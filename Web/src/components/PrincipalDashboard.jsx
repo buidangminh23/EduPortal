@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Users, 
@@ -6,9 +6,6 @@ import {
   DollarSign, 
   TrendingUp,
   Megaphone,
-  Plus,
-  Mail,
-  Phone,
   Award,
   Wallet,
   MessageSquare,
@@ -23,14 +20,16 @@ import {
   PieChart,
   Activity,
   Compass,
-  Briefcase
+  Briefcase,
+  ClipboardList
 } from 'lucide-react';
+import AIRiskPanel from './AIRiskPanel';
+
 
 export default function PrincipalDashboard() {
   const { 
     students, 
     teachers, 
-    announcements, 
     journalEntries,
     parentQAs,
     addAnnouncement, 
@@ -49,17 +48,21 @@ export default function PrincipalDashboard() {
     clubApplications,
     careerTestScores,
     reviewClubApplication,
-    approveClubBudget
+    approveClubBudget,
+    mockExamHistory,
+    teacherLeaveRequests,
+    approveTeacherLeaveRequest
   } = useContext(AppContext);
 
   // Sub tab control
   const [subTab, setSubTab] = useState('overview'); // overview, finance, qa_notices, leaves, lesson_plans, teacher_ratings
+  const [leaveTab, setLeaveTab] = useState('student'); // student, teacher
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [planFeedback, setPlanFeedback] = useState('');
 
   // Teacher Rating state
   const [selectedTeacherForRating, setSelectedTeacherForRating] = useState(null);
-  const [showAddTeacher, setShowAddTeacher] = useState(false);
+
   
   // Finance form states
   const [feeName, setFeeName] = useState('');
@@ -77,12 +80,22 @@ export default function PrincipalDashboard() {
   // Thi đua approval signature state
   const [thiDuaApproved, setThiDuaApproved] = useState(false);
 
+  // Mock Exam States
+  const [pMockSearch, setPMockSearch] = useState('');
+  const [pMockClassFilter, setPMockClassFilter] = useState('ALL');
+  const [pMockBlockFilter, setPMockBlockFilter] = useState('ALL');
+
   // Club ERP budgets state
   const [clubBudgets, setClubBudgets] = useState({});
 
   // Calculations
   const totalStudents = students.length;
   const totalTeachers = teachers.length;
+  const allAttempts = mockExamHistory || [];
+  
+  const topScorers = [...allAttempts]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
 
   // Expected vs Collected fees aggregate
   let totalFeesCount = 0;
@@ -227,6 +240,11 @@ export default function PrincipalDashboard() {
     alert(`BGH đã ${status === 'approved' ? 'chấp thuận' : 'từ chối'} đơn xin nghỉ phép!`);
   };
 
+  const handleBghTeacherLeaveApproval = (requestId, status) => {
+    approveTeacherLeaveRequest(requestId, status);
+    alert(`BGH đã ${status === 'approved' ? 'duyệt' : 'từ chối'} đơn xin nghỉ phép của giáo viên!`);
+  };
+
   const handleReviewSubmit = (e) => {
     e.preventDefault();
     if (!selectedPlan) return;
@@ -268,7 +286,7 @@ export default function PrincipalDashboard() {
           Hỏi Đáp & Phát Ngôn ({parentQAs.length})
         </button>
         <button onClick={() => setSubTab('leaves')} className={`tab-btn ${subTab === 'leaves' ? 'active' : ''}`}>
-          Duyệt Nghỉ Phép ({leaveRequests ? leaveRequests.filter(l => l.status === 'pending').length : 0})
+          Duyệt Nghỉ Phép ({(leaveRequests ? leaveRequests.filter(l => l.status === 'pending').length : 0) + (teacherLeaveRequests ? teacherLeaveRequests.filter(l => l.status === 'pending').length : 0)})
         </button>
         <button onClick={() => setSubTab('lesson_plans')} className={`tab-btn ${subTab === 'lesson_plans' ? 'active' : ''}`}>
           Duyệt Giáo Án ({lessonPlans ? lessonPlans.filter(p => p.status === 'pending').length : 0})
@@ -278,6 +296,9 @@ export default function PrincipalDashboard() {
         </button>
         <button onClick={() => setSubTab('assignments')} className={`tab-btn ${subTab === 'assignments' ? 'active' : ''}`}>
           Thống Kê Bài Tập
+        </button>
+        <button onClick={() => setSubTab('mock_exams')} className={`tab-btn ${subTab === 'mock_exams' ? 'active' : ''}`}>
+          Thống Kê Thi Thử
         </button>
       </div>
 
@@ -471,6 +492,11 @@ export default function PrincipalDashboard() {
                 </table>
               )}
             </div>
+          </div>
+
+          {/* AI Academic & Operational Risk Prediction */}
+          <div style={{ marginTop: '24px' }}>
+            <AIRiskPanel />
           </div>
         </div>
       )}
@@ -667,79 +693,178 @@ export default function PrincipalDashboard() {
             <span>Phê Duyệt Đơn Nghỉ Phép Toàn Trường</span>
           </h2>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="premium-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn</th>
-                  <th>Học Sinh</th>
-                  <th>Lớp</th>
-                  <th>Phụ Huynh</th>
-                  <th>Ngày Xin Nghỉ</th>
-                  <th>Lý Do Xin Nghỉ</th>
-                  <th>Trạng Thái</th>
-                  <th>Thao Tác BGH</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!leaveRequests || leaveRequests.length === 0 ? (
+          {/* Segmented Control / Tabs */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+            <button 
+              onClick={() => setLeaveTab('student')} 
+              className={`btn ${leaveTab === 'student' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '8px' }}
+            >
+              Nghỉ Phép Học Sinh ({leaveRequests ? leaveRequests.filter(l => l.status === 'pending').length : 0})
+            </button>
+            <button 
+              onClick={() => setLeaveTab('teacher')} 
+              className={`btn ${leaveTab === 'teacher' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '8px' }}
+            >
+              Nghỉ Phép Giáo Viên ({teacherLeaveRequests ? teacherLeaveRequests.filter(l => l.status === 'pending').length : 0})
+            </button>
+          </div>
+
+          {leaveTab === 'student' ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="premium-table">
+                <thead>
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                      Không có đơn nghỉ phép nào được gửi.
-                    </td>
+                    <th>Mã đơn</th>
+                    <th>Học Sinh</th>
+                    <th>Lớp</th>
+                    <th>Phụ Huynh</th>
+                    <th>Ngày Xin Nghỉ</th>
+                    <th>Lý Do Xin Nghỉ</th>
+                    <th>Trạng Thái</th>
+                    <th>Thao Tác BGH</th>
                   </tr>
-                ) : (
-                  leaveRequests.map(leave => (
-                    <tr key={leave.id}>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{leave.id}</td>
-                      <td style={{ fontWeight: 600 }}>{leave.studentName}</td>
-                      <td><span className="badge badge-success">Lớp {leave.class}</span></td>
-                      <td>{leave.parentName}</td>
-                      <td style={{ fontWeight: 600 }}>{leave.date}</td>
-                      <td style={{ maxWidth: '280px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={leave.reason}>
-                        {leave.reason}
-                      </td>
-                      <td>
-                        <span className={`badge ${
-                          leave.status === 'pending' 
-                            ? 'badge-warning' 
-                            : leave.status === 'approved' 
-                            ? 'badge-success' 
-                            : 'badge-danger'
-                        }`}>
-                          {leave.status === 'pending' && 'Đang chờ duyệt'}
-                          {leave.status === 'approved' && 'BGH Đã đồng ý'}
-                          {leave.status === 'rejected' && 'BGH Từ chối'}
-                        </span>
-                      </td>
-                      <td>
-                        {leave.status === 'pending' ? (
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button 
-                              onClick={() => handleBghLeaveApproval(leave.id, 'approved')} 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#e2f8f0', color: '#0f766e', borderColor: '#ccfbf1', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            >
-                              <Check size={12} /> Duyệt
-                            </button>
-                            <button 
-                              onClick={() => handleBghLeaveApproval(leave.id, 'rejected')} 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#fee2e2', color: '#991b1b', borderColor: '#fecaca', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            >
-                              <X size={12} /> Từ chối
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Đã xử lý</span>
-                        )}
+                </thead>
+                <tbody>
+                  {!leaveRequests || leaveRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                        Không có đơn nghỉ phép nào được gửi.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    leaveRequests.map(leave => (
+                      <tr key={leave.id}>
+                        <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{leave.id}</td>
+                        <td style={{ fontWeight: 600 }}>{leave.studentName}</td>
+                        <td><span className="badge badge-success">Lớp {leave.class}</span></td>
+                        <td>{leave.parentName}</td>
+                        <td style={{ fontWeight: 600 }}>{leave.date}</td>
+                        <td style={{ maxWidth: '280px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={leave.reason}>
+                          {leave.reason}
+                        </td>
+                        <td>
+                          <span className={`badge ${
+                            leave.status === 'pending' 
+                              ? 'badge-warning' 
+                              : leave.status === 'approved' 
+                              ? 'badge-success' 
+                              : 'badge-danger'
+                          }`}>
+                            {leave.status === 'pending' && 'Đang chờ duyệt'}
+                            {leave.status === 'approved' && 'BGH Đã đồng ý'}
+                            {leave.status === 'rejected' && 'BGH Từ chối'}
+                          </span>
+                        </td>
+                        <td>
+                          {leave.status === 'pending' ? (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button 
+                                onClick={() => handleBghLeaveApproval(leave.id, 'approved')} 
+                                className="btn btn-secondary" 
+                                style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#e2f8f0', color: '#0f766e', borderColor: '#ccfbf1', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <Check size={12} /> Duyệt
+                              </button>
+                              <button 
+                                onClick={() => handleBghLeaveApproval(leave.id, 'rejected')} 
+                                className="btn btn-secondary" 
+                                style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#fee2e2', color: '#991b1b', borderColor: '#fecaca', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <X size={12} /> Từ chối
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Đã xử lý</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="premium-table">
+                <thead>
+                  <tr>
+                    <th>Mã đơn</th>
+                    <th>Giáo Viên</th>
+                    <th>Môn Học</th>
+                    <th>Lớp CN</th>
+                    <th>Giáo Viên Dạy Thay</th>
+                    <th>Ngày Nghỉ</th>
+                    <th>Lý Do</th>
+                    <th>Trạng Thái</th>
+                    <th>Thao Tác BGH</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!teacherLeaveRequests || teacherLeaveRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                        Không có đơn xin nghỉ phép nào từ giáo viên.
+                      </td>
+                    </tr>
+                  ) : (
+                    teacherLeaveRequests.map(req => {
+                      const originalTeacher = teachers.find(t => t.id === req.teacherId);
+                      return (
+                        <tr key={req.id}>
+                          <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{req.id}</td>
+                          <td style={{ fontWeight: 600 }}>{req.teacherName}</td>
+                          <td>{originalTeacher ? originalTeacher.subject : 'N/A'}</td>
+                          <td><span className="badge badge-info">Lớp {originalTeacher ? originalTeacher.classJoined : 'N/A'}</span></td>
+                          <td style={{ fontWeight: 600 }}>{req.substituteTeacherName}</td>
+                          <td style={{ fontWeight: 600 }}>{req.date}</td>
+                          <td style={{ maxWidth: '240px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={req.reason}>
+                            {req.reason}
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              req.status === 'pending' 
+                                ? 'badge-warning' 
+                                : req.status === 'approved' 
+                                ? 'badge-success' 
+                                : 'badge-danger'
+                            }`}>
+                              {req.status === 'pending' && 'Đang chờ duyệt'}
+                              {req.status === 'approved' && 'BGH Đã duyệt'}
+                              {req.status === 'rejected' && 'BGH Từ chối'}
+                            </span>
+                          </td>
+                          <td>
+                            {req.status === 'pending' ? (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button 
+                                  onClick={() => handleBghTeacherLeaveApproval(req.id, 'approved')} 
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#e2f8f0', color: '#0f766e', borderColor: '#ccfbf1', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Check size={12} /> Duyệt
+                                </button>
+                                <button 
+                                  onClick={() => handleBghTeacherLeaveApproval(req.id, 'rejected')} 
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '6px 10px', fontSize: '0.8rem', background: '#fee2e2', color: '#991b1b', borderColor: '#fecaca', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <X size={12} /> Từ chối
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Đã xử lý</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -1107,6 +1232,304 @@ export default function PrincipalDashboard() {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOCK EXAMS MONITOR TAB */}
+      {subTab === 'mock_exams' && (
+        <div className="animate-fade">
+          
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>LƯỢT THI TOÀN TRƯỜNG</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: 'var(--accent-primary)', fontWeight: 'bold' }}>
+                  {allAttempts.length} lượt
+                </div>
+              </div>
+              <div className="stat-icon"><ClipboardList size={24} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ĐIỂM TRUNG BÌNH CHUNG</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: '#10b981', fontWeight: 'bold' }}>
+                  {(() => {
+                    if (allAttempts.length === 0) return '0.0';
+                    const sum = allAttempts.reduce((acc, curr) => acc + curr.score, 0);
+                    return (sum / allAttempts.length).toFixed(1);
+                  })()}/10
+                </div>
+              </div>
+              <div className="stat-icon"><Award size={24} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>THỦ KHOA LÂM THỜI</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: '#f59e0b', fontWeight: 'bold' }}>
+                  {(() => {
+                    if (allAttempts.length === 0) return '0.0';
+                    return Math.max(...allAttempts.map(h => h.score)).toFixed(1);
+                  })()}/10
+                </div>
+              </div>
+              <div className="stat-icon"><Award size={24} /></div>
+            </div>
+          </div>
+
+          {/* SVG Comparison & Top Scorers Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '30px' }}>
+            
+            {/* Class comparison SVG chart */}
+            <div className="glass-panel" style={{ padding: '24px', background: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '20px' }}>
+                So sánh Điểm trung bình thi thử giữa các Lớp (Khối 12)
+              </h3>
+              
+              {(() => {
+                const classes = ['12A1', '12A2'];
+                const data = classes.map(c => {
+                  const cAttempts = allAttempts.filter(h => h.class === c);
+                  const avg = cAttempts.length > 0 
+                    ? (cAttempts.reduce((acc, curr) => acc + curr.score, 0) / cAttempts.length)
+                    : 0;
+                  return { class: c, avg: parseFloat(avg.toFixed(1)) };
+                });
+
+                const chartWidth = 350;
+                const chartHeight = 180;
+                const barWidth = 60;
+                const gap = 60;
+                const maxVal = 10;
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <svg width="100%" height={chartHeight + 40} viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`} style={{ maxWidth: '400px' }}>
+                      {/* Grid Lines */}
+                      {[0, 2, 4, 6, 8, 10].map(val => {
+                        const y = chartHeight - (val / maxVal) * chartHeight;
+                        return (
+                          <g key={val}>
+                            <line x1="40" y1={y} x2={chartWidth - 20} y2={y} stroke="#e2e8f0" strokeDasharray="3,3" />
+                            <text x="15" y={y + 4} fontSize="9" fill="#64748b" textAnchor="middle">{val}</text>
+                          </g>
+                        );
+                      })}
+
+                      {/* Bars */}
+                      {data.map((item, idx) => {
+                        const barHeight = (item.avg / maxVal) * chartHeight;
+                        const x = 70 + idx * (barWidth + gap);
+                        const y = chartHeight - barHeight;
+                        
+                        return (
+                          <g key={item.class}>
+                            <defs>
+                              <linearGradient id={`grad-principal-${item.class}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={item.class === '12A1' ? '#6366f1' : '#10b981'} />
+                                <stop offset="100%" stopColor={item.class === '12A1' ? '#4f46e5' : '#059669'} stopOpacity="0.8" />
+                              </linearGradient>
+                            </defs>
+                            <rect
+                              x={x}
+                              y={y}
+                              width={barWidth}
+                              height={barHeight}
+                              rx="8"
+                              fill={`url(#grad-principal-${item.class})`}
+                            />
+                            <text
+                              x={x + barWidth / 2}
+                              y={y - 8}
+                              fontSize="11"
+                              fontWeight="bold"
+                              fill={item.class === '12A1' ? '#4f46e5' : '#059669'}
+                              textAnchor="middle"
+                            >
+                              {item.avg > 0 ? item.avg.toFixed(1) : 'Chưa thi'}
+                            </text>
+                            <text
+                              x={x + barWidth / 2}
+                              y={chartHeight + 20}
+                              fontSize="11"
+                              fontWeight="600"
+                              fill="#1e293b"
+                              textAnchor="middle"
+                            >
+                              Lớp {item.class}
+                            </text>
+                          </g>
+                        );
+                      })}
+                      
+                      <line x1="40" y1={chartHeight} x2={chartWidth - 20} y2={chartHeight} stroke="#cbd5e1" strokeWidth="2" />
+                    </svg>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Bảng Vàng Danh Vọng (Top scorers) */}
+            <div className="glass-panel" style={{ padding: '24px', background: 'white' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Award size={18} color="#f59e0b" /> Bảng Vàng Danh Vọng (Top 5 Điểm Cao)
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {topScorers.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>Chưa có lượt thi thử nào.</p>
+                ) : (
+                  topScorers.map((attempt, idx) => (
+                    <div 
+                      key={attempt.id} 
+                      style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        padding: '12px 16px', 
+                        background: idx === 0 ? 'rgba(245, 158, 11, 0.06)' : '#f8fafc', 
+                        borderRadius: '12px',
+                        border: idx === 0 ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid #e2e8f0'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ 
+                          width: '24px', 
+                          height: '24px', 
+                          borderRadius: '50%', 
+                          background: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#b45309' : '#e2e8f0', 
+                          color: idx <= 2 ? 'white' : '#64748b',
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <strong style={{ display: 'block', color: '#1e293b', fontSize: '0.88rem' }}>{attempt.studentName}</strong>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Lớp {attempt.class} • Khối {attempt.block} • {attempt.title || 'Đề thi thử'}</span>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: idx === 0 ? '#f59e0b' : 'var(--accent-primary)' }}>
+                        {attempt.score.toFixed(1)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* School-wide attempt ledger */}
+          <div className="glass-panel" style={{ padding: '24px', background: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                Nhật ký Kết quả Thi Thử Toàn trường
+              </h3>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Tìm học sinh..."
+                  className="form-control"
+                  value={pMockSearch}
+                  onChange={e => setPMockSearch(e.target.value)}
+                  style={{ width: '200px', fontSize: '0.85rem', padding: '8px 12px' }}
+                />
+
+                <select
+                  className="form-control"
+                  value={pMockClassFilter}
+                  onChange={e => setPMockClassFilter(e.target.value)}
+                  style={{ width: '120px', fontSize: '0.85rem', padding: '8px 12px' }}
+                >
+                  <option value="ALL">Tất cả Lớp</option>
+                  <option value="12A1">Lớp 12A1</option>
+                  <option value="12A2">Lớp 12A2</option>
+                </select>
+                
+                <select
+                  className="form-control"
+                  value={pMockBlockFilter}
+                  onChange={e => setPMockBlockFilter(e.target.value)}
+                  style={{ width: '120px', fontSize: '0.85rem', padding: '8px 12px' }}
+                >
+                  <option value="ALL">Tất cả Khối</option>
+                  <option value="A00">Khối A00</option>
+                  <option value="A01">Khối A01</option>
+                  <option value="B00">Khối B00</option>
+                  <option value="C00">Khối C00</option>
+                  <option value="D01">Khối D01</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.05)', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 8px' }}>Học sinh</th>
+                    <th style={{ padding: '12px 8px' }}>Lớp</th>
+                    <th style={{ padding: '12px 8px' }}>Khối thi</th>
+                    <th style={{ padding: '12px 8px' }}>Tên Đề thi</th>
+                    <th style={{ padding: '12px 8px' }}>Ngày thi</th>
+                    <th style={{ padding: '12px 8px' }}>Thời gian</th>
+                    <th style={{ padding: '12px 8px' }}>Số câu đúng</th>
+                    <th style={{ padding: '12px 8px' }}>Điểm số</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const filtered = allAttempts.filter(h => {
+                      const matchSearch = h.studentName.toLowerCase().includes(pMockSearch.toLowerCase());
+                      const matchClass = pMockClassFilter === 'ALL' || h.class === pMockClassFilter;
+                      const matchBlock = pMockBlockFilter === 'ALL' || h.block === pMockBlockFilter;
+                      return matchSearch && matchClass && matchBlock;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="8" style={{ padding: '24px 8px', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
+                            Không tìm thấy kết quả nào phù hợp.
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filtered.map(attempt => (
+                      <tr key={attempt.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', fontSize: '0.88rem', color: '#1e293b' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: 600 }}>{attempt.studentName}</td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.class}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
+                            {attempt.block}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.title || `Đề thi Khối ${attempt.block}`}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{attempt.date.split('-').reverse().join('/')}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{attempt.timeSpent}</td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.correctAnswers} / {attempt.totalQuestions}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <strong style={{ 
+                            color: attempt.score >= 8 ? '#10b981' : attempt.score >= 5 ? '#f59e0b' : '#ef4444',
+                            fontSize: '0.95rem'
+                          }}>
+                            {attempt.score.toFixed(1)}
+                          </strong>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

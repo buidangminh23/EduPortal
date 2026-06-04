@@ -1,27 +1,28 @@
-import React, { useContext, useState, useRef } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   FileText, 
   CreditCard, 
-  HelpCircle, 
   CheckCircle, 
   AlertTriangle,
   Signature,
   RotateCcw,
   Send,
   MessageCircle,
-  QrCode,
   Calendar,
   Award,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  Utensils
 } from 'lucide-react';
+import VietQRPayment from './VietQRPayment';
 
-export default function ParentHub() {
+
+export default function ParentHub({ activeTab, setActiveTab }) {
   const { 
     selectedStudentId, 
     students, 
     parentQAs, 
-    payStudentFee, 
     signParentReport, 
     askParentQuestion,
     submitLeaveRequest,
@@ -33,23 +34,44 @@ export default function ParentHub() {
     assignments,
     submissions,
     attendanceLogs,
-    careerTestScores
+    careerTestScores,
+    cafeteriaMenu,
+    cafeteriaRegistrations,
+    cafeteriaFeedback,
+    studentWallets,
+    registerCafeteriaMeal,
+    cancelCafeteriaMeal,
+    topUpStudentWallet,
+    updateStudentWalletLimit
   } = useContext(AppContext);
 
-  // Active student and parent data
-  const student = students.find(s => s.id === selectedStudentId) || students[0];
-  const qas = parentQAs.filter(q => q.parentName === student.parentName);
-  const studentLeaves = leaveRequests ? leaveRequests.filter(l => l.studentId === student.id) : [];
-  const studentConductLogs = conductLogs ? conductLogs.filter(l => l.studentId === student.id) : [];
-  const conductScore = 100 + studentConductLogs.reduce((acc, curr) => acc + curr.points, 0);
-  const conductGrade = conductScore >= 90 ? 'Tốt' : conductScore >= 70 ? 'Khá' : conductScore >= 50 ? 'Trung bình' : 'Yếu';
-  const myEvaluations = teacherEvaluations ? teacherEvaluations.filter(e => e.raterRole === 'parent' && e.raterName === student.parentName) : [];
-
+  // Declare all hooks at the very top level
   const [activeSubTab, setActiveSubTab] = useState('grades'); // grades, fees, qa, leaves, evaluations
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (activeTab === 'dashboard') {
+        setActiveSubTab('grades');
+      } else if (activeTab === 'fees') {
+        setActiveSubTab('fees');
+      } else if (activeTab === 'qas') {
+        setActiveSubTab('qa');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
   const [showPayModal, setShowPayModal] = useState(null); // fee object if active
   const [qaInput, setQaInput] = useState('');
   const [leaveDate, setLeaveDate] = useState('');
   const [leaveReason, setLeaveReason] = useState('');
+
+  // Part 8 States: Smart Cafeteria & Wallet
+  const [topUpAmount, setTopUpAmount] = useState(200000);
+  const [limitInput, setLimitInput] = useState(100000);
+  const [regDate, setRegDate] = useState('2026-06-04');
+  const [regMealType, setRegMealType] = useState('Standard');
+  const [payViaWalletOption, setPayViaWalletOption] = useState(true);
 
   // Teacher Evaluation states
   const [evalTeacherId, setEvalTeacherId] = useState(teachers && teachers.length > 0 ? teachers[0].id : '');
@@ -59,9 +81,73 @@ export default function ParentHub() {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Calculate GPA
-  const grades = Object.values(student.grades);
-  const gpa = (grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(2);
+  // Active student and parent data
+  const student = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
+
+  const handleSubTabChange = (tab) => {
+    setActiveSubTab(tab);
+    if (setActiveTab) {
+      if (tab === 'grades') {
+        setActiveTab('dashboard');
+      } else if (tab === 'fees') {
+        setActiveTab('fees');
+      } else if (tab === 'qa') {
+        setActiveTab('qas');
+      } else {
+        setActiveTab('dashboard');
+      }
+    }
+  };
+
+  if (!student) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+        <h3>Không tìm thấy thông tin học sinh</h3>
+        <p style={{ color: 'var(--text-secondary)' }}>Vui lòng đăng nhập lại hoặc liên hệ quản trị viên.</p>
+      </div>
+    );
+  }
+
+  const qas = parentQAs && student ? parentQAs.filter(q => q.parentName === student.parentName) : [];
+  const studentLeaves = leaveRequests && student ? leaveRequests.filter(l => l.studentId === student.id) : [];
+  const studentConductLogs = conductLogs && student ? conductLogs.filter(l => l.studentId === student.id) : [];
+  const conductScore = 100 + studentConductLogs.reduce((acc, curr) => acc + curr.points, 0);
+  const conductGrade = conductScore >= 90 ? 'Tốt' : conductScore >= 70 ? 'Khá' : conductScore >= 50 ? 'Trung bình' : 'Yếu';
+  const myEvaluations = teacherEvaluations && student ? teacherEvaluations.filter(e => e.raterRole === 'parent' && e.raterName === student.parentName) : [];
+
+  // Calculate GPA and classification for Sem 1, Sem 2, and Whole Year
+  const subjectsKeys = ['Math', 'Literature', 'Physics', 'English'];
+  
+  const sem1GradesArray = student.gradesSem1 ? Object.values(student.gradesSem1) : [];
+  const sem1Gpa = sem1GradesArray.length > 0 
+    ? (sem1GradesArray.reduce((a, b) => a + b, 0) / sem1GradesArray.length).toFixed(2)
+    : '0.00';
+
+  const sem2GradesArray = student.grades ? Object.values(student.grades) : [];
+  const sem2Gpa = sem2GradesArray.length > 0
+    ? (sem2GradesArray.reduce((a, b) => a + b, 0) / sem2GradesArray.length).toFixed(2)
+    : '0.00';
+
+  const wholeYearGrades = {};
+  subjectsKeys.forEach(sub => {
+    const s1 = student.gradesSem1?.[sub] || 0;
+    const s2 = student.grades?.[sub] || 0;
+    wholeYearGrades[sub] = parseFloat(((s1 + s2 * 2) / 3).toFixed(2));
+  });
+  const wholeYearGradesArray = Object.values(wholeYearGrades);
+  const wholeYearGpa = wholeYearGradesArray.length > 0
+    ? (wholeYearGradesArray.reduce((a, b) => a + b, 0) / wholeYearGradesArray.length).toFixed(2)
+    : '0.00';
+
+  const getClassification = (gpaScore) => {
+    const val = parseFloat(gpaScore);
+    if (val >= 8.0) return 'Giỏi';
+    if (val >= 6.5) return 'Khá';
+    if (val >= 5.0) return 'Trung bình';
+    return 'Yếu';
+  };
+
+
 
   // Format currency helper
   const formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -116,13 +202,6 @@ export default function ParentHub() {
     alert('Đã ký tên xác nhận học bạ của con thành công!');
   };
 
-  const handlePayFee = () => {
-    if (!showPayModal) return;
-    payStudentFee(student.id, showPayModal.id);
-    setShowPayModal(null);
-    alert(`Thanh toán thành công số tiền ${formatCurrency(showPayModal.amount)}!`);
-  };
-
   const handleQaSubmit = (e) => {
     e.preventDefault();
     if (!qaInput.trim()) return;
@@ -152,6 +231,28 @@ export default function ParentHub() {
     alert('Cảm ơn bạn! Đánh giá chất lượng giảng dạy đã được gửi trực tuyến tới Ban Giám Hiệu.');
   };
 
+  const handleTopUpSubmit = (e) => {
+    e.preventDefault();
+    if (topUpAmount <= 0) return;
+    topUpStudentWallet(student.id, topUpAmount);
+    alert(`Đã nạp thành công ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(topUpAmount)} vào ví điện tử của cháu ${student.name}!`);
+  };
+
+  const handleLimitSubmit = (e) => {
+    e.preventDefault();
+    if (limitInput <= 0) return;
+    updateStudentWalletLimit(student.id, limitInput);
+    alert(`Đã cập nhật hạn mức chi tiêu hàng ngày của cháu ${student.name} thành ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(limitInput)}!`);
+  };
+
+  const handleParentMealRegSubmit = (e) => {
+    e.preventDefault();
+    const success = registerCafeteriaMeal(student.id, regDate, regMealType, payViaWalletOption);
+    if (success) {
+      alert(`Đăng ký suất ăn bán trú ngày ${regDate.split('-').reverse().join('/')} cho cháu thành công!`);
+    }
+  };
+
   return (
     <div className="animate-fade">
       <div style={{ marginBottom: '24px' }}>
@@ -162,29 +263,35 @@ export default function ParentHub() {
       </div>
 
       {/* Sub Tabs */}
-      <div className="tabs-container" style={{ overflowX: 'auto', display: 'flex', flexWrap: 'nowrap', gap: '4px', paddingBottom: '6px' }} className="custom-scroll">
-        <button onClick={() => setActiveSubTab('grades')} className={`tab-btn ${activeSubTab === 'grades' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+      <div className="tabs-container custom-scroll" style={{ overflowX: 'auto', display: 'flex', flexWrap: 'nowrap', gap: '4px', paddingBottom: '6px' }}>
+        <button onClick={() => handleSubTabChange('grades')} className={`tab-btn ${activeSubTab === 'grades' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Bảng Điểm & Ký Nhận
         </button>
-        <button onClick={() => setActiveSubTab('fees')} className={`tab-btn ${activeSubTab === 'fees' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('fees')} className={`tab-btn ${activeSubTab === 'fees' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Học Phí & Đóng Tiền ({student.feeStatus.filter(f => !f.paid).length})
         </button>
-        <button onClick={() => setActiveSubTab('qa')} className={`tab-btn ${activeSubTab === 'qa' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('cafeteria')} className={`tab-btn ${activeSubTab === 'cafeteria' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+          Bán Trú Con
+        </button>
+        <button onClick={() => handleSubTabChange('wallet')} className={`tab-btn ${activeSubTab === 'wallet' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+          Ví Điện Tử Con
+        </button>
+        <button onClick={() => handleSubTabChange('qa')} className={`tab-btn ${activeSubTab === 'qa' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Hỏi Đáp Chủ Nhiệm ({qas.length})
         </button>
-        <button onClick={() => setActiveSubTab('leaves')} className={`tab-btn ${activeSubTab === 'leaves' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('leaves')} className={`tab-btn ${activeSubTab === 'leaves' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Xin Nghỉ Phép ({studentLeaves.length})
         </button>
-        <button onClick={() => setActiveSubTab('attendance')} className={`tab-btn ${activeSubTab === 'attendance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('attendance')} className={`tab-btn ${activeSubTab === 'attendance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Chuyên Cần Của Con
         </button>
-        <button onClick={() => setActiveSubTab('ai_guidance')} className={`tab-btn ${activeSubTab === 'ai_guidance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('ai_guidance')} className={`tab-btn ${activeSubTab === 'ai_guidance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Định Hướng AI
         </button>
-        <button onClick={() => setActiveSubTab('evaluations')} className={`tab-btn ${activeSubTab === 'evaluations' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('evaluations')} className={`tab-btn ${activeSubTab === 'evaluations' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Đánh Giá Giáo Viên ({myEvaluations.length})
         </button>
-        <button onClick={() => setActiveSubTab('assignments')} className={`tab-btn ${activeSubTab === 'assignments' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('assignments')} className={`tab-btn ${activeSubTab === 'assignments' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Xem Bài Tập ({assignments ? assignments.filter(a => a.classTarget === student.class).length : 0})
         </button>
       </div>
@@ -196,42 +303,56 @@ export default function ParentHub() {
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
               <FileText size={18} color="var(--accent-primary)" />
-              <span>Học bạ và Kết quả Học tập kì II</span>
+              <span>Học bạ và Kết quả Học tập liên thông</span>
             </h2>
 
             <table className="premium-table" style={{ marginBottom: '24px' }}>
               <thead>
                 <tr>
                   <th>Môn Học</th>
-                  <th>Điểm Số</th>
+                  <th style={{ textAlign: 'center' }}>Học kì I</th>
+                  <th style={{ textAlign: 'center' }}>Học kì II</th>
+                  <th style={{ textAlign: 'center' }}>Cả năm</th>
                   <th>Nhận Xét Khái Quát</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Toán học</td>
-                  <td style={{ fontWeight: 600 }}>{student.grades.Math}</td>
+                  <td style={{ fontWeight: 600 }}>Toán học</td>
+                  <td style={{ textAlign: 'center' }}>{(student.gradesSem1?.Math ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>{(student.grades.Math ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-secondary)', fontWeight: 700 }}>{((student.gradesSem1?.Math + student.grades.Math * 2) / 3).toFixed(2)}</td>
                   <td>Tiếp thu nhanh, tư duy logic khá.</td>
                 </tr>
                 <tr>
-                  <td>Ngữ văn</td>
-                  <td style={{ fontWeight: 600 }}>{student.grades.Literature}</td>
+                  <td style={{ fontWeight: 600 }}>Ngữ văn</td>
+                  <td style={{ textAlign: 'center' }}>{(student.gradesSem1?.Literature ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>{(student.grades.Literature ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-secondary)', fontWeight: 700 }}>{((student.gradesSem1?.Literature + student.grades.Literature * 2) / 3).toFixed(2)}</td>
                   <td>Cần chăm chỉ rèn luyện kĩ năng viết nghị luận.</td>
                 </tr>
                 <tr>
-                  <td>Vật lý</td>
-                  <td style={{ fontWeight: 600 }}>{student.grades.Physics}</td>
+                  <td style={{ fontWeight: 600 }}>Vật lý</td>
+                  <td style={{ textAlign: 'center' }}>{(student.gradesSem1?.Physics ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>{(student.grades.Physics ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-secondary)', fontWeight: 700 }}>{((student.gradesSem1?.Physics + student.grades.Physics * 2) / 3).toFixed(2)}</td>
                   <td>Làm bài tập đầy đủ, hiểu bài tốt.</td>
                 </tr>
                 <tr>
-                  <td>Tiếng Anh</td>
-                  <td style={{ fontWeight: 600 }}>{student.grades.English}</td>
+                  <td style={{ fontWeight: 600 }}>Tiếng Anh</td>
+                  <td style={{ textAlign: 'center' }}>{(student.gradesSem1?.English ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>{(student.grades.English ?? 0).toFixed(1)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--accent-secondary)', fontWeight: 700 }}>{((student.gradesSem1?.English + student.grades.English * 2) / 3).toFixed(2)}</td>
                   <td>Ngữ pháp vững vàng, giao tiếp trôi chảy.</td>
                 </tr>
-                <tr style={{ background: 'var(--accent-primary-glow)' }}>
-                  <td style={{ fontWeight: 700 }}>Điểm trung bình (GPA)</td>
-                  <td style={{ fontWeight: 800, color: 'var(--accent-primary)', fontSize: '1.1rem' }}>{gpa}</td>
-                  <td style={{ fontWeight: 600 }}>Xếp loại học lực: {gpa >= 8.0 ? 'Giỏi' : 'Khá'}</td>
+                <tr style={{ background: 'rgba(99, 102, 241, 0.05)', borderTop: '2px solid var(--border-color)' }}>
+                  <td style={{ fontWeight: 700 }}>GPA trung bình</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{sem1Gpa}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent-primary)' }}>{sem2Gpa}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--accent-secondary)', fontSize: '1.05rem' }}>{wholeYearGpa}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    Xếp loại HK1: <span className="badge badge-success" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>{getClassification(sem1Gpa)}</span> • HK2: <span className="badge badge-success" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>{getClassification(sem2Gpa)}</span> • Cả năm: <span className="badge badge-success" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>{getClassification(wholeYearGpa)}</span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -850,50 +971,259 @@ export default function ParentHub() {
         </div>
       )}
 
-      {/* Payment simulated Modal */}
-      {showPayModal && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade">
-            <h2 style={{ marginBottom: '12px', fontSize: '1.25rem' }}>Thanh Toán Học Phí Trực Tuyến</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '18px' }}>
-              Thanh toán khoản thu: <strong>{showPayModal.name}</strong> số tiền <strong>{formatCurrency(showPayModal.amount)}</strong>.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-card)', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <QrCode size={36} color="var(--accent-primary)" />
-                <strong style={{ fontSize: '1.1rem' }}>Mã QR Chuyển Khoản Nhanh</strong>
-              </div>
-              
-              {/* Dummy QR Code using a stylized div */}
-              <div style={{ width: '130px', height: '130px', background: '#fff', padding: '10px', borderRadius: '8px', position: 'relative', display: 'flex', flexWrap: 'wrap', contentVisibility: 'auto' }}>
-                {/* SVG Mock QR Code */}
-                <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-                  <rect x="0" y="0" width="25" height="25" fill="#000" />
-                  <rect x="5" y="5" width="15" height="15" fill="#fff" />
-                  <rect x="75" y="0" width="25" height="25" fill="#000" />
-                  <rect x="80" y="5" width="15" height="15" fill="#fff" />
-                  <rect x="0" y="75" width="25" height="25" fill="#000" />
-                  <rect x="5" y="80" width="15" height="15" fill="#fff" />
-                  {/* Random pixels */}
-                  <rect x="35" y="10" width="10" height="20" fill="#000" />
-                  <rect x="50" y="5" width="15" height="10" fill="#000" />
-                  <rect x="30" y="45" width="40" height="15" fill="#000" />
-                  <rect x="10" y="40" width="15" height="25" fill="#000" />
-                  <rect x="40" y="70" width="25" height="25" fill="#000" />
-                  <rect x="75" y="40" width="20" height="35" fill="#000" />
-                </svg>
+      {activeSubTab === 'cafeteria' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }} className="animate-fade">
+          {/* Menu Planner & Registration */}
+          <div className="glass-panel">
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+              <Utensils size={18} color="var(--accent-primary)" />
+              <span>Đăng Ký Bán Trú Cho Con</span>
+            </h2>
+            
+            <form onSubmit={handleParentMealRegSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+              <div className="form-group">
+                <label className="form-label">Chọn ngày đăng ký ăn</label>
+                <input 
+                  type="date" 
+                  className="form-control" 
+                  value={regDate}
+                  onChange={e => setRegDate(e.target.value)}
+                  min="2026-06-04"
+                  required
+                />
               </div>
 
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quét mã QR bằng App Ngân hàng hoặc Ví MoMo/ZaloPay</span>
+              <div className="form-group">
+                <label className="form-label">Loại suất ăn</label>
+                <select 
+                  className="form-control"
+                  value={regMealType}
+                  onChange={e => setRegMealType(e.target.value)}
+                >
+                  <option value="Standard">Suất thường (35.000đ)</option>
+                  <option value="Veggie">Suất chay (35.000đ)</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  type="checkbox" 
+                  id="payViaWallet" 
+                  checked={payViaWalletOption}
+                  onChange={e => setPayViaWalletOption(e.target.checked)}
+                />
+                <label htmlFor="payViaWallet" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>
+                  Thanh toán tự động bằng ví điện tử học sinh
+                </label>
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Đăng ký suất ăn</button>
+            </form>
+
+            <h3 style={{ fontSize: '1.05rem', marginBottom: '12px' }}>Lịch sử đăng ký bán trú</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {(() => {
+                const childRegs = cafeteriaRegistrations ? cafeteriaRegistrations.filter(r => r.studentId === student.id) : [];
+                if (childRegs.length === 0) {
+                  return (
+                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      Chưa có lịch sử đăng ký suất ăn nào cho cháu.
+                    </div>
+                  );
+                }
+                return childRegs.map(reg => (
+                  <div key={reg.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-card)', borderRadius: '8px', fontSize: '0.85rem' }}>
+                    <div>
+                      <strong>Ngày: {reg.date.split('-').reverse().join('/')}</strong>
+                      <span style={{ marginLeft: '10px' }}>({reg.mealType === 'Standard' ? 'Suất Thường' : 'Suất Chay'})</span>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Trạng thái: 
+                        <span style={{ 
+                          marginLeft: '4px',
+                          color: reg.status === 'registered' ? 'var(--accent-secondary)' : 'var(--text-muted)',
+                          fontWeight: 600
+                        }}>
+                          {reg.status === 'registered' ? 'Đã đăng ký' : 'Đã hủy'}
+                        </span>
+                      </div>
+                    </div>
+                    {reg.status === 'registered' && (
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Bạn có chắc chắn muốn hủy suất ăn ngày ${reg.date.split('-').reverse().join('/')}?`)) {
+                            cancelCafeteriaMeal(student.id, reg.date);
+                            alert('Đã hủy suất ăn và hoàn tiền vào ví điện tử thành công!');
+                          }
+                        }}
+                        className="btn btn-secondary" 
+                        style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--accent-danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                      >
+                        Hủy ăn
+                      </button>
+                    )}
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+
+          {/* Nutrition Info Panel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', fontSize: '1.2rem' }}>Thực đơn bán trú hôm nay</h2>
+              {cafeteriaMenu && cafeteriaMenu.find(m => m.date === '2026-06-03') ? (() => {
+                const todayMenu = cafeteriaMenu.find(m => m.date === '2026-06-03');
+                return (
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', color: 'var(--accent-primary)', marginBottom: '8px' }}>{todayMenu.name}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+                      {todayMenu.items.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px dashed rgba(0,0,0,0.05)' }}>
+                          <span>{item.name}</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{item.cal} kcal</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })() : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Không có thực đơn cho hôm nay.</p>
+              )}
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setShowPayModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Hủy bỏ</button>
-              <button onClick={handlePayFee} className="btn btn-primary" style={{ flex: 1 }}>Thành toán giả lập</button>
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', fontSize: '1.2rem' }}>Phản hồi về bữa ăn của con</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {(() => {
+                  const childFeedbacks = cafeteriaFeedback ? cafeteriaFeedback.filter(f => f.studentId === student.id) : [];
+                  if (childFeedbacks.length === 0) {
+                    return (
+                      <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        Cháu chưa gửi phản hồi nào về các bữa ăn gần đây.
+                      </div>
+                    );
+                  }
+                  return childFeedbacks.map(f => (
+                    <div key={f.id} style={{ padding: '10px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-card)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <strong>Ngày {f.date.split('-').reverse().join('/')}</strong>
+                        <div>
+                          {'⭐'.repeat(f.rating)}
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, fontStyle: 'italic', color: 'var(--text-secondary)' }}>"{f.comment}"</p>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {activeSubTab === 'wallet' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }} className="animate-fade">
+          {/* Wallet Balance & Action */}
+          <div className="glass-panel">
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+              <CreditCard size={18} color="var(--accent-primary)" />
+              <span>Ví Điện Tử Học Sinh</span>
+            </h2>
+
+            {(() => {
+              const wallet = studentWallets[student.id] || { balance: 0, dailyLimit: 100000, transactions: [] };
+              return (
+                <div>
+                  <div style={{ padding: '20px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))', border: '1px solid rgba(99, 102, 241, 0.2)', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Số dư ví điện tử của {student.name}</div>
+                    <strong style={{ fontSize: '2rem', color: 'var(--accent-primary)' }}>
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(wallet.balance)}
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                      Hạn mức chi tiêu hàng ngày: <strong>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(wallet.dailyLimit)}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                    {/* Top up form */}
+                    <form onSubmit={handleTopUpSubmit} style={{ border: '1px solid var(--border-card)', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.01)' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem' }}>Nạp tiền vào ví</h4>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Số tiền nạp (VND)</label>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          value={topUpAmount}
+                          onChange={e => setTopUpAmount(parseFloat(e.target.value))}
+                          step="10000"
+                          min="10000"
+                          required
+                        />
+                      </div>
+                      <button type="submit" className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px' }}>Xác nhận nạp</button>
+                    </form>
+
+                    {/* Change limit form */}
+                    <form onSubmit={handleLimitSubmit} style={{ border: '1px solid var(--border-card)', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.01)' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem' }}>Cài đặt hạn mức chi tiêu</h4>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Hạn mức / ngày (VND)</label>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          value={limitInput}
+                          onChange={e => setLimitInput(parseFloat(e.target.value))}
+                          step="10000"
+                          min="10000"
+                          required
+                        />
+                      </div>
+                      <button type="submit" className="btn btn-secondary" style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px' }}>Cập nhật hạn mức</button>
+                    </form>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Transaction History */}
+          <div className="glass-panel">
+            <h2 style={{ marginBottom: '16px', fontSize: '1.2rem' }}>Lịch sử giao dịch ví của con</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto' }} className="custom-scroll">
+              {(() => {
+                const wallet = studentWallets[student.id] || { balance: 0, dailyLimit: 100000, transactions: [] };
+                if (!wallet.transactions || wallet.transactions.length === 0) {
+                  return (
+                    <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      Chưa phát sinh giao dịch nào.
+                    </div>
+                  );
+                }
+                return wallet.transactions.map((tx, index) => (
+                  <div key={tx.id || index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-card)', borderRadius: '8px', fontSize: '0.82rem' }}>
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>{tx.description}</strong>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Mã GD: {tx.id} • {tx.date.split('-').reverse().join('/')}</div>
+                    </div>
+                    <strong style={{ color: tx.type === 'topup' ? 'var(--accent-secondary)' : 'var(--accent-danger)', fontSize: '0.9rem' }}>
+                      {tx.type === 'topup' ? '+' : '-'}{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}
+                    </strong>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment simulated Modal */}
+      {showPayModal && (
+        <VietQRPayment
+          studentId={student.id}
+          feeItem={showPayModal}
+          onClose={() => setShowPayModal(null)}
+          onSuccess={() => setShowPayModal(null)}
+        />
       )}
     </div>
   );

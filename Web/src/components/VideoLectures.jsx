@@ -1,12 +1,10 @@
-import React, { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Play, 
-  BookOpen, 
   FileText, 
   ArrowLeft, 
   Save, 
-  Sparkles, 
   CheckCircle,
   Clock
 } from 'lucide-react';
@@ -26,7 +24,10 @@ export default function VideoLectures() {
   // Update note text when active video changes
   useEffect(() => {
     if (activeVideo) {
-      setActiveNoteText(notes[activeVideo.id] || '');
+      const timer = setTimeout(() => {
+        setActiveNoteText(notes[activeVideo.id] || '');
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [activeVideo, notes]);
 
@@ -67,7 +68,7 @@ export default function VideoLectures() {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'between', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span className="badge badge-info">{activeVideo.subject}</span>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Clock size={12} /> Duration: {activeVideo.duration}
@@ -140,7 +141,7 @@ export default function VideoLectures() {
                 >
                   <div>
                     {/* Header bar */}
-                    <div style={{ display: 'flex', justifyContent: 'between', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                       <span className="badge badge-info">{lesson.subject}</span>
                       {hasNotes && (
                         <span className="badge badge-success" style={{ gap: '2px', padding: '2px 8px', fontSize: '0.7rem' }}>

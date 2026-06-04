@@ -57,6 +57,16 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
 .animate-fade {
   animation: fadeIn var(--transition-normal) forwards;
 }

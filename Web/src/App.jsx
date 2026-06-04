@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -12,7 +12,17 @@ import AITutor from './components/AITutor';
 import VideoLectures from './components/VideoLectures';
 import EduMeet from './components/EduMeet';
 import SchoolCalendar from './components/SchoolCalendar';
-import { Users, GraduationCap, ShieldCheck, Mail, Phone } from 'lucide-react';
+import FloatingChatWidget from './components/FloatingChatWidget';
+import BulletinBoard from './components/BulletinBoard';
+import DirectChat from './components/DirectChat';
+import MeetingBooking from './components/MeetingBooking';
+import ExamRepository from './components/ExamRepository';
+import AssetManager from './components/AssetManager';
+import TeacherAttendance from './components/TeacherAttendance';
+import BadgesPanel from './components/BadgesPanel';
+import Leaderboard from './components/Leaderboard';
+import GradeTrendChart from './components/GradeTrendChart';
+import { ShieldCheck, Mail, Phone, Trophy } from 'lucide-react';
 
 function App() {
   const { currentRole, userSession } = useContext(AppContext);
@@ -20,7 +30,10 @@ function App() {
 
   // Reset tab on role switch
   useEffect(() => {
-    setActiveTab('dashboard');
+    const timer = setTimeout(() => {
+      setActiveTab('dashboard');
+    }, 0);
+    return () => clearTimeout(timer);
   }, [currentRole]);
 
   // If no active session, render the beautiful Login Portal
@@ -45,6 +58,14 @@ function App() {
           return <AdminTeacherManager />;
         case 'journal':
           return <ClassJournal />;
+        case 'bulletin':
+          return <BulletinBoard />;
+        case 'exam_repository':
+          return <ExamRepository />;
+        case 'asset_manager':
+          return <AssetManager />;
+        case 'teacher_attendance':
+          return <TeacherAttendance />;
         default:
           return <PrincipalDashboard />;
       }
@@ -54,15 +75,27 @@ function App() {
     if (currentRole === 'teacher') {
       switch (activeTab) {
         case 'dashboard':
-          return <TeacherDashboard />;
+          return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
         case 'journal':
           return <ClassJournal />;
         case 'qas':
-          return <TeacherDashboard />;
+          return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
         case 'meet':
           return <EduMeet />;
+        case 'chat':
+          return <DirectChat />;
+        case 'meeting_booking':
+          return <MeetingBooking />;
+        case 'bulletin':
+          return <BulletinBoard />;
+        case 'exam_repository':
+          return <ExamRepository />;
+        case 'teacher_attendance':
+          return <TeacherAttendance />;
+        case 'asset_manager':
+          return <AssetManager />;
         default:
-          return <TeacherDashboard />;
+          return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
       }
     }
 
@@ -77,6 +110,12 @@ function App() {
           return <AITutor />;
         case 'meet':
           return <EduMeet />;
+        case 'bulletin':
+          return <BulletinBoard />;
+        case 'exam_repository':
+          return <ExamRepository />;
+        case 'gamification':
+          return <GamificationPage />;
         default:
           return <StudentDashboard setActiveTab={setActiveTab} />;
       }
@@ -84,7 +123,16 @@ function App() {
 
     // 4. PHỤ HUYNH
     if (currentRole === 'parent') {
-      return <ParentHub />;
+      switch (activeTab) {
+        case 'chat':
+          return <DirectChat />;
+        case 'meeting_booking':
+          return <MeetingBooking />;
+        case 'bulletin':
+          return <BulletinBoard />;
+        default:
+          return <ParentHub activeTab={activeTab} setActiveTab={setActiveTab} />;
+      }
     }
 
     return <div>Không tìm thấy nội dung.</div>;
@@ -97,12 +145,41 @@ function App() {
       
       <div className="main-content">
         {/* Header / Navbar */}
-        <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Navbar setActiveTab={setActiveTab} />
         
         {/* Main Content Viewport */}
         <main className="content-pane">
           {renderTabContent()}
         </main>
+      </div>
+
+      {/* Floating AI Chat Widget — chỉ hiện với học sinh */}
+      <FloatingChatWidget />
+    </div>
+  );
+}
+
+// Gamification composite page: Badges + Leaderboard + Grade Trend
+function GamificationPage() {
+  const { students, selectedStudentId } = useContext(AppContext);
+  const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
+  return (
+    <div className="glass-panel animate-fade" style={{ maxWidth: 900, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+        <Trophy size={24} color="#f59e0b" />
+        <div>
+          <h2 style={{ margin: 0 }}>Thành Tích & Xếp Hạng</h2>
+          <p style={{ margin: '3px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Huy hiệu, bảng xếp hạng thi thử và xu hướng điểm số của bạn</p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        {student && <GradeTrendChart student={student} />}
+        <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 24 }}>
+          <BadgesPanel studentId={selectedStudentId} />
+        </div>
+        <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 24 }}>
+          <Leaderboard />
+        </div>
       </div>
     </div>
   );

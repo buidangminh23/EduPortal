@@ -1,6 +1,6 @@
-import React, { useContext, useState, useRef, useEffect } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Send, Sparkles, MessageSquare, CornerDownLeft, HelpCircle } from 'lucide-react';
+import { Send, Sparkles, MessageSquare } from 'lucide-react';
 
 export default function AITutor() {
   const { tutorChat, sendTutorMessage } = useContext(AppContext);

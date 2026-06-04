@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   ChevronLeft, 
@@ -6,9 +6,7 @@ import {
   Calendar as CalendarIcon, 
   Clock, 
   BookOpen, 
-  AlertCircle, 
   Filter, 
-  CheckCircle, 
   DollarSign, 
   X,
   FileText,
@@ -23,8 +21,7 @@ export default function SchoolCalendar() {
     assignments, 
     submissions,
     leaveRequests,
-    lessonPlans,
-    teachers
+    lessonPlans
   } = useContext(AppContext);
 
   // Focus Date: Wednesday June 3, 2026
@@ -35,7 +32,7 @@ export default function SchoolCalendar() {
   const [selectedDay, setSelectedDay] = useState(new Date(2026, 5, 3));
   const [filterType, setFilterType] = useState('all'); // all, schedule, deadline, fee, leave, event
 
-  const activeStudent = students.find(s => s.id === selectedStudentId) || students[0];
+  const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
 
   // Helper for calendar days grid
   const getDaysInMonth = (date) => {
@@ -516,6 +513,15 @@ export default function SchoolCalendar() {
   const deadlinesList = allEvents
     .filter(evt => evt.type === 'deadline' || evt.type === 'fee')
     .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (!activeStudent && (currentRole === 'student' || currentRole === 'parent')) {
+    return (
+      <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+        <h3>Không tìm thấy thông tin học sinh</h3>
+        <p style={{ color: 'var(--text-secondary)' }}>Vui lòng đăng nhập lại hoặc liên hệ quản trị viên.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-panel animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

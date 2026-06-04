@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Video, 
@@ -8,11 +8,7 @@ import {
   Monitor, 
   Hand, 
   PhoneOff, 
-  MessageSquare, 
-  Users, 
-  Sparkles, 
   BookOpen, 
-  CheckCircle,
   Plus,
   Send,
   RotateCcw,
@@ -21,7 +17,7 @@ import {
 
 export default function EduMeet() {
   const { currentRole, selectedStudentId, students } = useContext(AppContext);
-  const activeStudent = students.find(s => s.id === selectedStudentId) || students[0];
+  const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
 
   const [inCall, setInCall] = useState(false);
   
@@ -65,7 +61,7 @@ export default function EduMeet() {
   // Get name for meeting label
   const getUserNameLabel = () => {
     if (currentRole === 'teacher') return 'Thầy Nguyễn Minh Triết (Giáo viên)';
-    return `${activeStudent.name} (Học sinh)`;
+    return `${activeStudent ? activeStudent.name : 'Học sinh'} (Học sinh)`;
   };
 
   // Launch camera stream when call starts
@@ -115,9 +111,12 @@ export default function EduMeet() {
       });
     }
     if (inCall && camOn && !stream) {
-      startCamera();
+      const timer = setTimeout(() => {
+        startCamera();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [camOn, inCall]);
+  }, [camOn, inCall, stream]);
 
   // Sync mic track
   useEffect(() => {
@@ -126,6 +125,7 @@ export default function EduMeet() {
         track.enabled = micOn;
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [micOn, inCall]);
 
   // Clean up tracks when component unmounts
@@ -133,6 +133,7 @@ export default function EduMeet() {
     return () => {
       stopCamera();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Bot chat generator simulator

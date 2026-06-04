@@ -49,7 +49,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding-left: 260px; /* Width of sidebar */
+  padding-left: 280px; /* Width of sidebar */
   transition: padding var(--transition-normal);
 }
 

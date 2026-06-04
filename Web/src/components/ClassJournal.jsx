@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from 'react';
+import { useContext, useState, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   BookOpen, 
@@ -56,7 +56,7 @@ export default function ClassJournal() {
   };
 
   // Filter journal entries based on selected Class
-  const classEntries = journalEntries.filter(entry => entry.class === selectedClass);
+  const classEntries = journalEntries ? journalEntries.filter(entry => entry.class === selectedClass) : [];
   const totalPeriods = classEntries.length;
   
   const getRatingValue = (r) => {

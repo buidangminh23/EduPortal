@@ -1,23 +1,26 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
+import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { 
   Users, 
   MessageSquare, 
   Award, 
   Edit3, 
   CheckCircle,
-  HelpCircle,
   Clock,
   Send,
   Calendar,
   BookOpen,
-  XCircle,
   FileText,
   Check,
-  X
+  X,
+  ClipboardList,
+  Sparkles
 } from 'lucide-react';
+import AIRiskPanel from './AIRiskPanel';
 
-export default function TeacherDashboard() {
+
+export default function TeacherDashboard({ activeTab: globalActiveTab, setActiveTab: setGlobalActiveTab }) {
   const { 
     students, 
     parentQAs, 
@@ -36,13 +39,53 @@ export default function TeacherDashboard() {
     attendanceLogs,
     logAttendance,
     learningResources,
-    uploadResource
+    uploadResource,
+    mockExamHistory,
+    addCustomExam,
+    teachers,
+    teacherLeaveRequests,
+    submitTeacherLeaveRequest
   } = useContext(AppContext);
 
-  const [activeTab, setActiveTab] = useState('students'); // students, qa, leaves, lesson_plans, conduct, assignments
+  const [activeTab, setActiveTab] = useState('students'); // students, qa, leaves, lesson_plans, conduct, assignments, teacher_leaves
+  
+  // Sync with global activeTab (sidebar selection)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (globalActiveTab === 'dashboard') {
+        setActiveTab('students');
+      } else if (globalActiveTab === 'qas') {
+        setActiveTab('qa');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [globalActiveTab]);
+
+  const handleSubTabChange = (tab) => {
+    setActiveTab(tab);
+    if (setGlobalActiveTab) {
+      if (tab === 'students') {
+        setGlobalActiveTab('dashboard');
+      } else if (tab === 'qa') {
+        setGlobalActiveTab('qas');
+      } else {
+        setGlobalActiveTab('dashboard');
+      }
+    }
+  };
+
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [gradesInput, setGradesInput] = useState({ Math: 0, Literature: 0, Physics: 0, English: 0 });
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
+
+  // Teacher Leave States
+  const [teacherLeaveDate, setTeacherLeaveDate] = useState('');
+  const [teacherLeaveReason, setTeacherLeaveReason] = useState('');
+  const [teacherSubstituteId, setTeacherSubstituteId] = useState('');
+  
+  // Mock Exam States
+  const [mockExamSearch, setMockExamSearch] = useState('');
+  const [mockExamBlockFilter, setMockExamBlockFilter] = useState('ALL');
 
   // Lesson plan state
   const [newPlanTitle, setNewPlanTitle] = useState('');
@@ -69,11 +112,108 @@ export default function TeacherDashboard() {
   const [resSubject, setResSubject] = useState('Toán học');
   const [resType, setResType] = useState('pdf');
 
+  // Exam Creator States
+  const [showCreateExamModal, setShowCreateExamModal] = useState(false);
+  const [newExamTitle, setNewExamTitle] = useState('');
+  const [newExamBlock, setNewExamBlock] = useState('A00');
+  const [newExamDuration, setNewExamDuration] = useState(45);
+  const [newExamQuestions, setNewExamQuestions] = useState([]);
+
+  const createBlankQuestion = (subj = 'Math') => ({
+    id: 'Q_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    subject: subj,
+    question: '',
+    options: [
+      { key: 'A', text: '' },
+      { key: 'B', text: '' },
+      { key: 'C', text: '' },
+      { key: 'D', text: '' }
+    ],
+    correctKey: 'A',
+    explanation: ''
+  });
+
+  const handleAddQuestion = () => {
+    const subjects = BLOCKS[newExamBlock]?.subjects || ['Math'];
+    const defaultSubject = subjects[0] || 'Math';
+    setNewExamQuestions(prev => [...prev, createBlankQuestion(defaultSubject)]);
+  };
+
+  const handleDeleteQuestion = (index) => {
+    setNewExamQuestions(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleQuestionChange = (index, field, value) => {
+    setNewExamQuestions(prev => prev.map((q, idx) => idx === index ? { ...q, [field]: value } : q));
+  };
+
+  const handleOptionTextChange = (qIndex, oKey, text) => {
+    setNewExamQuestions(prev => prev.map((q, idx) => {
+      if (idx !== qIndex) return q;
+      const updatedOptions = q.options.map(opt => opt.key === oKey ? { ...opt, text } : opt);
+      return { ...q, options: updatedOptions };
+    }));
+  };
+
+  const handleCreateExamSubmit = (e) => {
+    e.preventDefault();
+    if (!newExamTitle.trim()) {
+      alert('Vui lòng nhập tiêu đề đề thi!');
+      return;
+    }
+    if (newExamQuestions.length === 0) {
+      alert('Vui lòng thêm ít nhất một câu hỏi!');
+      return;
+    }
+    
+    // Check if all questions are filled out
+    for (let i = 0; i < newExamQuestions.length; i++) {
+      const q = newExamQuestions[i];
+      if (!q.question.trim()) {
+        alert(`Vui lòng nhập nội dung câu hỏi thứ ${i + 1}!`);
+        return;
+      }
+      for (let j = 0; j < q.options.length; j++) {
+        if (!q.options[j].text.trim()) {
+          alert(`Vui lòng nhập nội dung phương án ${q.options[j].key} của câu hỏi thứ ${i + 1}!`);
+          return;
+        }
+      }
+    }
+
+    const examData = {
+      title: newExamTitle,
+      block: newExamBlock,
+      duration: parseInt(newExamDuration),
+      questions: newExamQuestions,
+      teacherName: 'Nguyễn Minh Triết'
+    };
+
+    addCustomExam(examData);
+    alert('Đã ban hành đề thi thử mới thành công!');
+    setShowCreateExamModal(false);
+    setNewExamTitle('');
+    setNewExamBlock('A00');
+    setNewExamDuration(45);
+    setNewExamQuestions([]);
+  };
+
   // We assume this teacher manages Lớp 12A1
   const classStudents = students.filter(s => s.class === '12A1');
+  const classAttempts = mockExamHistory ? mockExamHistory.filter(h => h.class === '12A1') : [];
+  const overallClassAverage = classAttempts.length > 0 
+    ? (classAttempts.reduce((acc, curr) => acc + curr.score, 0) / classAttempts.length).toFixed(1)
+    : '0.0';
+  const highestClassScore = classAttempts.length > 0
+    ? Math.max(...classAttempts.map(h => h.score)).toFixed(1)
+    : '0.0';
   const classLeaves = leaveRequests ? leaveRequests.filter(l => l.class === '12A1') : [];
   const myLessonPlans = lessonPlans ? lessonPlans.filter(p => p.teacherName === 'Nguyễn Minh Triết') : [];
   const teacherConductLogs = conductLogs ? conductLogs.filter(l => l.teacherName === 'Nguyễn Minh Triết') : [];
+  
+  // Teacher Leaves data
+  const myCoverSchedules = teacherLeaveRequests ? teacherLeaveRequests.filter(r => r.substituteTeacherId === 'T01' && r.status === 'approved') : [];
+  const myTeacherLeaves = teacherLeaveRequests ? teacherLeaveRequests.filter(r => r.teacherId === 'T01') : [];
 
   // Handle grade edit opening
   const openGradingModal = (student) => {
@@ -115,6 +255,19 @@ export default function TeacherDashboard() {
     submitLessonPlan('Nguyễn Minh Triết', newPlanSubject, newPlanTitle);
     setNewPlanTitle('');
     alert('Đã nộp giáo án lên Ban Giám Hiệu thành công!');
+  };
+
+  const handleTeacherLeaveSubmit = (e) => {
+    e.preventDefault();
+    if (!teacherLeaveDate || !teacherSubstituteId || !teacherLeaveReason.trim()) {
+      alert('Vui lòng điền đầy đủ thông tin đơn nghỉ phép!');
+      return;
+    }
+    submitTeacherLeaveRequest('T01', teacherLeaveDate, teacherLeaveReason, teacherSubstituteId);
+    setTeacherLeaveDate('');
+    setTeacherLeaveReason('');
+    setTeacherSubstituteId('');
+    alert('Đã gửi đơn xin nghỉ phép và dạy thay lên BGH phê duyệt!');
   };
 
   const handleConductSubmit = (e) => {
@@ -168,29 +321,35 @@ export default function TeacherDashboard() {
 
       {/* Sub Tabs */}
       <div className="tabs-container" style={{ overflowX: 'auto', display: 'flex', flexWrap: 'nowrap', gap: '4px', paddingBottom: '6px' }} className="custom-scroll">
-        <button onClick={() => setActiveTab('students')} className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('students')} className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Học Sinh & Điểm Số ({classStudents.length})
         </button>
-        <button onClick={() => setActiveTab('attendance')} className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('attendance')} className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Điểm Danh Lớp
         </button>
-        <button onClick={() => setActiveTab('resources')} className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('resources')} className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Học Liệu Bài Giảng
         </button>
-        <button onClick={() => setActiveTab('qa')} className={`tab-btn ${activeTab === 'qa' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('qa')} className={`tab-btn ${activeTab === 'qa' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Hỏi Đáp Phụ Huynh ({parentQAs.filter(q => q.status === 'pending').length})
         </button>
-        <button onClick={() => setActiveTab('leaves')} className={`tab-btn ${activeTab === 'leaves' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('leaves')} className={`tab-btn ${activeTab === 'leaves' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Duyệt Nghỉ Phép ({classLeaves.filter(l => l.status === 'pending').length})
         </button>
-        <button onClick={() => setActiveTab('lesson_plans')} className={`tab-btn ${activeTab === 'lesson_plans' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('teacher_leaves')} className={`tab-btn ${activeTab === 'teacher_leaves' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+          Nghỉ Phép & Dạy Thay {myCoverSchedules.length > 0 && `(${myCoverSchedules.length})`}
+        </button>
+        <button onClick={() => handleSubTabChange('lesson_plans')} className={`tab-btn ${activeTab === 'lesson_plans' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Kế Hoạch Giáo Án ({myLessonPlans.length})
         </button>
-        <button onClick={() => setActiveTab('conduct')} className={`tab-btn ${activeTab === 'conduct' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('conduct')} className={`tab-btn ${activeTab === 'conduct' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Điểm Rèn Luyện Lớp ({classStudents.length})
         </button>
-        <button onClick={() => setActiveTab('assignments')} className={`tab-btn ${activeTab === 'assignments' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+        <button onClick={() => handleSubTabChange('assignments')} className={`tab-btn ${activeTab === 'assignments' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
           Giao Bài Tập
+        </button>
+        <button onClick={() => handleSubTabChange('mock_exams')} className={`tab-btn ${activeTab === 'mock_exams' ? 'active' : ''}`} style={{ whiteSpace: 'nowrap' }}>
+          Điểm Thi Thử Lớp
         </button>
       </div>
 
@@ -288,6 +447,11 @@ export default function TeacherDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* AI Student Risk Panel */}
+          <div style={{ marginTop: '24px' }}>
+            <AIRiskPanel compact={true} maxShow={5} />
           </div>
         </div>
       )}
@@ -440,6 +604,164 @@ export default function TeacherDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'teacher_leaves' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+          {/* Submit Teacher Leave Request Form */}
+          <div className="glass-panel">
+            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+              <Calendar size={18} color="var(--accent-primary)" />
+              <span>Đơn Xin Nghỉ Phép & Đổi Dạy Thay</span>
+            </h2>
+
+            <form onSubmit={handleTeacherLeaveSubmit}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Ngày xin nghỉ phép</label>
+                <input 
+                  type="date" 
+                  className="form-control" 
+                  value={teacherLeaveDate}
+                  onChange={e => setTeacherLeaveDate(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.7)' }}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ marginTop: '14px' }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Giáo viên dạy thay</label>
+                <select 
+                  className="form-control"
+                  value={teacherSubstituteId}
+                  onChange={e => setTeacherSubstituteId(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.7)' }}
+                  required
+                >
+                  <option value="">-- Chọn giáo viên dạy thay --</option>
+                  {teachers && teachers.filter(t => t.id !== 'T01').map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.subject})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group" style={{ marginTop: '14px', marginBottom: '20px' }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Lý do nghỉ phép</label>
+                <textarea 
+                  className="form-control" 
+                  value={teacherLeaveReason}
+                  onChange={e => setTeacherLeaveReason(e.target.value)}
+                  placeholder="Nhập lý do nghỉ phép, công tác..." 
+                  style={{ minHeight: '100px', resize: 'vertical', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.7)' }}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', gap: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Send size={14} />
+                <span>Gửi đơn lên BGH</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Teacher leaves history & assignment schedule */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* My Leave Requests history */}
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem' }}>
+                <ClipboardList size={16} color="var(--accent-primary)" />
+                <span>Lịch Sử Nghỉ Phép Của Tôi ({myTeacherLeaves.length})</span>
+              </h2>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Ngày Nghỉ</th>
+                      <th>Giáo Viên Dạy Thay</th>
+                      <th>Lý Do</th>
+                      <th>Trạng Thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myTeacherLeaves.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>
+                          Bạn chưa gửi đơn xin nghỉ phép nào.
+                        </td>
+                      </tr>
+                    ) : (
+                      myTeacherLeaves.map(req => (
+                        <tr key={req.id}>
+                          <td style={{ fontWeight: 600 }}>{req.date}</td>
+                          <td>{req.substituteTeacherName}</td>
+                          <td style={{ maxWidth: '200px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={req.reason}>
+                            {req.reason}
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              req.status === 'pending' 
+                                ? 'badge-warning' 
+                                : req.status === 'approved' 
+                                ? 'badge-success' 
+                                : 'badge-danger'
+                            }`}>
+                              {req.status === 'pending' && 'Đang chờ duyệt'}
+                              {req.status === 'approved' && 'Đã duyệt'}
+                              {req.status === 'rejected' && 'Từ chối'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Approved Cover Schedule where teacher is substitute */}
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.15rem' }}>
+                <Clock size={16} color="var(--accent-secondary)" />
+                <span>Lịch Dạy Thay Đồng Nghiệp ({myCoverSchedules.length})</span>
+              </h2>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>Ngày Dạy Thay</th>
+                      <th>Giáo Viên Nhờ Dạy</th>
+                      <th>Môn Học</th>
+                      <th>Trạng Thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myCoverSchedules.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>
+                          Không có lịch phân công dạy thay nào.
+                        </td>
+                      </tr>
+                    ) : (
+                      myCoverSchedules.map(req => {
+                        const originalTeacher = teachers.find(t => t.id === req.teacherId);
+                        return (
+                          <tr key={req.id}>
+                            <td style={{ fontWeight: 600 }}>{req.date}</td>
+                            <td style={{ fontWeight: 600 }}>{req.teacherName}</td>
+                            <td>{originalTeacher ? originalTeacher.subject : 'N/A'}</td>
+                            <td>
+                              <span className="badge badge-success">Đã xác nhận</span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1135,6 +1457,424 @@ export default function TeacherDashboard() {
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Xác nhận ghi nhận</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Create Custom Exam Modal */}
+      {showCreateExamModal && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-content animate-fade" style={{ width: '90%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', padding: '30px' }}>
+            <h2 style={{ marginBottom: '6px', fontSize: '1.4rem', fontWeight: 800, color: '#1e293b' }}>
+              Soạn đề thi thử liên môn mới
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '24px' }}>
+              Tạo đề thi kết hợp tất cả các môn của khối thi. Đề thi sẽ xuất hiện ngay lập tức trên dashboard của học sinh.
+            </p>
+            
+            <form onSubmit={handleCreateExamSubmit}>
+              {/* General Info Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Tên đề thi thử</label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    value={newExamTitle}
+                    onChange={e => setNewExamTitle(e.target.value)}
+                    placeholder="Ví dụ: Đề khảo sát chất lượng học kỳ II"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Chọn Khối thi</label>
+                  <select 
+                    className="form-control"
+                    value={newExamBlock}
+                    onChange={e => {
+                      setNewExamBlock(e.target.value);
+                      // Clear questions since subjects change
+                      setNewExamQuestions([]);
+                    }}
+                  >
+                    {Object.entries(BLOCKS).map(([key, value]) => (
+                      <option key={key} value={key}>{value.name} ({value.subjects.map(s => SUBJECT_NAMES[s] || s).join(', ')})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Thời gian (phút)</label>
+                  <input 
+                    type="number" 
+                    className="form-control"
+                    value={newExamDuration}
+                    onChange={e => setNewExamDuration(parseInt(e.target.value) || 15)}
+                    min="5"
+                    max="180"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Questions Area */}
+              <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>
+                    Danh sách câu hỏi ({newExamQuestions.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleAddQuestion}
+                    className="btn btn-secondary"
+                    style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', border: '1px solid rgba(99, 102, 241, 0.2)', padding: '6px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700 }}
+                  >
+                    + Thêm câu hỏi
+                  </button>
+                </div>
+
+                {newExamQuestions.length === 0 ? (
+                  <div style={{ padding: '40px', textAlign: 'center', border: '2px dashed #cbd5e1', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    Chưa có câu hỏi nào được thêm. Hãy nhấn "+ Thêm câu hỏi" để bắt đầu soạn đề.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '450px', overflowY: 'auto', paddingRight: '6px' }}>
+                    {newExamQuestions.map((q, idx) => (
+                      <div key={q.id} style={{ padding: '20px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-primary)', background: 'var(--accent-primary-glow)', padding: '3px 10px', borderRadius: '6px' }}>
+                            Câu hỏi {idx + 1}
+                          </span>
+                          
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Môn học:</label>
+                            <select
+                              className="form-control"
+                              style={{ width: '130px', padding: '4px 8px', fontSize: '0.8rem' }}
+                              value={q.subject}
+                              onChange={e => handleQuestionChange(idx, 'subject', e.target.value)}
+                            >
+                              {BLOCKS[newExamBlock].subjects.map(s => (
+                                <option key={s} value={s}>{SUBJECT_NAMES[s] || s}</option>
+                              ))}
+                            </select>
+                            
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteQuestion(idx)}
+                              style={{ color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.82rem', marginLeft: '10px' }}
+                            >
+                              Xóa câu
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Question Text */}
+                        <div className="form-group" style={{ marginBottom: '12px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Đề bài (Hỗ trợ HTML):</label>
+                          <textarea
+                            className="form-control"
+                            rows="2"
+                            value={q.question}
+                            onChange={e => handleQuestionChange(idx, 'question', e.target.value)}
+                            placeholder="Ví dụ: Tìm x biết x<sup>2</sup> - 4 = 0."
+                            required
+                          />
+                        </div>
+
+                        {/* Options Inputs */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                          {q.options.map(opt => (
+                            <div key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#64748b' }}>{opt.key}:</span>
+                              <input
+                                type="text"
+                                className="form-control"
+                                style={{ padding: '6px 10px', fontSize: '0.82rem' }}
+                                value={opt.text}
+                                onChange={e => handleOptionTextChange(idx, opt.key, e.target.value)}
+                                placeholder={`Phương án ${opt.key}`}
+                                required
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Correct Key and Explanation */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Đáp án đúng:</label>
+                            <select
+                              className="form-control"
+                              value={q.correctKey}
+                              onChange={e => handleQuestionChange(idx, 'correctKey', e.target.value)}
+                            >
+                              <option value="A">A</option>
+                              <option value="B">B</option>
+                              <option value="C">C</option>
+                              <option value="D">D</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Lời giải giải thích:</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={q.explanation}
+                              onChange={e => handleQuestionChange(idx, 'explanation', e.target.value)}
+                              placeholder="Giải thích chi tiết các bước giải..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                <button type="button" onClick={() => setShowCreateExamModal(false)} className="btn btn-secondary" style={{ flex: 1, padding: '12px' }}>Hủy bỏ</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}>Lưu và ban hành đề thi</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MOCK EXAMS TAB */}
+      {activeTab === 'mock_exams' && (
+        <div className="animate-fade">
+          {/* Section Header with Creator Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1e293b' }}>Báo cáo & Thiết lập Đề Thi Thử</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                Theo dõi kết quả học tập và tạo đề thi thử liên môn tùy chỉnh cho học sinh.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowCreateExamModal(true);
+                setNewExamQuestions([createBlankQuestion(BLOCKS[newExamBlock].subjects[0])]);
+              }}
+              className="btn btn-primary"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', fontWeight: 700 }}
+            >
+              <Sparkles size={16} /> Soạn đề thi mới
+            </button>
+          </div>
+          {/* Summary Stats Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>TỔNG SỐ LƯỢT THI THỬ LỚP</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: 'var(--accent-primary)', fontWeight: 'bold' }}>
+                  {classAttempts.length} lượt
+                </div>
+              </div>
+              <div className="stat-icon"><ClipboardList size={24} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ĐIỂM TRUNG BÌNH THI THỬ</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: '#10b981', fontWeight: 'bold' }}>
+                  {overallClassAverage}/10
+                </div>
+              </div>
+              <div className="stat-icon"><Award size={24} /></div>
+            </div>
+
+            <div className="glass-panel stat-card" style={{ background: 'white' }}>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ĐIỂM CAO NHẤT LỚP</span>
+                <div style={{ fontSize: '2rem', marginTop: '6px', color: '#f59e0b', fontWeight: 'bold' }}>
+                  {highestClassScore}/10
+                </div>
+              </div>
+              <div className="stat-icon"><Award size={24} /></div>
+            </div>
+          </div>
+
+          {/* SVG Bar Chart for Block Averages */}
+          <div className="glass-panel" style={{ padding: '24px', marginBottom: '30px', background: 'white' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '20px' }}>
+              Điểm thi thử trung bình theo Khối thi (Lớp 12A1)
+            </h3>
+            
+            {(() => {
+              const blocks = ['A00', 'A01', 'B00', 'C00', 'D01'];
+              const data = blocks.map(b => {
+                const bAttempts = classAttempts.filter(h => h.block === b);
+                const avg = bAttempts.length > 0 
+                  ? (bAttempts.reduce((acc, curr) => acc + curr.score, 0) / bAttempts.length)
+                  : 0;
+                return { block: b, avg: parseFloat(avg.toFixed(1)) };
+              });
+
+              const chartWidth = 500;
+              const chartHeight = 200;
+              const barWidth = 50;
+              const gap = 40;
+              const maxVal = 10;
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <svg width="100%" height={chartHeight + 40} viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`} style={{ maxWidth: '600px' }}>
+                    {/* Y-axis Grid Lines */}
+                    {[0, 2, 4, 6, 8, 10].map(val => {
+                      const y = chartHeight - (val / maxVal) * chartHeight;
+                      return (
+                        <g key={val}>
+                          <line x1="40" y1={y} x2={chartWidth - 20} y2={y} stroke="#e2e8f0" strokeDasharray="3,3" />
+                          <text x="15" y={y + 4} fontSize="10" fill="#64748b" textAnchor="middle">{val}</text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Bars */}
+                    {data.map((item, idx) => {
+                      const barHeight = (item.avg / maxVal) * chartHeight;
+                      const x = 60 + idx * (barWidth + gap);
+                      const y = chartHeight - barHeight;
+                      
+                      return (
+                        <g key={item.block}>
+                          <defs>
+                            <linearGradient id={`grad-teacher-${item.block}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#6366f1" />
+                              <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.8" />
+                            </linearGradient>
+                          </defs>
+                          <rect
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={barHeight}
+                            rx="6"
+                            fill={`url(#grad-teacher-${item.block})`}
+                            style={{ transition: 'all 0.3s' }}
+                          />
+                          <text
+                            x={x + barWidth / 2}
+                            y={y - 8}
+                            fontSize="11"
+                            fontWeight="bold"
+                            fill="#4f46e5"
+                            textAnchor="middle"
+                          >
+                            {item.avg > 0 ? item.avg.toFixed(1) : 'Chưa thi'}
+                          </text>
+                          <text
+                            x={x + barWidth / 2}
+                            y={chartHeight + 20}
+                            fontSize="11"
+                            fontWeight="600"
+                            fill="#1e293b"
+                            textAnchor="middle"
+                          >
+                            Khối {item.block}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    
+                    <line x1="40" y1={chartHeight} x2={chartWidth - 20} y2={chartHeight} stroke="#cbd5e1" strokeWidth="2" />
+                  </svg>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Table list of students results */}
+          <div className="glass-panel" style={{ padding: '24px', background: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                Danh sách Kết quả Thi Thử Lớp 12A1
+              </h3>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Tìm học sinh..."
+                  className="form-control"
+                  value={mockExamSearch}
+                  onChange={e => setMockExamSearch(e.target.value)}
+                  style={{ width: '200px', fontSize: '0.85rem', padding: '8px 12px' }}
+                />
+                
+                <select
+                  className="form-control"
+                  value={mockExamBlockFilter}
+                  onChange={e => setMockExamBlockFilter(e.target.value)}
+                  style={{ width: '130px', fontSize: '0.85rem', padding: '8px 12px' }}
+                >
+                  <option value="ALL">Tất cả Khối</option>
+                  <option value="A00">Khối A00</option>
+                  <option value="A01">Khối A01</option>
+                  <option value="B00">Khối B00</option>
+                  <option value="C00">Khối C00</option>
+                  <option value="D01">Khối D01</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.05)', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 8px' }}>Học sinh</th>
+                    <th style={{ padding: '12px 8px' }}>Khối thi</th>
+                    <th style={{ padding: '12px 8px' }}>Tên Đề thi</th>
+                    <th style={{ padding: '12px 8px' }}>Ngày thi</th>
+                    <th style={{ padding: '12px 8px' }}>Thời gian</th>
+                    <th style={{ padding: '12px 8px' }}>Số câu đúng</th>
+                    <th style={{ padding: '12px 8px' }}>Điểm số</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const filtered = classAttempts.filter(h => {
+                      const matchSearch = h.studentName.toLowerCase().includes(mockExamSearch.toLowerCase());
+                      const matchBlock = mockExamBlockFilter === 'ALL' || h.block === mockExamBlockFilter;
+                      return matchSearch && matchBlock;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="7" style={{ padding: '24px 8px', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
+                            Không tìm thấy kết quả nào phù hợp.
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filtered.map(attempt => (
+                      <tr key={attempt.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', fontSize: '0.88rem', color: '#1e293b' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: 600 }}>{attempt.studentName}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
+                            {attempt.block}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.title || `Đề thi Khối ${attempt.block}`}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{attempt.date.split('-').reverse().join('/')}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{attempt.timeSpent}</td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.correctAnswers} / {attempt.totalQuestions}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <strong style={{ 
+                            color: attempt.score >= 8 ? '#10b981' : attempt.score >= 5 ? '#f59e0b' : '#ef4444',
+                            fontSize: '0.95rem'
+                          }}>
+                            {attempt.score.toFixed(1)}
+                          </strong>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

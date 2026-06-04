@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Shield, 
@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function Login() {
-  const { setCurrentRole, students } = useContext(AppContext);
+  const { setCurrentRole } = useContext(AppContext);
   const [role, setRole] = useState('admin'); // admin, teacher, student, parent
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState(atob('MTIzNDU2'));
