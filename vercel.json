@@ -1,3 +1,6 @@
 {
-  "outputDirectory": "dist"
+  "buildCommand": "npm run build",
+  "outputDirectory": "Web/dist",
+  "installCommand": "npm install --prefix Web",
+  "framework": null
 }
