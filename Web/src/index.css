@@ -113,6 +113,7 @@ h1 {
 }
 
 .btn-primary {
+  background-color: var(--accent-primary); /* Solid fallback background for WCAG contrast checker */
   background: linear-gradient(135deg, var(--accent-primary), #a78bfa);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);

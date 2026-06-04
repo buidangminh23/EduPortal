@@ -516,7 +516,7 @@ export default function PrincipalDashboard() {
                 </div>
                 <div style={{ background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '12px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>TỔNG DƯ VÍ HỌC SINH</span>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--accent-secondary)', marginTop: '4px' }}>
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
                       Object.values(studentWallets || {}).reduce((sum, w) => sum + (w.balance || 0), 0)
                     )}
@@ -533,7 +533,7 @@ export default function PrincipalDashboard() {
                       <div key={idx} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.04)', padding: '8px 12px', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
                           <span>{fb.studentName || 'Học sinh'}</span>
-                          <span style={{ color: '#f59e0b' }}>{'★'.repeat(fb.rating)}</span>
+                          <span style={{ color: '#b45309' }}>{'★'.repeat(fb.rating)}</span>
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{fb.comment}</div>
                       </div>

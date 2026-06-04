@@ -44,12 +44,12 @@ function calcRisk(student, attendanceLogs, submissions, assignments) {
   if (missing > 0) { riskScore += 10; reasons.push(`${missing} bài tập chưa nộp`); }
 
   // Risk level
-  let level, color, bg, label;
-  if (riskScore >= 50) { level = 'high'; color = '#ef4444'; bg = 'rgba(239,68,68,0.1)'; label = 'Nguy cơ cao'; }
-  else if (riskScore >= 25) { level = 'medium'; color = '#f59e0b'; bg = 'rgba(245,158,11,0.1)'; label = 'Cần theo dõi'; }
-  else { level = 'low'; color = '#10b981'; bg = 'rgba(16,185,129,0.1)'; label = 'Ổn định'; }
+  let level, color, textColor, bg, label;
+  if (riskScore >= 50) { level = 'high'; color = '#ef4444'; textColor = '#b91c1c'; bg = 'rgba(239,68,68,0.08)'; label = 'Nguy cơ cao'; }
+  else if (riskScore >= 25) { level = 'medium'; color = '#f59e0b'; textColor = '#92400e'; bg = 'rgba(245,158,11,0.08)'; label = 'Cần theo dõi'; }
+  else { level = 'low'; color = '#047857'; textColor = '#047857'; bg = 'rgba(4,120,87,0.08)'; label = 'Ổn định'; }
 
-  return { level, color, bg, label, riskScore, reasons, gpa: gpa.toFixed(1) };
+  return { level, color, textColor, bg, label, riskScore, reasons, gpa: gpa.toFixed(1) };
 }
 
 export default function AIRiskPanel({ students: propStudents, compact = false, maxShow = 10 }) {
@@ -74,23 +74,23 @@ export default function AIRiskPanel({ students: propStudents, compact = false, m
         </div>
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <div style={{ flex: 1, background: 'rgba(239,68,68,0.08)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ef4444' }}>{highRisk}</div>
-            <div style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>Nguy cơ cao</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#b91c1c' }}>{highRisk}</div>
+            <div style={{ fontSize: '0.7rem', color: '#b91c1c', fontWeight: 600 }}>Nguy cơ cao</div>
           </div>
           <div style={{ flex: 1, background: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b' }}>{medRisk}</div>
-            <div style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600 }}>Cần theo dõi</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#92400e' }}>{medRisk}</div>
+            <div style={{ fontSize: '0.7rem', color: '#92400e', fontWeight: 600 }}>Cần theo dõi</div>
           </div>
-          <div style={{ flex: 1, background: 'rgba(16,185,129,0.08)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>{withRisk.length - highRisk - medRisk}</div>
-            <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>Ổn định</div>
+          <div style={{ flex: 1, background: 'rgba(4,120,87,0.08)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#047857' }}>{withRisk.length - highRisk - medRisk}</div>
+            <div style={{ fontSize: '0.7rem', color: '#047857', fontWeight: 600 }}>Ổn định</div>
           </div>
         </div>
         {withRisk.filter(s => s.risk.level !== 'low').slice(0, 3).map(s => (
           <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.risk.color, flexShrink: 0 }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', flex: 1 }}>{s.name}</span>
-            <span style={{ fontSize: '0.72rem', color: s.risk.color, fontWeight: 600 }}>{s.risk.label}</span>
+            <span style={{ fontSize: '0.72rem', color: s.risk.textColor, fontWeight: 600 }}>{s.risk.label}</span>
           </div>
         ))}
       </div>
@@ -102,16 +102,16 @@ export default function AIRiskPanel({ students: propStudents, compact = false, m
       {/* Header stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'Nguy cơ cao', count: highRisk, color: '#ef4444', bg: 'rgba(239,68,68,0.08)', Icon: AlertTriangle },
-          { label: 'Cần theo dõi', count: medRisk, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', Icon: Shield },
-          { label: 'Ổn định', count: withRisk.length - highRisk - medRisk, color: '#10b981', bg: 'rgba(16,185,129,0.08)', Icon: ShieldCheck },
+          { label: 'Nguy cơ cao', count: highRisk, color: '#ef4444', textColor: '#b91c1c', bg: 'rgba(239,68,68,0.08)', Icon: AlertTriangle },
+          { label: 'Cần theo dõi', count: medRisk, color: '#f59e0b', textColor: '#92400e', bg: 'rgba(245,158,11,0.08)', Icon: Shield },
+          { label: 'Ổn định', count: withRisk.length - highRisk - medRisk, color: '#047857', textColor: '#047857', bg: 'rgba(4,120,87,0.08)', Icon: ShieldCheck },
         ].map(item => (
-          <div key={item.label} style={{ background: item.bg, borderRadius: 14, padding: '14px 18px', border: `1px solid ${item.color}20` }}>
+          <div key={item.label} style={{ background: item.bg, borderRadius: 14, padding: '14px 18px', border: `1px solid ${item.color || item.textColor}20` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <item.Icon size={16} color={item.color} />
-              <span style={{ fontSize: '0.78rem', color: item.color, fontWeight: 600 }}>{item.label}</span>
+              <item.Icon size={16} color={item.color || item.textColor} />
+              <span style={{ fontSize: '0.78rem', color: item.textColor, fontWeight: 600 }}>{item.label}</span>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: item.color }}>{item.count}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: item.textColor }}>{item.count}</div>
           </div>
         ))}
       </div>
@@ -127,7 +127,7 @@ export default function AIRiskPanel({ students: propStudents, compact = false, m
                   <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{s.name}</span>
                   <span style={{ marginLeft: 8, fontSize: '0.78rem', color: 'var(--text-muted)' }}>{s.class} • ĐTB: {s.risk.gpa}</span>
                 </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: s.risk.bg, color: s.risk.color }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: s.risk.bg, color: s.risk.textColor }}>
                   {s.risk.label}
                 </span>
               </div>

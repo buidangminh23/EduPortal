@@ -248,7 +248,7 @@ export default function CanteenManager() {
                 <div key={fb.id} style={{ background: 'white', border: '1px solid rgba(0,0,0,0.05)', padding: 10, borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
                     <strong>{fb.studentName}</strong>
-                    <span style={{ color: '#f59e0b' }}>{'★'.repeat(fb.rating)}{'☆'.repeat(5-fb.rating)}</span>
+                    <span style={{ color: '#b45309' }}>{'★'.repeat(fb.rating)}{'☆'.repeat(5-fb.rating)}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{fb.comment}</p>
                 </div>
@@ -285,7 +285,7 @@ export default function CanteenManager() {
                       <strong style={{ color: 'var(--text-primary)', fontSize: '0.78rem' }}>{tx.description}</strong>
                       <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{tx.date.split('-').reverse().join('/')}</div>
                     </div>
-                    <strong style={{ color: tx.type === 'topup' ? '#10b981' : '#ef4444' }}>
+                    <strong style={{ color: tx.type === 'topup' ? 'var(--accent-secondary)' : '#b91c1c' }}>
                       {tx.type === 'topup' ? '+' : '-'}{formatVND(tx.amount)}
                     </strong>
                   </div>
@@ -352,7 +352,7 @@ export default function CanteenManager() {
                   <div>Số TK: <strong style={{ fontFamily: 'monospace' }}>{selectedBank.code}{student?.id.replace('HS', '8888')}</strong></div>
                   <div>Học sinh: <strong>{student?.name}</strong></div>
                   <div>Nội dung CK: <strong style={{ fontFamily: 'monospace', color: '#6366f1' }}>{student?.id} NAPTIENCANTEEN</strong></div>
-                  <div>Số tiền: <strong style={{ color: '#10b981' }}>{formatVND(parseInt(topupAmount))}</strong></div>
+                  <div>Số tiền: <strong style={{ color: 'var(--accent-secondary)' }}>{formatVND(parseInt(topupAmount))}</strong></div>
                 </div>
               </div>
 
