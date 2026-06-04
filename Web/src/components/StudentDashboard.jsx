@@ -1552,10 +1552,10 @@ export default function StudentDashboard({ setActiveTab }) {
           {/* Quick shortcuts */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
             <div className="glass-panel glass-panel-hover" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('tutor')}>
-              <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '1rem', fontWeight: 700 }}>
                 <Sparkles size={16} color="var(--accent-primary)" />
                 <span>Gia sư AI 24/7</span>
-              </h4>
+              </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 Hỏi đáp giải bài tập Toán, Lý, Hóa, Văn, Anh trực tuyến bất cứ lúc nào.
               </p>
@@ -1565,10 +1565,10 @@ export default function StudentDashboard({ setActiveTab }) {
             </div>
 
             <div className="glass-panel glass-panel-hover" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('lectures')}>
-              <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '1rem', fontWeight: 700 }}>
                 <BookOpen size={16} color="var(--accent-secondary)" />
                 <span>Thư viện bài giảng số</span>
-              </h4>
+              </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 Hệ thống video giảng dạy trực quan, ôn luyện chuyên đề thi THPT Quốc gia.
               </p>
@@ -1578,10 +1578,10 @@ export default function StudentDashboard({ setActiveTab }) {
             </div>
 
             <div className="glass-panel glass-panel-hover" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('meet')}>
-              <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '1rem', fontWeight: 700 }}>
                 <BookOpen size={16} color="var(--accent-info)" />
                 <span>Phòng học trực tuyến EduMeet</span>
-              </h4>
+              </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 Tham gia phòng họp video học trực tuyến cùng thầy cô và bạn bè.
               </p>
