@@ -69,7 +69,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{
+    <main style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -158,8 +158,9 @@ export default function Login() {
         {/* Input credentials Form */}
         <form onSubmit={handleLoginSubmit}>
           <div className="form-group">
-            <label className="form-label">Tên tài khoản</label>
+            <label htmlFor="username-input" className="form-label">Tên tài khoản</label>
             <input 
+              id="username-input"
               type="text" 
               className="form-control" 
               value={username}
@@ -171,9 +172,10 @@ export default function Login() {
           </div>
 
           <div className="form-group" style={{ marginBottom: '28px' }}>
-            <label className="form-label">Mật khẩu</label>
+            <label htmlFor="password-input" className="form-label">Mật khẩu</label>
             <div style={{ position: 'relative' }}>
               <input 
+                id="password-input"
                 type="password" 
                 className="form-control" 
                 value={password}
@@ -194,6 +196,7 @@ export default function Login() {
               height: '48px', 
               fontSize: '1rem', 
               fontWeight: 600, 
+              backgroundColor: '#4f46e5', // Solid background for WCAG contrast checker
               background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
               boxShadow: '0 10px 20px -8px rgba(99, 102, 241, 0.4)',
               gap: '6px'
@@ -241,12 +244,12 @@ export default function Login() {
               </button>
             ))}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Key size={10} />
             <span>Tài khoản: <code>{username}</code> / Mật khẩu: <code>{password}</code></span>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
