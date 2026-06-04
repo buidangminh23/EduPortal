@@ -414,6 +414,54 @@ const initialTeacherAttendance = [
   { id: 'TA10', teacherId: 'T04', teacherName: 'Lê Thu Hà', date: '2026-06-02', checkInTime: '07:18', status: 'ontime', pin: '2345' },
 ];
 
+// ── WELLNESS / MENTAL SUPPORT ────────────────────────────────────────────────
+const initialWellnessLogs = [
+  { id: 'WL01', studentId: 'HS001', date: '2026-06-03', stressLevel: 3, mood: 'happy', notes: 'Hôm nay làm bài thi thử được điểm cao nên tâm trạng rất phấn chấn!' },
+  { id: 'WL02', studentId: 'HS001', date: '2026-06-02', stressLevel: 7, mood: 'anxious', notes: 'Lo lắng về kết quả bài kiểm tra khảo sát chất lượng khối 12 sắp tới.' },
+  { id: 'WL03', studentId: 'HS003', date: '2026-06-03', stressLevel: 8, mood: 'stressed', notes: 'Nhiều bài tập quá tấn công dồn dập, em cảm thấy hơi quá tải.' }
+];
+
+const initialWellnessAppointments = [
+  { id: 'WA01', studentId: 'HS001', date: '2026-06-05', timeSlot: '09:00 - 09:45', notes: 'Gặp thầy Triết tư vấn chọn ngành đại học CNTT và hướng nghiệp phù hợp.', status: 'confirmed' },
+  { id: 'WA02', studentId: 'HS003', date: '2026-06-06', timeSlot: '14:30 - 15:15', notes: 'Cần gặp thầy cô tâm lý trao đổi về áp lực học tập và mất ngủ kéo dài gần đây.', status: 'pending' }
+];
+
+// ── STUDY GROUPS & PEER TUTORING ─────────────────────────────────────────────
+const initialStudyRooms = [
+  { id: 'SR01', title: 'Ôn thi Toán Giải Tích 12', subject: 'Toán học', creatorName: 'Lê Mai Chi', pomodoroTime: 25, participantsCount: 4, bgMusic: 'lofi' },
+  { id: 'SR02', title: 'Luyện đề RLC Vật Lý nâng cao', subject: 'Vật lý', creatorName: 'Nguyễn Hoàng Nam', pomodoroTime: 25, participantsCount: 2, bgMusic: 'ambient' }
+];
+
+const initialPeerTutors = [
+  { studentId: 'HS002', name: 'Lê Mai Chi', subjectExpertise: 'Toán học', status: 'active', assistedCount: 12 },
+  { studentId: 'HS001', name: 'Nguyễn Hoàng Nam', subjectExpertise: 'Vật lý', status: 'active', assistedCount: 8 }
+];
+
+const initialTutorRequests = [
+  { id: 'TR01', studentId: 'HS003', studentName: 'Phan Minh Triết', tutorId: 'HS002', subject: 'Toán học', notes: 'Bạn ơi giúp mình ôn lại phương pháp nguyên hàm từng phần với, mình mất gốc chỗ này.', status: 'pending' },
+  { id: 'TR02', studentId: 'HS003', studentName: 'Phan Minh Triết', tutorId: 'HS001', subject: 'Vật lý', notes: 'Cần hỗ trợ cách bấm máy tính Casio giải nhanh bài toán dòng điện xoay chiều cực trị.', status: 'accepted' }
+];
+
+// ── LIBRARY & BOOK BOOKINGS ──────────────────────────────────────────────────
+const initialLibraryBooks = [
+  { id: 'B_01', title: 'Đắc Nhân Tâm', author: 'Dale Carnegie', category: 'Kỹ năng sống', status: 'available' },
+  { id: 'B_02', title: 'Lược Sử Thời Gian', author: 'Stephen Hawking', category: 'Khoa học vũ trụ', status: 'available' },
+  { id: 'B_03', title: 'Vật Lý Vui', author: 'Yakov Perelman', category: 'Khoa học phổ thông', status: 'reserved' },
+  { id: 'B_04', title: 'Giáo trình Giải tích nâng cao', author: 'Nhiều tác giả', category: 'Sách giáo khoa', status: 'available' },
+  { id: 'B_05', title: 'Tiếng Anh THPT ôn thi quốc gia', author: 'Lê Thu Hà', category: 'Tài liệu tham khảo', status: 'borrowed' }
+];
+
+const initialBookReservations = [
+  { id: 'RES01', studentId: 'HS001', studentName: 'Nguyễn Hoàng Nam', bookId: 'B_03', bookTitle: 'Vật Lý Vui', reserveDate: '2026-06-03', status: 'ready' },
+  { id: 'RES02', studentId: 'HS002', studentName: 'Lê Mai Chi', bookId: 'B_05', bookTitle: 'Tiếng Anh THPT ôn thi quốc gia', reserveDate: '2026-06-01', status: 'picked_up' }
+];
+
+const initialEbooks = [
+  { id: 'EB01', title: 'Tóm tắt lý thuyết Toán 12 thi THPT', category: 'Toán học', readingLink: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=800&auto=format&fit=crop&q=60' },
+  { id: 'EB02', title: '30 Đề Vật lý tinh tuyển 2026', category: 'Vật lý', readingLink: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60' },
+  { id: 'EB03', title: 'Cẩm nang viết Nghị luận văn học đạt điểm 9+', category: 'Ngữ văn', readingLink: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=60' }
+];
+
 export const AppProvider = ({ children }) => {
   const [theme] = useState('light');
   
@@ -476,6 +524,42 @@ export const AppProvider = ({ children }) => {
   const [lessonPlans, setLessonPlans] = useState(() => {
     const saved = localStorage.getItem('lessonPlans');
     return saved ? JSON.parse(saved) : initialLessonPlans;
+  });
+
+  // ── 4 New Educational Features States ──────────────────────────────────────
+  const [wellnessLogs, setWellnessLogs] = useState(() => {
+    const saved = localStorage.getItem('wellnessLogs');
+    return saved ? JSON.parse(saved) : initialWellnessLogs;
+  });
+
+  const [wellnessAppointments, setWellnessAppointments] = useState(() => {
+    const saved = localStorage.getItem('wellnessAppointments');
+    return saved ? JSON.parse(saved) : initialWellnessAppointments;
+  });
+
+  const [studyRooms, setStudyRooms] = useState(() => {
+    const saved = localStorage.getItem('studyRooms');
+    return saved ? JSON.parse(saved) : initialStudyRooms;
+  });
+
+  const [peerTutors, setPeerTutors] = useState(() => {
+    const saved = localStorage.getItem('peerTutors');
+    return saved ? JSON.parse(saved) : initialPeerTutors;
+  });
+
+  const [tutorRequests, setTutorRequests] = useState(() => {
+    const saved = localStorage.getItem('tutorRequests');
+    return saved ? JSON.parse(saved) : initialTutorRequests;
+  });
+
+  const [libraryBooks, setLibraryBooks] = useState(() => {
+    const saved = localStorage.getItem('libraryBooks');
+    return saved ? JSON.parse(saved) : initialLibraryBooks;
+  });
+
+  const [bookReservations, setBookReservations] = useState(() => {
+    const saved = localStorage.getItem('bookReservations');
+    return saved ? JSON.parse(saved) : initialBookReservations;
   });
 
   const [conductLogs, setConductLogs] = useState(() => {
@@ -748,6 +832,35 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('studentWallets', JSON.stringify(studentWallets));
   }, [studentWallets]);
+
+  // Sync 4 New Features States
+  useEffect(() => {
+    localStorage.setItem('wellnessLogs', JSON.stringify(wellnessLogs));
+  }, [wellnessLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('wellnessAppointments', JSON.stringify(wellnessAppointments));
+  }, [wellnessAppointments]);
+
+  useEffect(() => {
+    localStorage.setItem('studyRooms', JSON.stringify(studyRooms));
+  }, [studyRooms]);
+
+  useEffect(() => {
+    localStorage.setItem('peerTutors', JSON.stringify(peerTutors));
+  }, [peerTutors]);
+
+  useEffect(() => {
+    localStorage.setItem('tutorRequests', JSON.stringify(tutorRequests));
+  }, [tutorRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('libraryBooks', JSON.stringify(libraryBooks));
+  }, [libraryBooks]);
+
+  useEffect(() => {
+    localStorage.setItem('bookReservations', JSON.stringify(bookReservations));
+  }, [bookReservations]);
 
   useEffect(() => {
     localStorage.setItem('studentCompetencies', JSON.stringify(studentCompetencies));
@@ -1559,6 +1672,130 @@ export const AppProvider = ({ children }) => {
     addNotification({ type: 'fee', title: 'Thanh toán thành công', body: `Học phí đã được thanh toán thành công qua VietQR`, targetRole: 'parent', targetId: studentId });
   };
 
+  // ── Wellness Hub Actions ──────────────────────────────────────────────────
+  const logWellnessMood = (studentId, stressLevel, mood, notes) => {
+    const id = 'WL' + Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    setWellnessLogs(prev => [{ id, studentId, date, stressLevel, mood, notes }, ...prev]);
+  };
+
+  const requestCounseling = (studentId, date, timeSlot, notes) => {
+    const id = 'WA' + Date.now();
+    setWellnessAppointments(prev => [...prev, { id, studentId, date, timeSlot, notes, status: 'pending' }]);
+    addNotification({
+      type: 'meeting',
+      title: 'Yêu cầu tham vấn tâm lý',
+      body: `Học sinh ${studentId} đã gửi yêu cầu đặt lịch tham vấn ngày ${date.split('-').reverse().join('/')}.`,
+      targetRole: 'admin',
+      targetId: 'admin'
+    });
+  };
+
+  const confirmCounseling = (appointmentId) => {
+    setWellnessAppointments(prev => prev.map(a => a.id === appointmentId ? { ...a, status: 'confirmed' } : a));
+  };
+
+  // ── Study Group Actions ────────────────────────────────────────────────────
+  const createStudyRoom = (title, subject, creatorName, pomodoroTime, bgMusic) => {
+    const id = 'SR' + Date.now();
+    setStudyRooms(prev => [...prev, { id, title, subject, creatorName, pomodoroTime, participantsCount: 1, bgMusic }]);
+  };
+
+  const registerAsTutor = (studentId, name, subjectExpertise) => {
+    const isEx = peerTutors.some(t => t.studentId === studentId && t.subjectExpertise === subjectExpertise);
+    if (isEx) return;
+    setPeerTutors(prev => [...prev, { studentId, name, subjectExpertise, status: 'active', assistedCount: 0 }]);
+  };
+
+  const requestTutorHelp = (studentId, studentName, tutorId, subject, notes) => {
+    const id = 'TR' + Date.now();
+    setTutorRequests(prev => [...prev, { id, studentId, studentName, tutorId, subject, notes, status: 'pending' }]);
+    
+    // Notify tutor student
+    addNotification({
+      type: 'approval',
+      title: 'Yêu cầu hỗ trợ học tập mới',
+      body: `Bạn học ${studentName} cần bạn kèm môn ${subject}.`,
+      targetRole: 'student',
+      targetId: tutorId
+    });
+  };
+
+  const acceptTutorRequest = (requestId) => {
+    setTutorRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'accepted' } : r));
+  };
+
+  const completeTutorRequest = (requestId) => {
+    let tId = '';
+    setTutorRequests(prev => prev.map(r => {
+      if (r.id === requestId) {
+        tId = r.tutorId;
+        return { ...r, status: 'completed' };
+      }
+      return r;
+    }));
+    // Reward tutor with assistedCount+1 and +5 conduct log
+    if (tId) {
+      setPeerTutors(prev => prev.map(t => t.studentId === tId ? { ...t, assistedCount: t.assistedCount + 1 } : t));
+      addConductLog(tId, 5, 'Kèm học nhóm (Gia sư đồng đẳng) hoàn thành xuất sắc');
+    }
+  };
+
+  // ── Library Actions ────────────────────────────────────────────────────────
+  const reserveBook = (bookId, studentId, studentName) => {
+    const id = 'RES' + Date.now();
+    const reserveDate = new Date().toISOString().split('T')[0];
+    
+    // Update book status
+    setLibraryBooks(prev => prev.map(b => b.id === bookId ? { ...b, status: 'reserved' } : b));
+    
+    const bookTitle = libraryBooks.find(b => b.id === bookId)?.title || 'Sách';
+    setBookReservations(prev => [...prev, { id, studentId, studentName, bookId, bookTitle, reserveDate, status: 'pending' }]);
+  };
+
+  const approveBookReservation = (reservationId) => {
+    setBookReservations(prev => prev.map(r => r.id === reservationId ? { ...r, status: 'ready' } : r));
+    
+    const res = bookReservations.find(r => r.id === reservationId);
+    if (res) {
+      addNotification({
+        type: 'approval',
+        title: 'Sách mượn đã sẵn sàng',
+        body: `Cuốn sách "${res.bookTitle}" bạn đặt mượn đã được thủ thư chuẩn bị xong. Hãy đến thư viện nhận sách!`,
+        targetRole: 'student',
+        targetId: res.studentId
+      });
+    }
+  };
+
+  const collectBook = (reservationId) => {
+    let bookId = '';
+    setBookReservations(prev => prev.map(r => {
+      if (r.id === reservationId) {
+        bookId = r.bookId;
+        return { ...r, status: 'picked_up' };
+      }
+      return r;
+    }));
+    if (bookId) {
+      setLibraryBooks(prev => prev.map(b => b.id === bookId ? { ...b, status: 'borrowed' } : b));
+    }
+  };
+
+  const returnBook = (reservationId) => {
+    let bookId = '';
+    setBookReservations(prev => prev.map(r => {
+      if (r.id === reservationId) {
+        bookId = r.bookId;
+        return { ...r, status: 'returned' };
+      }
+      return r;
+    }));
+    if (bookId) {
+      setLibraryBooks(prev => prev.map(b => b.id === bookId ? { ...b, status: 'available' } : b));
+    }
+  };
+
   // ── Global Search ────────────────────────────────────────────────────────
   const globalSearch = (query) => {
     if (!query || query.trim().length < 2) return [];
@@ -1629,6 +1866,14 @@ export const AppProvider = ({ children }) => {
       cafeteriaFeedback,
       studentWallets,
       studentCompetencies,
+      wellnessLogs,
+      wellnessAppointments,
+      studyRooms,
+      peerTutors,
+      tutorRequests,
+      libraryBooks,
+      bookReservations,
+      eBooks: initialEbooks,
       logout,
       addStudent,
       editStudentGrades,
@@ -1665,6 +1910,18 @@ export const AppProvider = ({ children }) => {
       topUpStudentWallet,
       updateStudentWalletLimit,
       spendStudentWallet,
+      logWellnessMood,
+      requestCounseling,
+      confirmCounseling,
+      createStudyRoom,
+      registerAsTutor,
+      requestTutorHelp,
+      acceptTutorRequest,
+      completeTutorRequest,
+      reserveBook,
+      approveBookReservation,
+      collectBook,
+      returnBook,
       notifications, markNotificationRead, markAllNotificationsRead, addNotification,
       directMessages, sendDirectMessage, markMessageRead,
       bulletins, addBulletin, confirmBulletinRead,

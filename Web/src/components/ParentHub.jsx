@@ -42,7 +42,8 @@ export default function ParentHub({ activeTab, setActiveTab }) {
     registerCafeteriaMeal,
     cancelCafeteriaMeal,
     topUpStudentWallet,
-    updateStudentWalletLimit
+    updateStudentWalletLimit,
+    wellnessLogs
   } = useContext(AppContext);
 
   // Declare all hooks at the very top level
@@ -962,6 +963,59 @@ export default function ParentHub({ activeTab, setActiveTab }) {
                     </p>
                     <div style={{ borderTop: '1.5px dashed rgba(0,0,0,0.06)', paddingTop: '8px', marginTop: '6px', fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
                       💼 Gợi ý nghề phù hợp: {careerMatch}
+                    </div>
+
+                    {/* Wellness Tracking for Child */}
+                    <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(139,92,246,0.02)', border: '1px solid var(--border-card)', borderRadius: '12px' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🧠 Nhật ký Stress & Tâm lý của con</span>
+                      </h4>
+
+                      {(() => {
+                        const childLogs = wellnessLogs ? wellnessLogs.filter(l => l.studentId === student.id) : [];
+                        if (childLogs.length === 0) {
+                          return (
+                            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                              Chương trình chưa có ghi nhận tâm lý nào gần đây cho cháu.
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px' }}>
+                              {childLogs.slice(0, 3).map(log => {
+                                const moodEmoji = log.mood === 'happy' ? '😊' : log.mood === 'tired' ? '😴' : log.mood === 'anxious' ? '😰' : '😫';
+                                return (
+                                  <div key={log.id} style={{ flexShrink: 0, width: '130px', background: '#fff', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '1.2rem' }}>{moodEmoji}</span>
+                                      <span className="badge" style={{ 
+                                        fontSize: '0.62rem', 
+                                        background: log.stressLevel >= 7 ? 'rgba(239,68,68,0.08)' : log.stressLevel >= 4 ? 'rgba(245,158,11,0.08)' : 'rgba(16,185,129,0.08)',
+                                        color: log.stressLevel >= 7 ? '#ef4444' : log.stressLevel >= 4 ? '#b45309' : '#10b981'
+                                      }}>
+                                        Stress {log.stressLevel}/10
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                      {log.date.split('-').reverse().slice(0, 2).join('/')}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={log.notes}>
+                                      {log.notes}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {childLogs.some(l => l.stressLevel >= 7) && (
+                              <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.1)', padding: '10px', borderRadius: '8px', color: '#b91c1c', fontSize: '0.74rem', marginTop: '6px' }}>
+                                ⚠️ Cháu đang có dấu hiệu căng thẳng cao. Khuyên khích trao đổi cùng GVCN hoặc đặt lịch tư vấn tâm lý.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

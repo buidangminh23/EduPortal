@@ -22,6 +22,10 @@ import TeacherAttendance from './components/TeacherAttendance';
 import BadgesPanel from './components/BadgesPanel';
 import Leaderboard from './components/Leaderboard';
 import GradeTrendChart from './components/GradeTrendChart';
+import CanteenManager from './components/CanteenManager';
+import WellnessHub from './components/WellnessHub';
+import StudyGroupHub from './components/StudyGroupHub';
+import LibraryHub from './components/LibraryHub';
 import { ShieldCheck, Mail, Phone, Trophy } from 'lucide-react';
 
 function App() {
@@ -45,6 +49,18 @@ function App() {
   const renderTabContent = () => {
     if (activeTab === 'calendar') {
       return <SchoolCalendar />;
+    }
+    if (activeTab === 'canteen') {
+      return <CanteenManager />;
+    }
+    if (activeTab === 'wellness') {
+      return <WellnessHub />;
+    }
+    if (activeTab === 'study_group') {
+      return <StudyGroupHub />;
+    }
+    if (activeTab === 'library_hub') {
+      return <LibraryHub />;
     }
 
     // 1. BAN GIÁM HIỆU

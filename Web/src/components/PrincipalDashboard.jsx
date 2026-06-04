@@ -51,7 +51,12 @@ export default function PrincipalDashboard() {
     approveClubBudget,
     mockExamHistory,
     teacherLeaveRequests,
-    approveTeacherLeaveRequest
+    approveTeacherLeaveRequest,
+    cafeteriaRegistrations,
+    cafeteriaFeedback,
+    studentWallets,
+    wellnessLogs,
+    wellnessAppointments
   } = useContext(AppContext);
 
   // Sub tab control
@@ -491,6 +496,128 @@ export default function PrincipalDashboard() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+
+          {/* Căng tin & Sức khỏe Tâm lý Học đường */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', marginTop: '20px' }}>
+            {/* Canteen statistics */}
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+                <span>🍱 Báo Cáo Căng Tin & Suất Ăn Bán Trú</span>
+              </h2>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '12px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>SUẤT ĂN ĐÃ ĐĂNG KÝ</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--accent-primary)', marginTop: '4px' }}>
+                    {(cafeteriaRegistrations || []).length} suất ăn
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '12px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>TỔNG DƯ VÍ HỌC SINH</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                      Object.values(studentWallets || {}).reduce((sum, w) => sum + (w.balance || 0), 0)
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu and feedback summary */}
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong style={{ display: 'block', marginBottom: '8px' }}>Nhận xét/Đánh giá suất ăn từ học sinh:</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' }}>
+                  {(cafeteriaFeedback && cafeteriaFeedback.length > 0) ? (
+                    cafeteriaFeedback.map((fb, idx) => (
+                      <div key={idx} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.04)', padding: '8px 12px', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
+                          <span>{fb.studentName || 'Học sinh'}</span>
+                          <span style={{ color: '#f59e0b' }}>{'★'.repeat(fb.rating)}</span>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{fb.comment}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Chưa có phản hồi món ăn nào.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Stress level distribution */}
+            <div className="glass-panel">
+              <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+                <span>🧠 Chỉ Số Sức Khỏe Tâm Lý & Stress Học Đường</span>
+              </h2>
+
+              {/* Stress logs count */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Phân bổ Stress học sinh toàn trường:</span>
+                <span className="badge badge-info">{(wellnessLogs || []).length} lượt ghi nhận</span>
+              </div>
+
+              {/* Progress stress bar charts */}
+              {(() => {
+                const logs = wellnessLogs || [];
+                const highStress = logs.filter(l => l.stressLevel >= 7).length;
+                const midStress = logs.filter(l => l.stressLevel >= 4 && l.stressLevel < 7).length;
+                const lowStress = logs.filter(l => l.stressLevel < 4).length;
+                const total = logs.length || 1;
+
+                const highPct = Math.round((highStress / total) * 100);
+                const midPct = Math.round((midStress / total) * 100);
+                const lowPct = Math.round((lowStress / total) * 100);
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                        <span>Căng thẳng cao (Stress 7-10)</span>
+                        <strong>{highStress} HS ({highPct}%)</strong>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${highPct}%`, height: '100%', background: '#ef4444', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                        <span>Áp lực trung bình (Stress 4-6)</span>
+                        <strong>{midStress} HS ({midPct}%)</strong>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${midPct}%`, height: '100%', background: '#f59e0b', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+                        <span>Tâm trạng thoải mái (Stress 1-3)</span>
+                        <strong>{lowStress} HS ({lowPct}%)</strong>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${lowPct}%`, height: '100%', background: '#10b981', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Consultation queue */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '12px' }}>
+                <strong style={{ fontSize: '0.82rem', display: 'block', marginBottom: '6px' }}>Lịch hẹn tư vấn tâm lý đang chờ duyệt:</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {(wellnessAppointments && wellnessAppointments.filter(a => a.status === 'pending').length > 0) ? (
+                    wellnessAppointments.filter(a => a.status === 'pending').map((app, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid rgba(0,0,0,0.04)', padding: '6px 10px', borderRadius: '8px', fontSize: '0.78rem' }}>
+                        <span>Lịch ngày {app.date.split('-').reverse().join('/')} ({app.timeSlot})</span>
+                        <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>Đang chờ</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Không có ca tư vấn nào đang chờ.</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
