@@ -1,37 +1,38 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, lazy, Suspense } from 'react';
 import { AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
-import PrincipalDashboard from './components/PrincipalDashboard';
-import TeacherDashboard from './components/TeacherDashboard';
-import ClassJournal from './components/ClassJournal';
-import ParentHub from './components/ParentHub';
-import StudentDashboard from './components/StudentDashboard';
-import AITutor from './components/AITutor';
-import VideoLectures from './components/VideoLectures';
-import EduMeet from './components/EduMeet';
-import SchoolCalendar from './components/SchoolCalendar';
-import FloatingChatWidget from './components/FloatingChatWidget';
-import BulletinBoard from './components/BulletinBoard';
-import DirectChat from './components/DirectChat';
-import MeetingBooking from './components/MeetingBooking';
-import ExamRepository from './components/ExamRepository';
-import AssetManager from './components/AssetManager';
-import TeacherAttendance from './components/TeacherAttendance';
-import BadgesPanel from './components/BadgesPanel';
-import Leaderboard from './components/Leaderboard';
-import GradeTrendChart from './components/GradeTrendChart';
-import CanteenManager from './components/CanteenManager';
-import WellnessHub from './components/WellnessHub';
-import StudyGroupHub from './components/StudyGroupHub';
-import LibraryHub from './components/LibraryHub';
-import WebLab from './components/WebLab';
-import EssayGrader from './components/EssayGrader';
-import BusTracker from './components/BusTracker';
-import PortfolioBuilder from './components/PortfolioBuilder';
-import TimetableGenerator from './components/TimetableGenerator';
 import { ShieldCheck, Mail, Phone, Trophy } from 'lucide-react';
+
+const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
+const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
+const ClassJournal = lazy(() => import('./components/ClassJournal'));
+const ParentHub = lazy(() => import('./components/ParentHub'));
+const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
+const AITutor = lazy(() => import('./components/AITutor'));
+const VideoLectures = lazy(() => import('./components/VideoLectures'));
+const EduMeet = lazy(() => import('./components/EduMeet'));
+const SchoolCalendar = lazy(() => import('./components/SchoolCalendar'));
+const FloatingChatWidget = lazy(() => import('./components/FloatingChatWidget'));
+const BulletinBoard = lazy(() => import('./components/BulletinBoard'));
+const DirectChat = lazy(() => import('./components/DirectChat'));
+const MeetingBooking = lazy(() => import('./components/MeetingBooking'));
+const ExamRepository = lazy(() => import('./components/ExamRepository'));
+const AssetManager = lazy(() => import('./components/AssetManager'));
+const TeacherAttendance = lazy(() => import('./components/TeacherAttendance'));
+const BadgesPanel = lazy(() => import('./components/BadgesPanel'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const GradeTrendChart = lazy(() => import('./components/GradeTrendChart'));
+const CanteenManager = lazy(() => import('./components/CanteenManager'));
+const WellnessHub = lazy(() => import('./components/WellnessHub'));
+const StudyGroupHub = lazy(() => import('./components/StudyGroupHub'));
+const LibraryHub = lazy(() => import('./components/LibraryHub'));
+const WebLab = lazy(() => import('./components/WebLab'));
+const EssayGrader = lazy(() => import('./components/EssayGrader'));
+const BusTracker = lazy(() => import('./components/BusTracker'));
+const PortfolioBuilder = lazy(() => import('./components/PortfolioBuilder'));
+const TimetableGenerator = lazy(() => import('./components/TimetableGenerator'));
 
 function App() {
   const { currentRole, userSession } = useContext(AppContext);
@@ -172,7 +173,7 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container" data-role={currentRole}>
       {/* Navigation Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
@@ -182,12 +183,16 @@ function App() {
         
         {/* Main Content Viewport */}
         <main className="content-pane">
-          {renderTabContent()}
+          <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Đang tải nội dung…</div>}>
+            {renderTabContent()}
+          </Suspense>
         </main>
       </div>
 
       {/* Floating AI Chat Widget — chỉ hiện với học sinh */}
-      <FloatingChatWidget />
+      <Suspense fallback={null}>
+        <FloatingChatWidget />
+      </Suspense>
     </div>
   );
 }

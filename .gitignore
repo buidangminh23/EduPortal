@@ -8,3 +8,8 @@ Web/dist-ssr
 Thumbs.db
 
 .vercel
+
+# Agent / design handoff artifacts
+.claude/
+Web/.claude/
+_design_extract/

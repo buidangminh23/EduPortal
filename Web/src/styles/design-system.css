@@ -1,0 +1,93 @@
+/* design-system.css — primitives + Login mới (Claude Design handoff)
+   Bổ sung vocabulary class mới, không ghi đè class cũ (.glass-panel...). */
+
+/* ---------- Login split-screen ---------- */
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  background: var(--bg);
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  .login-wrap { grid-template-columns: 1fr; }
+  .login-art { display: none !important; }
+}
+
+.login-art {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255,255,255,.22), transparent 45%),
+    radial-gradient(circle at 12% 88%, rgba(255,255,255,.16), transparent 42%),
+    linear-gradient(150deg, #6c5ce7 0%, #4d7bff 52%, #1fb6f0 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 52px;
+}
+.login-art .blob { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .5; }
+
+.login-form-side { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.login-card { width: 100%; max-width: 420px; }
+
+.role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.role-opt {
+  display: flex; align-items: center; gap: 11px;
+  padding: 14px; border-radius: var(--r-md);
+  border: 2px solid var(--line); background: var(--surface);
+  cursor: pointer; transition: var(--t); text-align: left;
+}
+.role-opt:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+.role-opt.sel { border-color: var(--ro-c); background: color-mix(in srgb, var(--ro-c) 7%, #fff); }
+.role-opt .ro-ico { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: #fff; flex-shrink: 0; }
+.role-opt .ro-t { font-weight: 700; font-size: 0.92rem; color: var(--ink); }
+.role-opt .ro-s { font-size: 0.74rem; color: var(--muted-c); }
+
+.field { margin-bottom: 15px; }
+.field label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--ink-soft); margin-bottom: 7px; }
+.input {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid var(--line-strong); border-radius: var(--r-md);
+  background: var(--surface); color: var(--ink);
+  font-family: inherit; font-size: 0.95rem; outline: none; transition: var(--t);
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+/* ---------- New primitives (net-new, không đụng .glass-panel) ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  box-shadow: var(--sh-sm);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: var(--r-pill);
+  font-size: 0.74rem; font-weight: 700; line-height: 1.4;
+}
+.chip-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; }
+
+.btn-soft { background: var(--accent-soft); color: var(--accent-ink); }
+.btn-soft:hover { filter: brightness(.97); }
+.btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { background: var(--bg); }
+
+/* color helpers */
+.t-violet { color: var(--violet); } .bg-violet { background: var(--violet-soft); }
+.t-blue { color: var(--blue); }     .bg-blue { background: var(--blue-soft); }
+.t-sky { color: var(--sky); }        .bg-sky { background: var(--sky-soft); }
+.t-mint { color: var(--mint); }      .bg-mint { background: var(--mint-soft); }
+.t-amber { color: #c98800; }         .bg-amber { background: var(--amber-soft); }
+.t-orange { color: var(--orange); }  .bg-orange { background: var(--orange-soft); }
+.t-coral { color: var(--coral); }    .bg-coral { background: var(--coral-soft); }
+.t-pink { color: var(--pink); }      .bg-pink { background: var(--pink-soft); }
+.t-accent { color: var(--accent); }
+
+@keyframes popIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+.animate-pop { animation: popIn .42s cubic-bezier(.2,.7,.3,1) both; }

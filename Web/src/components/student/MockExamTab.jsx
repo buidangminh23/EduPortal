@@ -1,0 +1,799 @@
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { AppContext } from '../../context/AppContext';
+import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES } from '../../data/mockExamsData';
+import {
+  Award,
+  ArrowRight,
+  Sparkles,
+  FileText,
+  Clock,
+  ChevronRight,
+  ChevronLeft,
+  RefreshCw,
+  Timer,
+  Check,
+  X,
+  ClipboardList,
+} from 'lucide-react';
+
+export default function MockExamTab({ student }) {
+  const { customExams, mockExamHistory, saveMockExamResult } = useContext(AppContext);
+
+  const [selectedBlockKey, setSelectedBlockKey] = useState('A00');
+  const [activeExam, setActiveExam] = useState(null);
+  const [examMode, setExamMode] = useState(null);
+  const [examAnswers, setExamAnswers] = useState({});
+  const [examSecondsLeft, setExamSecondsLeft] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [reviewingPastAttempt, setReviewingPastAttempt] = useState(null);
+
+  const calculateExamScore = useCallback((exam, answers) => {
+    let correctCount = 0;
+    exam.questions.forEach(q => {
+      if (answers[q.id] === q.correctKey) {
+        correctCount++;
+      }
+    });
+    const score = (correctCount / exam.questions.length) * 10;
+    return { score, correctCount };
+  }, []);
+
+  const submitExam = useCallback(() => {
+    if (!activeExam) return;
+
+    const durationUsed = activeExam.duration * 60 - examSecondsLeft;
+    const minutesUsed = Math.floor(durationUsed / 60);
+    const secondsUsed = durationUsed % 60;
+    const timeSpentStr = `${String(minutesUsed).padStart(2, '0')}:${String(secondsUsed).padStart(2, '0')}`;
+
+    const { score, correctCount } = calculateExamScore(activeExam, examAnswers);
+
+    const subjectBreakdown = {};
+    activeExam.questions.forEach(q => {
+      if (!subjectBreakdown[q.subject]) {
+        subjectBreakdown[q.subject] = { correct: 0, total: 0 };
+      }
+      subjectBreakdown[q.subject].total++;
+      if (examAnswers[q.id] === q.correctKey) {
+        subjectBreakdown[q.subject].correct++;
+      }
+    });
+
+    const newResult = {
+      studentId: student?.id,
+      studentName: student?.name,
+      class: student?.class,
+      block: activeExam.block || selectedBlockKey,
+      examId: activeExam.id,
+      title: activeExam.title,
+      score: score,
+      totalQuestions: activeExam.questions.length,
+      correctAnswers: correctCount,
+      timeSpent: timeSpentStr,
+      selectedAnswers: examAnswers,
+      subjectBreakdown: subjectBreakdown
+    };
+
+    saveMockExamResult(newResult);
+    setExamMode('reviewing');
+    setReviewingPastAttempt({
+      ...newResult,
+      date: new Date().toISOString().split('T')[0]
+    });
+  }, [activeExam, examAnswers, examSecondsLeft, student, selectedBlockKey, saveMockExamResult, calculateExamScore]);
+
+  const handleAutoSubmit = useCallback(() => {
+    alert('Hết giờ làm bài! Hệ thống tự động nộp bài.');
+    submitExam();
+  }, [submitExam]);
+
+  const handleFinishExam = useCallback(() => {
+    if (!activeExam) return;
+    if (window.confirm('Bạn có chắc chắn muốn nộp bài thi?')) {
+      submitExam();
+    }
+  }, [activeExam, submitExam]);
+
+  useEffect(() => {
+    let timerInterval = null;
+    if (examMode === 'taking' && examSecondsLeft > 0) {
+      timerInterval = setInterval(() => {
+        setExamSecondsLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerInterval);
+            setTimeout(() => { handleAutoSubmit(); }, 0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+  }, [examMode, examSecondsLeft, handleAutoSubmit]);
+
+  const handleStartExam = (exam) => {
+    setActiveExam(exam);
+    setExamMode('taking');
+    setExamAnswers({});
+    setExamSecondsLeft(exam.duration * 60);
+    setCurrentQuestionIndex(0);
+    setReviewingPastAttempt(null);
+  };
+
+  const handleSelectOption = (questionId, optionKey) => {
+    setExamAnswers(prev => ({
+      ...prev,
+      [questionId]: optionKey
+    }));
+  };
+
+  const handleViewPastAttempt = (attempt) => {
+    let exam = SYSTEM_BLOCK_EXAMS.find(ex => ex.id === attempt.examId);
+    if (!exam && customExams) {
+      exam = customExams.find(ex => ex.id === attempt.examId);
+    }
+    if (!exam) {
+      exam = SYSTEM_BLOCK_EXAMS.find(ex => ex.title === attempt.title || ex.block === attempt.block);
+    }
+    if (!exam && customExams) {
+      exam = customExams.find(ex => ex.title === attempt.title || ex.block === attempt.block);
+    }
+
+    if (exam) {
+      setActiveExam(exam);
+      setExamAnswers(attempt.selectedAnswers || {});
+      setExamMode('reviewing');
+      setReviewingPastAttempt(attempt);
+    } else {
+      alert('Không tìm thấy đề thi tương ứng để xem lại.');
+    }
+  };
+
+  const handleExitExam = () => {
+    setActiveExam(null);
+    setExamMode(null);
+    setExamAnswers({});
+    setReviewingPastAttempt(null);
+  };
+
+  const getSelectedAnswerKey = (q, attempt) => {
+    if (attempt && attempt.selectedAnswers && attempt.selectedAnswers[q.id]) {
+      return attempt.selectedAnswers[q.id];
+    }
+    if (!attempt) return null;
+    const qIndex = activeExam?.questions?.findIndex(question => question.id === q.id) ?? 0;
+    if (qIndex < attempt.correctAnswers) {
+      return q.correctKey;
+    }
+    const wrongKeys = q.options.map(o => o.key).filter(k => k !== q.correctKey);
+    return wrongKeys[0] || 'A';
+  };
+
+  return (
+    <div className="animate-fade">
+
+      {/* Main selection view */}
+      {examMode === null && (
+        <div>
+          {/* Header card with glassmorphism */}
+          <div className="glass-panel" style={{ padding: '30px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.45))' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <ClipboardList size={28} color="var(--accent-primary)" /> Thi Thử Đại Học THPT Quốc Gia
+                </h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '6px' }}>
+                  Rèn luyện kiến thức thực tế với đề thi thử chuẩn cấu trúc đề của Bộ Giáo dục và Đào tạo.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {Object.keys(BLOCKS).map(blockKey => (
+                  <button
+                    key={blockKey}
+                    onClick={() => setSelectedBlockKey(blockKey)}
+                    className={`btn ${selectedBlockKey === blockKey ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{
+                      padding: '10px 18px',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      borderRadius: '12px',
+                      border: selectedBlockKey === blockKey ? 'none' : '1px solid #cbd5e1',
+                      background: selectedBlockKey === blockKey ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
+                      color: selectedBlockKey === blockKey ? 'white' : '#4f46e5'
+                    }}
+                  >
+                    {BLOCKS[blockKey].name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Grid of Integrated Block Exams */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Award size={18} color="var(--accent-secondary)" /> Đề thi thử hệ thống của {BLOCKS[selectedBlockKey].name}
+            </h3>
+
+            {(() => {
+              const systemExam = SYSTEM_BLOCK_EXAMS.find(ex => ex.block === selectedBlockKey);
+              if (!systemExam) return <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Chưa có đề thi hệ thống cho khối này.</p>;
+
+              const counts = {};
+              systemExam.questions.forEach(q => {
+                counts[q.subject] = (counts[q.subject] || 0) + 1;
+              });
+              const structureDesc = Object.entries(counts)
+                .map(([sub, count]) => `${count} ${SUBJECT_NAMES[sub] || sub}`)
+                .join(', ');
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '180px', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(255, 255, 255, 0.8))' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--accent-primary)',
+                          background: 'var(--accent-primary-glow)',
+                          padding: '4px 10px',
+                          borderRadius: '99px'
+                        }}>
+                          Đề thi Hệ thống
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={12} /> {systemExam.duration} phút
+                        </span>
+                      </div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 850, color: '#1e293b', lineHeight: 1.4, margin: '6px 0' }}>
+                        {systemExam.title}
+                      </h4>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                        <strong>Cấu trúc liên môn:</strong> {structureDesc}
+                      </p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Trải nghiệm thi thử liên môn tuần tự theo đúng quy chế thi thật của Bộ GD&ĐT.
+                      </p>
+                    </div>
+
+                    <div style={{ marginTop: '20px' }}>
+                      <button
+                        onClick={() => handleStartExam(systemExam)}
+                        className="btn btn-primary"
+                        style={{
+                          width: '100%',
+                          borderRadius: '10px',
+                          padding: '10px',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          background: 'linear-gradient(135deg, #6366f1, #3b82f6)'
+                        }}
+                      >
+                        <span>Bắt đầu làm bài</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Teacher created exams */}
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginTop: '32px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={18} color="var(--accent-primary)" /> Đề thi thử từ Thầy Cô thiết lập
+            </h3>
+
+            {(() => {
+              const teacherExams = customExams ? customExams.filter(ex => ex.block === selectedBlockKey) : [];
+              if (teacherExams.length === 0) {
+                return (
+                  <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', border: '1px dashed #cbd5e1', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                    Chưa có đề thi thử riêng nào từ thầy cô bộ môn giao cho khối thi này.
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                  {teacherExams.map(exam => {
+                    const counts = {};
+                    exam.questions.forEach(q => {
+                      counts[q.subject] = (counts[q.subject] || 0) + 1;
+                    });
+                    const structureDesc = Object.entries(counts)
+                      .map(([sub, count]) => `${count} ${SUBJECT_NAMES[sub] || sub}`)
+                      .join(', ');
+
+                    return (
+                      <div key={exam.id} className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '180px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.03), rgba(255, 255, 255, 0.85))' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: '#10b981',
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              padding: '4px 10px',
+                              borderRadius: '99px'
+                            }}>
+                              Thầy Cô giao ({exam.teacherName || 'Giáo viên'})
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={12} /> {exam.duration} phút
+                            </span>
+                          </div>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.4, margin: '6px 0' }}>
+                            {exam.title}
+                          </h4>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                            <strong>Cấu trúc đề:</strong> {structureDesc}
+                          </p>
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                            Ngày tạo: {exam.createdDate?.split('-').reverse().join('/') || 'Mới đây'}
+                          </span>
+                        </div>
+
+                        <div style={{ marginTop: '20px' }}>
+                          <button
+                            onClick={() => handleStartExam(exam)}
+                            className="btn btn-primary"
+                            style={{
+                              width: '100%',
+                              borderRadius: '10px',
+                              padding: '10px',
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              background: 'var(--accent-secondary)',
+                              border: 'none'
+                            }}
+                          >
+                            <span>Bắt đầu làm bài</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Attempt History */}
+          <div className="glass-panel">
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <RefreshCw size={18} color="var(--accent-info)" /> Lịch sử thi thử của bạn
+            </h3>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.05)', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 8px' }}>Tên Đề thi</th>
+                    <th style={{ padding: '12px 8px' }}>Khối thi</th>
+                    <th style={{ padding: '12px 8px' }}>Ngày thi</th>
+                    <th style={{ padding: '12px 8px' }}>Thời gian làm</th>
+                    <th style={{ padding: '12px 8px' }}>Số câu đúng</th>
+                    <th style={{ padding: '12px 8px' }}>Điểm số</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockExamHistory.filter(h => h.studentId === student.id).length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ padding: '24px 8px', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>
+                        Bạn chưa tham gia đợt thi thử nào. Hãy chọn môn thi phía trên để bắt đầu!
+                      </td>
+                    </tr>
+                  ) : (
+                    mockExamHistory.filter(h => h.studentId === student.id).map(attempt => (
+                      <tr key={attempt.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', fontSize: '0.88rem', color: '#1e293b' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: 600 }}>{attempt.title || `Đề thi thử Khối ${attempt.block}`}</td>
+                        <td style={{ padding: '12px 8px' }}><span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>{attempt.block}</span></td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>{attempt.date.split('-').reverse().join('/')}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}><Clock size={12} style={{ marginRight: '4px', display: 'inline' }} /> {attempt.timeSpent}</td>
+                        <td style={{ padding: '12px 8px' }}>{attempt.correctAnswers} / {attempt.totalQuestions}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <strong style={{
+                            color: attempt.score >= 8 ? '#10b981' : attempt.score >= 5 ? '#f59e0b' : '#ef4444',
+                            fontSize: '1rem'
+                          }}>
+                            {attempt.score.toFixed(1)}
+                          </strong>
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                          <button
+                            onClick={() => handleViewPastAttempt(attempt)}
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '8px' }}
+                          >
+                            Xem lời giải
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exam room (taking exam) */}
+      {examMode === 'taking' && activeExam && (
+        <div className="glass-panel animate-fade" style={{ padding: '30px', border: '2px solid rgba(99, 102, 241, 0.25)', minHeight: '500px' }}>
+
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: '16px', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600, background: 'var(--accent-primary-glow)', padding: '4px 10px', borderRadius: '99px' }}>
+                PHÒNG THI THỬ TRỰC TUYẾN
+              </span>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginTop: '6px' }}>{activeExam.title}</h3>
+            </div>
+
+            {/* Timer and action */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: examSecondsLeft < 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                padding: '8px 18px',
+                borderRadius: '12px',
+                border: examSecondsLeft < 60 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(16, 185, 129, 0.25)',
+                color: examSecondsLeft < 60 ? '#ef4444' : '#10b981',
+                fontWeight: 700,
+                fontSize: '1.1rem'
+              }}>
+                <Timer size={20} className={examSecondsLeft < 60 ? 'animate-pulse' : ''} />
+                <span>
+                  {Math.floor(examSecondsLeft / 60)}:
+                  {String(examSecondsLeft % 60).padStart(2, '0')}
+                </span>
+              </div>
+
+              <button
+                onClick={handleFinishExam}
+                className="btn btn-primary"
+                style={{ background: 'var(--accent-secondary)', padding: '10px 24px', fontWeight: 700, borderRadius: '12px', border: 'none' }}
+              >
+                Nộp bài
+              </button>
+            </div>
+          </div>
+
+          {/* Main content grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '24px' }}>
+
+            {/* Left side: Question detail */}
+            <div>
+              {(() => {
+                const currentQuestion = activeExam.questions[currentQuestionIndex];
+                if (!currentQuestion) return null;
+
+                return (
+                  <div className="animate-fade" key={currentQuestion.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, background: 'var(--accent-primary)', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {currentQuestionIndex + 1}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Câu {currentQuestionIndex + 1} trên tổng số {activeExam.questions.length} câu</span>
+                      <span style={{
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        color: '#4f46e5',
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        padding: '4px 12px',
+                        borderRadius: '8px',
+                        marginLeft: 'auto'
+                      }}>
+                        Môn học: {SUBJECT_NAMES[currentQuestion.subject] || currentQuestion.subject}
+                      </span>
+                    </div>
+
+                    <p
+                      style={{ fontSize: '1.05rem', fontWeight: 600, color: '#1e293b', marginBottom: '24px', lineHeight: 1.6 }}
+                      dangerouslySetInnerHTML={{ __html: currentQuestion.question }}
+                    />
+
+                    {/* Options */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {currentQuestion.options.map(option => {
+                        const isSelected = examAnswers[currentQuestion.id] === option.key;
+                        return (
+                          <button
+                            key={option.key}
+                            onClick={() => handleSelectOption(currentQuestion.id, option.key)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '16px',
+                              borderRadius: '12px',
+                              border: isSelected ? '2px solid var(--accent-primary)' : '1px solid #cbd5e1',
+                              background: isSelected ? 'var(--accent-primary-glow)' : 'white',
+                              color: '#1e293b',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontWeight: isSelected ? 600 : 500,
+                              fontSize: '0.92rem',
+                              transition: 'all 0.15s',
+                              gap: '12px'
+                            }}
+                          >
+                            <span style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              border: isSelected ? 'none' : '1px solid #94a3b8',
+                              background: isSelected ? 'var(--accent-primary)' : 'transparent',
+                              color: isSelected ? 'white' : '#64748b',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.8rem',
+                              fontWeight: 'bold'
+                            }}>
+                              {option.key}
+                            </span>
+                            <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Prev/Next buttons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '20px' }}>
+                <button
+                  onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentQuestionIndex === 0}
+                  className="btn btn-secondary"
+                  style={{ gap: '6px', opacity: currentQuestionIndex === 0 ? 0.5 : 1, cursor: currentQuestionIndex === 0 ? 'not-allowed' : 'pointer' }}
+                >
+                  <ChevronLeft size={16} />
+                  <span>Câu trước</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentQuestionIndex(prev => Math.min(activeExam.questions.length - 1, prev + 1))}
+                  disabled={currentQuestionIndex === activeExam.questions.length - 1}
+                  className="btn btn-secondary"
+                  style={{ gap: '6px', opacity: currentQuestionIndex === activeExam.questions.length - 1 ? 0.5 : 1, cursor: currentQuestionIndex === activeExam.questions.length - 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  <span>Câu tiếp theo</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Right side: Navigation status panel */}
+            <div style={{ borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '24px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>TIẾN ĐỘ BÀI LÀM</h4>
+              {(() => {
+                const subjectsInExam = [];
+                activeExam.questions.forEach(q => {
+                  if (!subjectsInExam.includes(q.subject)) {
+                    subjectsInExam.push(q.subject);
+                  }
+                });
+
+                return subjectsInExam.map(subj => {
+                  const subjQuestions = activeExam.questions.map((q, idx) => ({ q, idx })).filter(item => item.q.subject === subj);
+                  return (
+                    <div key={subj} style={{ marginBottom: '16px' }}>
+                      <h5 style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {SUBJECT_NAMES[subj] || subj}
+                      </h5>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                        {subjQuestions.map(({ q, idx }) => {
+                          const isAnswered = !!examAnswers[q.id];
+                          const isCurrent = idx === currentQuestionIndex;
+                          return (
+                            <button
+                              key={q.id}
+                              onClick={() => setCurrentQuestionIndex(idx)}
+                              style={{
+                                width: '100%',
+                                aspectRatio: '1',
+                                borderRadius: '8px',
+                                border: isCurrent ? '2px solid var(--accent-primary)' : isAnswered ? 'none' : '1px solid #cbd5e1',
+                                background: isAnswered ? 'var(--accent-primary)' : 'transparent',
+                                color: isAnswered ? 'white' : '#64748b',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s'
+                              }}
+                            >
+                              {idx + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exam results / review */}
+      {examMode === 'reviewing' && activeExam && (
+        <div className="animate-fade">
+
+          {/* Scorecard panel */}
+          <div className="glass-panel" style={{ padding: '30px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.55))', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+              <div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--accent-secondary)', fontWeight: 600, background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '99px' }}>
+                  KẾT QUẢ THI THỬ
+                </span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginTop: '6px' }}>{activeExam.title}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                  Khối thi: <strong style={{ color: 'var(--accent-primary)' }}>{reviewingPastAttempt?.block}</strong> •
+                  Thời gian hoàn thành: <strong>{reviewingPastAttempt?.timeSpent}</strong> •
+                  Ngày thi: <strong>{reviewingPastAttempt?.date?.split('-').reverse().join('/')}</strong>
+                </p>
+              </div>
+
+              {/* Big score box */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Điểm Số</span>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: reviewingPastAttempt?.score >= 8 ? '#10b981' : reviewingPastAttempt?.score >= 5 ? '#f59e0b' : '#ef4444' }}>
+                    {reviewingPastAttempt?.score?.toFixed(1)}<span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>/10.0</span>
+                  </div>
+                </div>
+
+                <div style={{ borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  <div>Tổng câu đúng: <strong style={{ color: '#10b981' }}>{reviewingPastAttempt?.correctAnswers}/{reviewingPastAttempt?.totalQuestions}</strong></div>
+                  <div style={{ marginTop: '4px' }}>Đánh giá: <strong>{reviewingPastAttempt?.score >= 8 ? 'Xuất sắc! 🎉' : reviewingPastAttempt?.score >= 6.5 ? 'Khá tốt! 👍' : 'Cần cố gắng thêm! 💪'}</strong></div>
+                </div>
+
+                {reviewingPastAttempt?.subjectBreakdown && (
+                  <div style={{ borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <strong style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>MÔN HỌC CHI TIẾT:</strong>
+                    {Object.entries(reviewingPastAttempt.subjectBreakdown).map(([subKey, data]) => (
+                      <div key={subKey} style={{ fontSize: '0.82rem', marginBottom: '2px' }}>
+                        {SUBJECT_NAMES[subKey] || subKey}: <strong>{data.correct}/{data.total}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleExitExam}
+                  className="btn btn-secondary"
+                  style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}
+                >
+                  Quay lại đề thi
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Explanations section */}
+          <div>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={18} color="var(--accent-primary)" /> Chi tiết đáp án và Lời giải giải thích
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {activeExam.questions.map((q, idx) => {
+                const studentAns = getSelectedAnswerKey(q, reviewingPastAttempt);
+                const isCorrect = studentAns === q.correctKey;
+
+                return (
+                  <div key={q.id} className="glass-panel" style={{ borderLeft: isCorrect ? '4px solid #10b981' : '4px solid #ef4444', padding: '24px' }}>
+
+                    {/* Question title */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '14px' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Câu {idx + 1}:
+                      </span>
+
+                      {isCorrect ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: 600, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                          <Check size={12} /> Trả lời đúng
+                        </span>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontWeight: 600, fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                          <X size={12} /> Trả lời sai (hoặc chưa làm)
+                        </span>
+                      )}
+                    </div>
+
+                    <p
+                      style={{ fontSize: '0.98rem', fontWeight: 600, color: '#1e293b', marginBottom: '16px', lineHeight: 1.5 }}
+                      dangerouslySetInnerHTML={{ __html: q.question }}
+                    />
+
+                    {/* Options show */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+                      {q.options.map(option => {
+                        const isCorrectOption = option.key === q.correctKey;
+                        const isStudentOption = option.key === studentAns;
+
+                        let optBg = 'white';
+                        let optBorder = '1px solid #e2e8f0';
+                        let optColor = '#1e293b';
+
+                        if (isCorrectOption) {
+                          optBg = 'rgba(16, 185, 129, 0.08)';
+                          optBorder = '1px solid #10b981';
+                          optColor = '#065f46';
+                        } else if (isStudentOption && !isCorrect) {
+                          optBg = 'rgba(239, 68, 68, 0.08)';
+                          optBorder = '1px solid #ef4444';
+                          optColor = '#991b1b';
+                        }
+
+                        return (
+                          <div
+                            key={option.key}
+                            style={{
+                              padding: '12px 16px',
+                              borderRadius: '8px',
+                              background: optBg,
+                              border: optBorder,
+                              color: optColor,
+                              fontSize: '0.88rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                          >
+                            <strong style={{
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '50%',
+                              background: isCorrectOption ? '#10b981' : isStudentOption ? '#ef4444' : '#f1f5f9',
+                              color: isCorrectOption || isStudentOption ? 'white' : '#64748b',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.72rem'
+                            }}>
+                              {option.key}
+                            </strong>
+                            <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Explanation Box */}
+                    <div style={{
+                      padding: '14px 18px',
+                      background: 'rgba(99, 102, 241, 0.04)',
+                      borderRadius: '8px',
+                      border: '1px dashed rgba(99, 102, 241, 0.2)',
+                      fontSize: '0.85rem',
+                      color: '#4f46e5',
+                      lineHeight: 1.5
+                    }}>
+                      <strong style={{ display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', color: '#6366f1' }}>LỜI GIẢI CHI TIẾT:</strong>
+                      <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

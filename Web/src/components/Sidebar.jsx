@@ -193,7 +193,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       <div style={{ flex: 1 }}>
         {/* Logo */}
         <div className="logo-container">
-          <GraduationCap className="logo-icon" size={32} color="#4f46e5" />
+          <GraduationCap className="logo-icon" size={32} color="var(--accent)" />
           <span className="logo-text">EduPortal</span>
         </div>
 
@@ -214,7 +214,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               {/* Sub-items — always visible for student */}
               <div style={{
                 marginLeft: '10px',
-                borderLeft: '2px solid rgba(99,102,241,0.15)',
+                borderLeft: '2px solid var(--accent-soft)',
                 paddingLeft: '8px',
                 marginBottom: '6px',
                 display: 'flex',
@@ -243,14 +243,14 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                         fontWeight: isActive ? 700 : 500,
                         color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
                         background: isActive
-                          ? 'rgba(99,102,241,0.1)'
+                          ? 'var(--accent-soft)'
                           : 'transparent',
                         transition: 'all 0.15s',
                         position: 'relative'
                       }}
                       onMouseEnter={e => {
                         if (!isActive) {
-                          e.currentTarget.style.background = 'rgba(99,102,241,0.05)';
+                          e.currentTarget.style.background = 'var(--accent-soft)';
                           e.currentTarget.style.color = 'var(--text-primary)';
                         }
                       }}
@@ -267,7 +267,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                       </span>
                       {badge !== null && (
                         <span style={{
-                          background: isActive ? getBadgeColor(item.id) : (getBadgeColor(item.id) === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(99,102,241,0.15)'),
+                          background: isActive ? getBadgeColor(item.id) : (getBadgeColor(item.id) === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-soft)'),
                           color: isActive ? 'white' : getBadgeColor(item.id),
                           borderRadius: '99px',
                           fontSize: '0.65rem',
@@ -287,7 +287,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               </div>
 
               {/* Divider */}
-              <div style={{ height: '1px', background: 'rgba(99,102,241,0.08)', margin: '4px 8px 6px' }} />
+              <div style={{ height: '1px', background: 'var(--line)', margin: '4px 8px 6px' }} />
             </>
           )}
 
@@ -329,7 +329,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
         {/* Profile widget */}
         <div className="user-profile-widget">
-          <div className="avatar" style={{ background: 'linear-gradient(135deg, #818cf8, #4f46e5)' }}>
+          <div className="avatar" style={{ background: 'var(--accent)' }}>
             {getProfileName().charAt(0).toUpperCase()}
           </div>
           <div style={{ overflow: 'hidden' }}>

@@ -1,11 +1,12 @@
 @import './styles/theme.css';
 @import './styles/components.css';
+@import './styles/design-system.css';
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -20,21 +21,27 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
+  background: #d7d9e8;
   border-radius: 99px;
+  border: 3px solid var(--bg);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-primary);
+  background: #c2c5da;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
 /* App Layout Grid */
@@ -85,9 +92,14 @@ body {
 
 /* Modern Typography */
 h1, h2, h3, h4 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Fredoka', 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+.display, .font-display {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 600;
 }
 
 h1 {
@@ -101,36 +113,36 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 11px 18px;
+  border-radius: var(--r-pill);
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all var(--transition-fast);
 }
 
 .btn-primary {
-  background-color: var(--accent-primary); /* Solid fallback background for WCAG contrast checker */
-  background: linear-gradient(135deg, var(--accent-primary), #a78bfa);
+  background-color: var(--accent-primary);
+  background: var(--accent-primary);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+  box-shadow: var(--sh-pop);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-card);
-  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--text-secondary);
+  background: var(--bg);
+  border-color: var(--line-strong);
 }
 
 .btn-danger {
@@ -163,8 +175,8 @@ h1 {
   width: 100%;
   padding: 12px 16px;
   border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-card);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
   color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
@@ -172,8 +184,8 @@ h1 {
 }
 
 .form-control:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px var(--accent-primary-glow);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 /* Badges */
@@ -235,7 +247,7 @@ h1 {
 }
 
 .premium-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg);
 }
 
 /* Tabs */

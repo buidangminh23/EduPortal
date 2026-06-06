@@ -26,9 +26,9 @@ export default function Navbar({ setActiveTab }) {
   };
 
   return (
-    <header className="navbar" style={{ background: 'rgba(255, 255, 255, 0.55)', borderBottom: '1px solid rgba(0, 0, 0, 0.05)' }}>
+    <header className="navbar">
       <div>
-        <h2 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+        <h2 className="display" style={{ fontSize: '1.35rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ink)' }}>
           {getRoleIcon()}
           <span>{getRoleLabel()}</span>
         </h2>
@@ -70,7 +70,7 @@ export default function Navbar({ setActiveTab }) {
             borderRadius: '99px',
             color: 'var(--accent-primary)',
             fontWeight: 600,
-            border: '1px solid rgba(79, 70, 229, 0.15)'
+            border: '1px solid var(--accent-soft)'
           }}>
             <UserCheck size={14} />
             <span>Tài khoản: {userSession.username}</span>

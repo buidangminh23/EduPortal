@@ -1,50 +1,106 @@
-/* theme.css - Hệ thống biến màu sáng (Light-Only) cao cấp */
+/* theme.css — EduPortal design system (trẻ trung • nhiều màu • vui)
+   Nguồn: Claude Design handoff. Font Fredoka (display) + Plus Jakarta Sans (UI).
+   Token legacy (--accent-primary, --bg-app, --text-*) được alias sang hệ mới
+   để toàn bộ màn hình hiện có tự đổi tone + theo màu nhận diện vai trò. */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* HSL Color Palette - Exclusive Premium Light Mode */
-  --bg-app: #f1f5f9; /* Slate 100 soft background */
-  --bg-sidebar: rgba(255, 255, 255, 0.85);
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --border-card: rgba(255, 255, 255, 0.7);
-  --border-card-hover: rgba(99, 102, 241, 0.3); /* Soft indigo highlight */
-  
-  --text-primary: #0f172a; /* Slate 900 */
-  --text-secondary: #475569; /* Slate 600 */
-  --text-muted: #5c6f84; /* Higher contrast slate */
-  
-  --accent-primary: #4f46e5; /* Indigo 600 */
-  --accent-secondary: #047857; /* Emerald 700 - Compliant with WCAG AA */
-  --accent-danger: #b91c1c; /* Higher contrast red */
-  --accent-warning: #f59e0b; /* Amber 500 */
-  --accent-info: #0369a1; /* Sky 700 - Compliant with WCAG AA */
-  
-  --accent-primary-glow: rgba(79, 70, 229, 0.08);
-  --accent-secondary-glow: rgba(4, 120, 87, 0.08);
-  
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-blur: blur(20px);
-  --shadow-premium: 0 12px 30px -10px rgba(79, 70, 229, 0.08), 0 4px 12px -5px rgba(0, 0, 0, 0.03);
-  --shadow-neon: 0 0 20px rgba(79, 70, 229, 0.12);
-  
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  
+  /* Surfaces */
+  --bg: #f3f4fb;
+  --bg-2: #eceefa;
+  --surface: #ffffff;
+  --surface-soft: #fafbff;
+  --line: #ebecf5;
+  --line-strong: #dfe1ef;
+
+  /* Ink */
+  --ink: #1d2138;
+  --ink-soft: #565d7e;
+  --muted-c: #7a8099;
+
+  /* Brand + accent palette */
+  --violet: #6c5ce7;  --violet-soft: #efecff;
+  --blue: #3d7bff;    --blue-soft: #e6efff;
+  --sky: #1fb6f0;     --sky-soft: #e0f5ff;
+  --mint: #14c4a0;    --mint-soft: #ddf8f1;
+  --lime: #5bc85b;    --lime-soft: #e4f7e2;
+  --amber: #ffb020;   --amber-soft: #fff3da;
+  --orange: #ff8a3d;  --orange-soft: #ffeadd;
+  --coral: #ff6b6b;   --coral-soft: #ffe5e5;
+  --pink: #ff5fa2;    --pink-soft: #ffe4f0;
+
+  /* Accent — overridden per role by [data-role] */
+  --accent: var(--violet);
+  --accent-soft: var(--violet-soft);
+  --accent-ink: #4634c9;
+
+  /* Radii */
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 34px;
+  --r-pill: 999px;
+
+  /* Shadows */
+  --sh-sm: 0 2px 8px -3px rgba(35, 38, 80, 0.14);
+  --sh-md: 0 12px 28px -16px rgba(35, 38, 80, 0.30);
+  --sh-lg: 0 26px 50px -24px rgba(35, 38, 80, 0.32);
+  --sh-pop: 0 18px 40px -18px rgba(108, 92, 231, 0.45);
+
+  --t: 0.2s cubic-bezier(.4, 0, .2, 1);
+
+  /* ---- Legacy alias: re-skin existing screens ---- */
+  --bg-app: var(--bg);
+  --bg-sidebar: var(--surface);
+  --bg-card: var(--surface);
+  --border-card: var(--line);
+  --border-card-hover: var(--accent);
+  --border-color: var(--line-strong);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted: var(--muted-c);
+
+  --accent-primary: var(--accent);
+  --accent-secondary: var(--mint);
+  --accent-danger: var(--coral);
+  --accent-warning: var(--amber);
+  --accent-info: var(--sky);
+  --accent-primary-glow: var(--accent-soft);
+  --accent-secondary-glow: var(--mint-soft);
+  --accent-success: var(--lime);
+
+  --glass-bg: var(--surface);
+  --glass-blur: blur(0px);
+  --shadow-premium: var(--sh-sm);
+  --shadow-neon: var(--sh-pop);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
   --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: var(--t);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Biến hoạt họa toàn cục */
+/* Per-role accent theming (matches AppContext currentRole) */
+[data-role="student"] { --accent: var(--blue);   --accent-soft: var(--blue-soft);   --accent-ink: #2356c9; }
+[data-role="teacher"] { --accent: var(--mint);   --accent-soft: var(--mint-soft);   --accent-ink: #0a8b71; }
+[data-role="parent"]  { --accent: var(--orange); --accent-soft: var(--orange-soft); --accent-ink: #d35e16; }
+[data-role="admin"]   { --accent: var(--violet); --accent-soft: var(--violet-soft); --accent-ink: #4634c9; }
+
+/* Global animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 10px rgba(79, 70, 229, 0.1); }
-  50% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.2); }
+  0%, 100% { box-shadow: 0 0 10px rgba(108, 92, 231, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(108, 92, 231, 0.2); }
 }
 
 @keyframes slideInRight {
@@ -65,6 +121,11 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(14px) scale(.99); }
+  to { opacity: 1; transform: none; }
 }
 
 .animate-fade {
