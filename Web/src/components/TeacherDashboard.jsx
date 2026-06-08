@@ -75,6 +75,7 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
   };
 
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showGradeEntryModal, setShowGradeEntryModal] = useState(false);
   const [gradesInput, setGradesInput] = useState({ Math: 0, Literature: 0, Physics: 0, English: 0 });
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
 
@@ -344,7 +345,16 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
       </div>
 
       {/* Content Panes */}
-      {activeTab === 'students' && <TeacherOverview teacherName={userSession?.displayName} />}
+      {activeTab === 'students' && (
+        <TeacherOverview 
+          teacherName={userSession?.displayName} 
+          onEnterGradesClick={() => setShowGradeEntryModal(true)}
+          onAssignHomeworkClick={() => {
+            handleSubTabChange('assignments');
+            setShowCreateAssignmentModal(true);
+          }}
+        />
+      )}
 
       {activeTab === 'qa' && (
         /* Parent QAs Panel */
@@ -1769,9 +1779,85 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
         </div>
       )}
 
+      {/* Grade Entry List Modal */}
+      {showGradeEntryModal && (
+        <div className="modal-overlay" style={{ zIndex: 999 }}>
+          <div className="modal-content animate-fade" style={{ maxWidth: '750px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Danh Sách Nhập Điểm Lớp {classStudents[0]?.class || '12A1'}</h2>
+              <button 
+                type="button"
+                onClick={() => setShowGradeEntryModal(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <table className="premium-table">
+                <thead>
+                  <tr style={{ textAlign: 'left' }}>
+                    <th style={{ padding: '12px 10px' }}>Học sinh</th>
+                    <th style={{ padding: '12px 10px' }}>Toán</th>
+                    <th style={{ padding: '12px 10px' }}>Văn</th>
+                    <th style={{ padding: '12px 10px' }}>Lý</th>
+                    <th style={{ padding: '12px 10px' }}>Anh</th>
+                    <th style={{ padding: '12px 10px', textAlign: 'center' }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classStudents.map(std => (
+                    <tr key={std.id}>
+                      <td style={{ padding: '12px 10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
+                        <img src={std.avatarUrl} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                        {std.name}
+                      </td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Math ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Literature ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Physics ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.English ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setSelectedStudent(std);
+                            setGradesInput({
+                              Math: std.grades.Math || 0,
+                              Literature: std.grades.Literature || 0,
+                              Physics: std.grades.Physics || 0,
+                              English: std.grades.English || 0
+                            });
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                        >
+                          Nhập điểm
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-card)', paddingTop: '15px' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowGradeEntryModal(false)} 
+                className="btn btn-secondary"
+                style={{ padding: '8px 20px' }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grading Modal */}
       {selectedStudent && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ zIndex: 1010 }}>
           <div className="modal-content animate-fade">
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>

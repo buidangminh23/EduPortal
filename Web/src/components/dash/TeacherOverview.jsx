@@ -22,7 +22,7 @@ const SCHEDULE = [
   { time: '14:00', cls: '10A5', topic: 'Ôn tập chương 3', color: 'violet' },
 ];
 
-export default function TeacherOverview({ teacherName }) {
+export default function TeacherOverview({ teacherName, onEnterGradesClick, onAssignHomeworkClick }) {
   const honorMatch = teacherName && teacherName.match(/^(Thầy|Cô)/i);
   const honor = honorMatch && honorMatch[1].toLowerCase() === 'thầy' ? 'Thầy' : 'Cô';
   const shortName = teacherName ? teacherName.replace(/^(Thầy|Cô)\s+/i, '').split(' ').pop() : 'Hoa';
@@ -35,8 +35,8 @@ export default function TeacherOverview({ teacherName }) {
           <p className="page-sub">{honor} đang phụ trách <b style={{ color: 'var(--accent)' }}>3 lớp</b> · <b style={{ color: 'var(--accent)' }}>43 bài</b> cần chấm hôm nay.</p>
         </div>
         <div className="flex gap-12">
-          <button className="btn btn-ghost"><Edit3 size={17} /> Nhập điểm</button>
-          <button className="btn btn-primary"><Plus size={18} /> Giao bài tập</button>
+          <button className="btn btn-ghost" onClick={onEnterGradesClick}><Edit3 size={17} /> Nhập điểm</button>
+          <button className="btn btn-primary" onClick={onAssignHomeworkClick}><Plus size={18} /> Giao bài tập</button>
         </div>
       </div>
 
