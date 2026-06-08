@@ -31,6 +31,7 @@ export default function LibraryHub() {
   // E-book reader state
   const [activeEbook, setActiveEbook] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTicket, setActiveTicket] = useState(null);
 
   // Filter books based on search query and category
   const filteredBooks = (libraryBooks || []).filter(book => {
@@ -65,6 +66,16 @@ export default function LibraryHub() {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     return dateStr.split('-').reverse().join('/');
+  };
+
+  const getExpirationDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() + 7);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy}`;
   };
 
   const getStatusText = (status) => {
@@ -211,7 +222,7 @@ export default function LibraryHub() {
                             {getStatusText(res.status)}
                           </span>
                           {res.status === 'ready' && (
-                            <button onClick={() => alert('Vui lòng mang thẻ học sinh đến thư viện tầng 1 để nhận sách!')} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '0.65rem', borderRadius: 6 }}>
+                            <button onClick={() => setActiveTicket(res)} className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '0.65rem', borderRadius: 6 }}>
                               Xem mã nhận
                             </button>
                           )}
@@ -385,6 +396,84 @@ export default function LibraryHub() {
                 className="btn btn-primary" 
                 style={{ padding: '6px 14px', fontSize: '0.75rem', borderRadius: 8 }}>
                 Trang tiếp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Barcode Ticket Modal */}
+      {activeTicket && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 6000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 24, padding: 24, maxWidth: 380, width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.2)', border: '1px solid rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+            {/* Decorative background gradients */}
+            <div style={{ position: 'absolute', top: -50, right: -50, width: 150, height: 150, background: 'radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -50, left: -50, width: 150, height: 150, background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                🎟️ Vé Nhận Sách Thư Viện
+              </h3>
+              <button onClick={() => setActiveTicket(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+            </div>
+
+            <div style={{ border: '2px dashed rgba(0,0,0,0.08)', borderRadius: 16, padding: 18, background: '#fafafa', position: 'relative' }}>
+              {/* Ticket punch circles on the sides */}
+              <div style={{ position: 'absolute', left: -10, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: 'inset -2px 0 3px rgba(0,0,0,0.05)' }} />
+              <div style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: 'inset 2px 0 3px rgba(0,0,0,0.05)' }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>TÊN SÁCH ĐẶT MƯỢN</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#4f46e5' }}>{activeTicket.bookTitle}</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>HỌC SINH NHẬN</div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>{activeTicket.studentName}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>MÃ PHIẾU</div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', fontFamily: 'monospace' }}>LIB-{activeTicket.id.slice(-6).toUpperCase()}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>NGÀY ĐẶT GIỮ</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formatDate(activeTicket.reserveDate)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>HẠN CHỐT NHẬN SÁCH</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#b91c1c' }}>{getExpirationDate(activeTicket.reserveDate)}</div>
+                  </div>
+                </div>
+
+                {/* Barcode Area */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 12, borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: 16 }}>
+                  {/* Simulated Barcode */}
+                  <div style={{ display: 'flex', gap: '2px', height: 40, width: '100%', background: '#fff', padding: '6px', borderRadius: 4, border: '1px solid rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'stretch' }}>
+                    {[1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3].map((w, idx) => (
+                      <div key={idx} style={{ width: w, background: idx % 2 === 0 ? '#1e293b' : 'transparent' }} />
+                    ))}
+                  </div>
+                  
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: 2 }}>
+                    *LIB{activeTicket.id.slice(-6).toUpperCase()}*
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(16,185,129,0.08)', borderRadius: 12, padding: 12, fontSize: '0.72rem', color: '#065f46', display: 'flex', gap: 6, marginTop: 16 }}>
+              <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>Vui lòng mang mã này đến thư viện tầng 1 để nhận sách giấy. Mã sẽ hết hạn sau 7 ngày.</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="btn btn-primary" onClick={() => setActiveTicket(null)} style={{ fontSize: '0.8rem', padding: '8px 20px', width: '100%' }}>
+                Đóng phiếu nhận
               </button>
             </div>
           </div>

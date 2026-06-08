@@ -65,7 +65,7 @@ export default function CanteenManager() {
   const handleFeedback = (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
-    submitMealFeedback(selectedDish, rating, comment);
+    submitMealFeedback(student?.id, rating, `[${selectedDish}] ${comment}`);
     setComment('');
     alert('Cảm ơn bạn đã gửi đánh giá bữa ăn căng tin!');
   };
