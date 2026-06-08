@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { 
@@ -1217,7 +1218,7 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
       )}
 
       {/* Create Assignment Modal */}
-      {showCreateAssignmentModal && (
+      {showCreateAssignmentModal && createPortal(
         <div className="modal-overlay" style={{ zIndex: 1000 }}>
           <div className="modal-content animate-fade" style={{ maxWidth: '600px', background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1338,7 +1339,8 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Grade Submission Modal */}
@@ -1868,7 +1870,7 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
       )}
 
       {/* Grade Entry List Modal */}
-      {showGradeEntryModal && (
+      {showGradeEntryModal && createPortal(
         <div className="modal-overlay" style={{ zIndex: 999 }}>
           <div className="modal-content animate-fade" style={{ maxWidth: '750px', background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1944,11 +1946,12 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Grading Modal */}
-      {selectedStudent && (
+      {selectedStudent && createPortal(
         <div className="modal-overlay" style={{ zIndex: 1010 }}>
           <div className="modal-content animate-fade" style={{ background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
@@ -2016,7 +2019,8 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
