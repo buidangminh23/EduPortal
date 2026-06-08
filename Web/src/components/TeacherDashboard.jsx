@@ -1782,41 +1782,45 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
       {/* Grade Entry List Modal */}
       {showGradeEntryModal && (
         <div className="modal-overlay" style={{ zIndex: 999 }}>
-          <div className="modal-content animate-fade" style={{ maxWidth: '750px' }}>
+          <div className="modal-content animate-fade" style={{ maxWidth: '750px', background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Danh Sách Nhập Điểm Lớp {classStudents[0]?.class || '12A1'}</h2>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>
+                Danh Sách Nhập Điểm Lớp {classStudents[0]?.class || '12A1'}
+              </h2>
               <button 
                 type="button"
                 onClick={() => setShowGradeEntryModal(false)} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}
               >
                 <X size={20} />
               </button>
             </div>
             
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              <table className="premium-table">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ textAlign: 'left' }}>
-                    <th style={{ padding: '12px 10px' }}>Học sinh</th>
-                    <th style={{ padding: '12px 10px' }}>Toán</th>
-                    <th style={{ padding: '12px 10px' }}>Văn</th>
-                    <th style={{ padding: '12px 10px' }}>Lý</th>
-                    <th style={{ padding: '12px 10px' }}>Anh</th>
-                    <th style={{ padding: '12px 10px', textAlign: 'center' }}>Thao tác</th>
+                  <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Học sinh</th>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Toán</th>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Văn</th>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Lý</th>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>Anh</th>
+                    <th style={{ padding: '12px 10px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {classStudents.map(std => (
-                    <tr key={std.id}>
-                      <td style={{ padding: '12px 10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-                        <img src={std.avatarUrl} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
-                        {std.name}
+                    <tr key={std.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                      <td style={{ padding: '12px 10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: '#f1f5f9' }}>
+                          <img src={std.avatarUrl} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                          <span>{std.name}</span>
+                        </div>
                       </td>
-                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Math ?? '—'}</td>
-                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Literature ?? '—'}</td>
-                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.Physics ?? '—'}</td>
-                      <td style={{ padding: '12px 10px', fontWeight: 700 }}>{std.grades.English ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.Math ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.Literature ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.Physics ?? '—'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.English ?? '—'}</td>
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                         <button 
                           type="button"
@@ -1830,7 +1834,7 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                             });
                           }}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}
                         >
                           Nhập điểm
                         </button>
@@ -1841,12 +1845,12 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
               </table>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-card)', paddingTop: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '15px' }}>
               <button 
                 type="button" 
                 onClick={() => setShowGradeEntryModal(false)} 
                 className="btn btn-secondary"
-                style={{ padding: '8px 20px' }}
+                style={{ padding: '8px 20px', background: '#ffffff', color: '#18181b', fontWeight: 700 }}
               >
                 Đóng
               </button>
@@ -1858,11 +1862,11 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
       {/* Grading Modal */}
       {selectedStudent && (
         <div className="modal-overlay" style={{ zIndex: 1010 }}>
-          <div className="modal-content animate-fade">
-            <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
+          <div className="modal-content animate-fade" style={{ background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+            <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>
               <div className="form-group">
-                <label className="form-label">Điểm Toán</label>
+                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Toán</label>
                 <input 
                   type="number" 
                   step="0.1" 
@@ -1870,12 +1874,13 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                   max="10" 
                   className="form-control" 
                   value={gradesInput.Math}
-                  onChange={e => setGradesInput({...gradesInput, Math: parseFloat(e.target.value)})}
+                  onChange={e => setGradesInput({...gradesInput, Math: parseFloat(e.target.value) || 0})}
                   required 
+                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Điểm Ngữ Văn</label>
+                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Ngữ Văn</label>
                 <input 
                   type="number" 
                   step="0.1" 
@@ -1883,12 +1888,13 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                   max="10" 
                   className="form-control" 
                   value={gradesInput.Literature}
-                  onChange={e => setGradesInput({...gradesInput, Literature: parseFloat(e.target.value)})}
+                  onChange={e => setGradesInput({...gradesInput, Literature: parseFloat(e.target.value) || 0})}
                   required 
+                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Điểm Vật Lý</label>
+                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Vật Lý</label>
                 <input 
                   type="number" 
                   step="0.1" 
@@ -1896,12 +1902,13 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                   max="10" 
                   className="form-control" 
                   value={gradesInput.Physics}
-                  onChange={e => setGradesInput({...gradesInput, Physics: parseFloat(e.target.value)})}
+                  onChange={e => setGradesInput({...gradesInput, Physics: parseFloat(e.target.value) || 0})}
                   required 
+                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Điểm Tiếng Anh</label>
+                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Tiếng Anh</label>
                 <input 
                   type="number" 
                   step="0.1" 
@@ -1909,14 +1916,15 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                   max="10" 
                   className="form-control" 
                   value={gradesInput.English}
-                  onChange={e => setGradesInput({...gradesInput, English: parseFloat(e.target.value)})}
+                  onChange={e => setGradesInput({...gradesInput, English: parseFloat(e.target.value) || 0})}
                   required 
+                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                 />
               </div>
               
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                <button type="button" onClick={() => setSelectedStudent(null)} className="btn btn-secondary" style={{ flex: 1 }}>Hủy</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Cập nhật</button>
+                <button type="button" onClick={() => setSelectedStudent(null)} className="btn btn-secondary" style={{ flex: 1, background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}>Hủy</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }}>Cập nhật</button>
               </div>
             </form>
           </div>
