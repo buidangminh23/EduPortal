@@ -1,4 +1,5 @@
-import { GraduationCap, Award, BookOpen, Clock, Users, ArrowRight, ShieldCheck, Sparkles, Video, MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { GraduationCap, Award, BookOpen, Users, ArrowRight, Sparkles, Video, MessageSquare } from 'lucide-react';
 
 const mockFeatures = [
   { id: 1, title: 'AI Gia Sư 24/7', desc: 'Hỏi đáp bài tập, tự ôn luyện lý thuyết mọi môn học với trợ lý ảo thông minh.', icon: Sparkles, color: 'var(--amber)' },
@@ -10,12 +11,40 @@ const mockFeatures = [
 ];
 
 const mockNews = [
-  { id: 'N1', title: 'Thông báo lịch thi học kỳ II năm học 2025 - 2026', date: '2026-06-05', summary: 'Chi tiết phòng thi, sơ đồ bàn thi và nội quy phòng kiểm tra dành cho học sinh cả 3 khối...' },
-  { id: 'N2', title: 'Học sinh Nguyễn Du xuất sắc đạt giải Nhất kì thi Tin học trẻ', date: '2026-05-28', summary: 'Chúc mừng em Nguyễn Hoàng Nam lớp 12A1 đã đạt giải Nhất trong kì thi Tin học trẻ cấp tỉnh vừa qua...' },
-  { id: 'N3', title: 'Ngày hội hướng nghiệp và tuyển sinh Đại học năm 2026', date: '2026-04-18', summary: 'Hơn 20 trường Đại học top đầu cả nước đã tham gia ngày hội tư vấn chọn ngành, chọn nghề tại sân trường...' },
+  {
+    id: 'N1',
+    title: 'Thông báo lịch thi học kỳ II năm học 2025 - 2026',
+    date: '2026-06-05',
+    summary: 'Chi tiết phòng thi, sơ đồ bàn thi và nội quy phòng kiểm tra dành cho học sinh cả 3 khối...',
+    detail: 'Nhà trường công bố lịch thi học kỳ II, sơ đồ phòng thi và nội quy kiểm tra. Phụ huynh và học sinh đăng nhập hệ thống để xem lịch cá nhân, môn thi, phòng thi và các mốc nhắc việc quan trọng.'
+  },
+  {
+    id: 'N2',
+    title: 'Học sinh Nguyễn Du xuất sắc đạt giải Nhất kì thi Tin học trẻ',
+    date: '2026-05-28',
+    summary: 'Chúc mừng em Nguyễn Hoàng Nam lớp 12A1 đã đạt giải Nhất trong kì thi Tin học trẻ cấp tỉnh vừa qua...',
+    detail: 'Thành tích của em Nguyễn Hoàng Nam là kết quả từ quá trình tự học, tham gia câu lạc bộ công nghệ và được giáo viên bộ môn hỗ trợ liên tục qua hệ thống học liệu số.'
+  },
+  {
+    id: 'N3',
+    title: 'Ngày hội hướng nghiệp và tuyển sinh Đại học năm 2026',
+    date: '2026-04-18',
+    summary: 'Hơn 20 trường Đại học top đầu cả nước đã tham gia ngày hội tư vấn chọn ngành, chọn nghề tại sân trường...',
+    detail: 'Sự kiện cung cấp thông tin tuyển sinh, tư vấn chọn ngành và các phiên trò chuyện cùng cựu học sinh. Học sinh có thể đăng nhập để lưu ngành quan tâm và nhận gợi ý định hướng cá nhân.'
+  },
 ];
 
 export default function LandingPage({ onLogin }) {
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [selectedNews, setSelectedNews] = useState(null);
+  const [showAllNews, setShowAllNews] = useState(false);
+
+  const closeDialog = () => {
+    setSelectedFeature(null);
+    setSelectedNews(null);
+    setShowAllNews(false);
+  };
+
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: '100vh', width: '100%' }}>
       {/* Navbar Header */}
@@ -117,15 +146,22 @@ export default function LandingPage({ onLogin }) {
           {mockFeatures.map(f => {
             const Icon = f.icon;
             return (
-              <div 
+              <button
+                type="button"
                 key={f.id} 
                 className="glass-panel" 
+                aria-label={`Xem tính năng ${f.title}`}
+                onClick={() => setSelectedFeature(f)}
                 style={{ 
                   borderRadius: '20px', 
                   padding: '24px', 
                   border: '1px solid rgba(0,0,0,0.06)',
                   background: 'var(--surface)',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  textAlign: 'left',
+                  width: '100%',
+                  cursor: 'pointer',
+                  color: 'inherit'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
@@ -141,7 +177,7 @@ export default function LandingPage({ onLogin }) {
                 </div>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', fontWeight: 700 }}>{f.title}</h3>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>{f.desc}</p>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -155,7 +191,7 @@ export default function LandingPage({ onLogin }) {
               <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>Tin Tức & Hoạt Động Mới Nhất</h2>
               <p style={{ color: 'var(--text-secondary)', marginTop: '6px', margin: 0 }}>Cập nhật các thông báo và sự kiện giáo dục của nhà trường.</p>
             </div>
-            <button className="btn btn-secondary">Xem tất cả tin tức</button>
+            <button className="btn btn-secondary" onClick={() => setShowAllNews(true)}>Xem tất cả tin tức</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
@@ -179,7 +215,7 @@ export default function LandingPage({ onLogin }) {
                 </div>
                 
                 <button 
-                  onClick={onLogin}
+                  onClick={() => setSelectedNews(n)}
                   style={{ 
                     marginTop: '20px', 
                     background: 'transparent', 
@@ -202,6 +238,101 @@ export default function LandingPage({ onLogin }) {
           </div>
         </div>
       </section>
+
+      {(selectedFeature || selectedNews || showAllNews) && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            background: 'rgba(29,33,56,0.48)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDialog();
+          }}
+        >
+          <div style={{
+            width: '100%',
+            maxWidth: showAllNews ? '760px' : '520px',
+            maxHeight: '86vh',
+            overflowY: 'auto',
+            background: 'var(--surface)',
+            borderRadius: '20px',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.22)',
+            border: '1px solid rgba(255,255,255,0.65)',
+            padding: '26px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
+              <div>
+                <div style={{ color: 'var(--accent-ink)', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                  {selectedFeature ? 'Tính năng nổi bật' : 'Tin tức nhà trường'}
+                </div>
+                <h2 style={{ margin: 0, fontSize: '1.45rem', color: 'var(--text-primary)' }}>
+                  {selectedFeature?.title || selectedNews?.title || 'Tất cả tin tức'}
+                </h2>
+              </div>
+              <button className="icon-btn" onClick={closeDialog} aria-label="Đóng">×</button>
+            </div>
+
+            {selectedFeature && (
+              <>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 22px' }}>{selectedFeature.desc}</p>
+                <div style={{ background: 'var(--accent-soft)', color: 'var(--accent-ink)', borderRadius: '14px', padding: '14px 16px', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '22px' }}>
+                  Đăng nhập để dùng trực tiếp tính năng này trong đúng vai trò học sinh, phụ huynh, giáo viên hoặc BGH.
+                </div>
+                <button className="btn btn-primary" onClick={onLogin} style={{ width: '100%' }}>
+                  Đăng nhập để trải nghiệm
+                  <ArrowRight size={16} />
+                </button>
+              </>
+            )}
+
+            {selectedNews && (
+              <>
+                <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '12px' }}>{selectedNews.date}</div>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, margin: '0 0 14px' }}>{selectedNews.summary.replace('...', '.')}</p>
+                <p style={{ color: 'var(--text-primary)', lineHeight: 1.7, margin: 0 }}>{selectedNews.detail}</p>
+              </>
+            )}
+
+            {showAllNews && (
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {mockNews.map(n => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => {
+                      setShowAllNews(false);
+                      setSelectedNews(n);
+                    }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      background: 'var(--bg-app)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      borderRadius: '14px',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      color: 'inherit'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>{n.date}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>{n.title}</div>
+                    <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{n.summary}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer style={{ 

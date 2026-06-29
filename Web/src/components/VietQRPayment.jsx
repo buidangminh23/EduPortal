@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { QrCode, CreditCard, CheckCircle, X, Smartphone } from 'lucide-react';
 
@@ -9,6 +10,8 @@ const BANKS = [
   { name: 'Techcombank', code: '970407', color: '#EF3829', logo: '🔴' },
   { name: 'MB Bank', code: '970422', color: '#00417E', logo: '🔵' },
 ];
+
+const PAYMENT_MODAL_Z_INDEX = 10000;
 
 // Simple QR-like visual (SVG pattern simulating a QR code)
 function MockQRCode({ studentName }) {
@@ -45,6 +48,8 @@ export default function VietQRPayment({ studentId, feeItem, onClose, onSuccess }
   const fmtVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
   const accountNo = `${selectedBank.code}${student.id.replace('HS', '0000')}`;
   const content = `${student.id} HOCPHI ${fee.name.replace(/\s+/g, '').slice(0, 15).toUpperCase()}`;
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
+  if (!portalTarget) return null;
 
   const handleConfirm = () => {
     setConfirming(true);
@@ -56,8 +61,8 @@ export default function VietQRPayment({ studentId, feeItem, onClose, onSuccess }
   };
 
   if (step === 'success') {
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 6000, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    return createPortal((
+      <div style={{ position: 'fixed', inset: 0, zIndex: PAYMENT_MODAL_Z_INDEX, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ background: '#fff', borderRadius: 24, padding: 40, maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 32px 80px rgba(0,0,0,0.2)' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <CheckCircle size={36} color="#10b981" />
@@ -75,11 +80,11 @@ export default function VietQRPayment({ studentId, feeItem, onClose, onSuccess }
           </button>
         </div>
       </div>
-    );
+    ), portalTarget);
   }
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 6000, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  return createPortal((
+    <div style={{ position: 'fixed', inset: 0, zIndex: PAYMENT_MODAL_Z_INDEX, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', borderRadius: 24, padding: 0, maxWidth: 480, width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -155,5 +160,5 @@ export default function VietQRPayment({ studentId, feeItem, onClose, onSuccess }
         </div>
       </div>
     </div>
-  );
+  ), portalTarget);
 }
