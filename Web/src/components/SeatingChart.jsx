@@ -296,7 +296,7 @@ export default function SeatingChart() {
     const charts = { ...seatingCharts };
     let changed = false;
     CLASS_LIST.forEach(cls => {
-      if (!charts[cls] || charts[cls].length === 0) {
+      if (!charts[cls] || charts[cls].length < TOTAL_SEATS) {
         const src = (contextStudents && contextStudents.length > 0)
           ? contextStudents.filter(s => s.class === cls || s.className === cls)
           : (MOCK_STUDENTS_BY_CLASS[cls] ?? []);

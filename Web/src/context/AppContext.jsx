@@ -775,7 +775,14 @@ export const AppProvider = ({ children }) => {
 
   const [students, setStudents] = useState(() => {
     const saved = localStorage.getItem('students');
-    return saved ? JSON.parse(saved) : initialStudents;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.length < 160) {
+        return initialStudents;
+      }
+      return parsed;
+    }
+    return initialStudents;
   });
 
   const [announcements, setAnnouncements] = useState(() => {
