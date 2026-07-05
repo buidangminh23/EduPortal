@@ -65,6 +65,24 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showGradeEntryModal, setShowGradeEntryModal] = useState(false);
   const [gradesInput, setGradesInput] = useState({ Math: 0, Literature: 0, Physics: 0, English: 0 });
+  const [selectedSubject, setSelectedSubject] = useState('Math');
+  const [detailedGradesInput, setDetailedGradesInput] = useState({ oral: 0, quiz15m: 0, test1Period: 0, semester: 0 });
+
+  const loadDetailedGradesForSubject = (student, subject) => {
+    if (!student) return;
+    if (student.gradesDetailed && student.gradesDetailed[subject]) {
+      setDetailedGradesInput(student.gradesDetailed[subject]);
+    } else {
+      const score = student.grades[subject] || 0;
+      setDetailedGradesInput({ oral: score, quiz15m: score, test1Period: score, semester: score });
+    }
+  };
+
+  useEffect(() => {
+    if (selectedStudent) {
+      loadDetailedGradesForSubject(selectedStudent, selectedSubject);
+    }
+  }, [selectedStudent, selectedSubject]);
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
 
   // Teacher Leave States
@@ -96,6 +114,13 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
   const [selectedGradingSubmission, setSelectedGradingSubmission] = useState(null);
   const [gradingScore, setGradingScore] = useState('');
   const [gradingFeedback, setGradingFeedback] = useState('');
+  
+  // AI Quiz Creator States
+  const [assignmentMode, setAssignmentMode] = useState('normal'); // 'normal' | 'ai_quiz'
+  const [aiQuizTopic, setAiQuizTopic] = useState('');
+  const [aiQuizSubject, setAiQuizSubject] = useState('English');
+  const [aiQuizQuestions, setAiQuizQuestions] = useState([]);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
   // Part 6 local states
   const [resTitle, setResTitle] = useState('');
@@ -112,10 +137,10 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
 
   const handleGenerateComment = () => {
     if (!selectedStudent) return;
-    const m = gradesInput.Math;
-    const l = gradesInput.Literature;
-    const p = gradesInput.Physics;
-    const e = gradesInput.English;
+    const m = selectedStudent.grades.Math || 0;
+    const l = selectedStudent.grades.Literature || 0;
+    const p = selectedStudent.grades.Physics || 0;
+    const e = selectedStudent.grades.English || 0;
     const avg = (m + l + p + e) / 4;
     const logs = conductLogs ? conductLogs.filter(cl => cl.studentId === selectedStudent.id) : [];
     const conductScore = 100 + logs.reduce((sum, curr) => sum + curr.points, 0);
@@ -235,13 +260,14 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
     e.preventDefault();
     if (!selectedStudent) return;
     
-    // Update all grades
-    Object.keys(gradesInput).forEach(subject => {
-      editStudentGrades(selectedStudent.id, subject, gradesInput[subject]);
-    });
+    const { oral, quiz15m, test1Period, semester } = detailedGradesInput;
+    const avg = parseFloat(((oral + quiz15m + test1Period * 2 + semester * 3) / 7).toFixed(1));
+
+    // Update with detailed grades and its calculated average
+    editStudentGrades(selectedStudent.id, selectedSubject, avg, detailedGradesInput);
 
     setSelectedStudent(null);
-    alert(`Đã cập nhật bảng điểm của học sinh ${selectedStudent.name}!`);
+    alert(`Đã cập nhật bảng điểm chi tiết môn ${selectedSubject === 'Math' ? 'Toán' : selectedSubject === 'Literature' ? 'Ngữ văn' : selectedSubject === 'Physics' ? 'Vật lý' : 'Tiếng Anh'} của học sinh ${selectedStudent.name}!`);
   };
 
   const handleAnswerSubmit = (qaId) => {
@@ -303,20 +329,59 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
     createAssignment(
       'T01',
       'Nguyễn Minh Triết',
-      'Toán học',
+      assignmentMode === 'ai_quiz' ? (aiQuizSubject === 'English' ? 'Tiếng Anh' : aiQuizSubject === 'Physics' ? 'Vật lý' : 'Toán học') : 'Toán học',
       newAssignmentClassTarget,
       newAssignmentTitle,
       newAssignmentContent,
       newAssignmentDeadline,
-      selectedFile ? selectedFile.name : null
+      selectedFile ? selectedFile.name : null,
+      assignmentMode === 'ai_quiz' ? aiQuizQuestions : null
     );
     
     setNewAssignmentTitle('');
     setNewAssignmentContent('');
     setNewAssignmentDeadline('');
     setSelectedFile(null);
+    setAssignmentMode('normal');
+    setAiQuizTopic('');
+    setAiQuizQuestions([]);
     setShowCreateAssignmentModal(false);
     alert('Đã giao bài tập mới thành công!');
+  };
+
+  const handleTriggerAiQuizGen = () => {
+    if (!aiQuizTopic.trim()) {
+      alert('Vui lòng điền chủ đề bài trắc nghiệm!');
+      return;
+    }
+    setIsGeneratingQuiz(true);
+    setTimeout(() => {
+      let questions = [];
+      if (aiQuizSubject === 'English') {
+        questions = [
+          { question: `Tìm câu đúng sử dụng Thì Hiện tại hoàn thành với chủ đề "${aiQuizTopic}":`, options: [`A. She has just learned about ${aiQuizTopic}.`, `B. She is learning about ${aiQuizTopic}.`, `C. She learned about ${aiQuizTopic} yesterday.`, `D. She will learn about ${aiQuizTopic}.`], correctKey: 'A' },
+          { question: `Chia động từ: "We ___ (study) ${aiQuizTopic} for three weeks."`, options: ['A. studied', 'B. have studied', 'C. are studying', 'D. will study'], correctKey: 'B' },
+          { question: `Chọn đáp án đúng nhất điền vào chỗ trống: "They haven't finished the test about ${aiQuizTopic} ___."`, options: ['A. already', 'B. yet', 'C. since', 'D. ago'], correctKey: 'B' },
+        ];
+      } else if (aiQuizSubject === 'Physics') {
+        questions = [
+          { question: `Định luật/Công thức cốt lõi liên quan đến chủ đề "${aiQuizTopic}":`, options: ['A. Công thức liên hệ độc lập thời gian', 'B. Định luật bảo toàn cơ năng', 'C. Hệ thức Anh-xtanh', 'D. Tất cả đều đúng'], correctKey: 'D' },
+          { question: `Tính chất quan trọng nhất khi nghiên cứu về "${aiQuizTopic}":`, options: ['A. Biên độ luôn suy giảm theo thời gian', 'B. Pha ban đầu luôn bằng không', 'C. Tần số luôn phụ thuộc vào ngoại lực', 'D. Chu kỳ dao động không đổi'], correctKey: 'D' },
+          { question: `Đơn vị đo lường tương ứng của đại lượng trong bài tập "${aiQuizTopic}":`, options: ['A. Hz (Héc)', 'B. J (Jun)', 'C. N (Niuton)', 'D. Tùy thuộc vào đại lượng cụ thể'], correctKey: 'D' },
+        ];
+      } else { // Math
+        questions = [
+          { question: `Giải phương trình/bài toán ứng dụng chủ đề "${aiQuizTopic}":`, options: ['A. Nghiệm duy nhất x = 0', 'B. Nghiệm x thuộc khoảng (0;1)', 'C. Vô số nghiệm thực', 'D. Cần điều kiện biên để xác định nghiệm'], correctKey: 'D' },
+          { question: `Để tìm điểm cực trị hoặc tối ưu hóa trong bài toán "${aiQuizTopic}", ta dùng:`, options: ['A. Đạo hàm bậc nhất f\'(x) = 0', 'B. Tính tích phân cận từ 0 đến vô cực', 'C. Vẽ đồ thị hàm số mũ', 'D. Giải phương trình vi phân bậc hai'], correctKey: 'A' },
+          { question: `Phát biểu nào sau đây là ĐÚNG về lý thuyết "${aiQuizTopic}":`, options: ['A. Là ánh xạ liên tục trên tập số thực', 'B. Là tập hợp rỗng', 'C. Luôn có giá trị âm', 'D. Là hàm số tuần hoàn với chu kỳ tuần hoàn pi'], correctKey: 'A' },
+        ];
+      }
+      setAiQuizQuestions(questions);
+      setNewAssignmentTitle(`Bài trắc nghiệm AI: Chuyên đề ${aiQuizTopic}`);
+      setNewAssignmentContent(`Học sinh hãy hoàn thành bài trắc nghiệm 3 câu hỏi do AI tạo tự động về chuyên đề: ${aiQuizTopic}. Bài nộp sẽ được hệ thống chấm điểm tự động ngay lập tức.`);
+      setIsGeneratingQuiz(false);
+      alert('Đã tạo đề trắc nghiệm bằng AI thành công! Bạn có thể xem trước nội dung bên dưới.');
+    }, 1200);
   };
 
   const handleGradeSubmissionSubmit = (e) => {
@@ -1216,6 +1281,91 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
             </div>
             
             <form onSubmit={handleAssignmentSubmit}>
+              {/* Mode Toggle Tabs */}
+              <div style={{ display: 'flex', background: '#27272a', padding: '4px', borderRadius: '10px', marginBottom: '20px' }}>
+                <button
+                  type="button"
+                  onClick={() => setAssignmentMode('normal')}
+                  style={{
+                    flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600,
+                    background: assignmentMode === 'normal' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                    color: '#ffffff', cursor: 'pointer', transition: 'all 0.15s ease'
+                  }}
+                >
+                  📝 Tự luận / Bài tập thường
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssignmentMode('ai_quiz')}
+                  style={{
+                    flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600,
+                    background: assignmentMode === 'ai_quiz' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                    color: '#ffffff', cursor: 'pointer', transition: 'all 0.15s ease'
+                  }}
+                >
+                  🤖 Tạo trắc nghiệm tự động bằng AI
+                </button>
+              </div>
+
+              {assignmentMode === 'ai_quiz' && (
+                <div style={{ background: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.18)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🤖 Cấu hình AI Quiz Generator
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px', marginBottom: '12px' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Môn học trắc nghiệm</label>
+                      <select
+                        className="form-control"
+                        value={aiQuizSubject}
+                        onChange={e => setAiQuizSubject(e.target.value)}
+                        style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                      >
+                        <option value="English">Tiếng Anh</option>
+                        <option value="Physics">Vật lý</option>
+                        <option value="Math">Toán học</option>
+                      </select>
+                    </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Chủ đề thi / Chuyên đề học *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ví dụ: Passive Voice, Dao động cơ..."
+                        value={aiQuizTopic}
+                        onChange={e => setAiQuizTopic(e.target.value)}
+                        style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTriggerAiQuizGen}
+                    className="btn btn-primary"
+                    disabled={isGeneratingQuiz}
+                    style={{ width: '100%', padding: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    {isGeneratingQuiz ? '🤖 Đang thiết lập bộ câu hỏi...' : '⚡ Sinh bộ đề trắc nghiệm bằng AI'}
+                  </button>
+
+                  {/* Preview Generated Questions */}
+                  {aiQuizQuestions.length > 0 && (
+                    <div style={{ marginTop: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#a1a1aa', fontWeight: 600, marginBottom: '8px' }}>XEM TRƯỚC CÂU HỎI AI ĐÃ SINH:</div>
+                      {aiQuizQuestions.map((q, idx) => (
+                        <div key={idx} style={{ fontSize: '0.8rem', color: '#e2e8f0', marginBottom: '8px', borderBottom: idx < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none', paddingBottom: '6px' }}>
+                          <strong>Câu {idx + 1}:</strong> {q.question}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', fontSize: '0.72rem', color: '#94a3b8' }}>
+                            {q.options.map((opt, oIdx) => <div key={oIdx}>{opt}</div>)}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>✓ Đáp án đúng: {q.correctKey}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label" style={{ color: '#cbd5e1' }}>Tiêu đề bài tập</label>
                 <input 
@@ -1900,6 +2050,8 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                           onClick={() => {
                             setSelectedStudent(std);
                             setGeneratedComment('');
+                            setSelectedSubject('Math');
+                            loadDetailedGradesForSubject(std, 'Math');
                             setGradesInput({
                               Math: std.grades.Math || 0,
                               Literature: std.grades.Literature || 0,
@@ -1940,61 +2092,69 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
           <div className="modal-content animate-fade" style={{ background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>
-              <div className="form-group">
-                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Toán</label>
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  min="0" 
-                  max="10" 
-                  className="form-control" 
-                  value={gradesInput.Math}
-                  onChange={e => setGradesInput({...gradesInput, Math: parseFloat(e.target.value) || 0})}
-                  required 
-                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                />
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ color: '#cbd5e1', fontWeight: 600 }}>Môn học nhập điểm</label>
+                <select
+                  className="form-control"
+                  value={selectedSubject}
+                  onChange={e => setSelectedSubject(e.target.value)}
+                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', height: '42px' }}
+                >
+                  <option value="Math">Toán học</option>
+                  <option value="Literature">Ngữ văn</option>
+                  <option value="Physics">Vật lý</option>
+                  <option value="English">Tiếng Anh</option>
+                </select>
               </div>
-              <div className="form-group">
-                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Ngữ Văn</label>
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  min="0" 
-                  max="10" 
-                  className="form-control" 
-                  value={gradesInput.Literature}
-                  onChange={e => setGradesInput({...gradesInput, Literature: parseFloat(e.target.value) || 0})}
-                  required 
-                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm Miệng (hs 1)</label>
+                  <input 
+                    type="number" step="0.1" min="0" max="10" className="form-control" 
+                    value={detailedGradesInput.oral}
+                    onChange={e => setDetailedGradesInput({...detailedGradesInput, oral: parseFloat(e.target.value) || 0})}
+                    required 
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm 15 Phút (hs 1)</label>
+                  <input 
+                    type="number" step="0.1" min="0" max="10" className="form-control" 
+                    value={detailedGradesInput.quiz15m}
+                    onChange={e => setDetailedGradesInput({...detailedGradesInput, quiz15m: parseFloat(e.target.value) || 0})}
+                    required 
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm 1 Tiết (hs 2)</label>
+                  <input 
+                    type="number" step="0.1" min="0" max="10" className="form-control" 
+                    value={detailedGradesInput.test1Period}
+                    onChange={e => setDetailedGradesInput({...detailedGradesInput, test1Period: parseFloat(e.target.value) || 0})}
+                    required 
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm Học Kỳ (hs 3)</label>
+                  <input 
+                    type="number" step="0.1" min="0" max="10" className="form-control" 
+                    value={detailedGradesInput.semester}
+                    onChange={e => setDetailedGradesInput({...detailedGradesInput, semester: parseFloat(e.target.value) || 0})}
+                    required 
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Vật Lý</label>
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  min="0" 
-                  max="10" 
-                  className="form-control" 
-                  value={gradesInput.Physics}
-                  onChange={e => setGradesInput({...gradesInput, Physics: parseFloat(e.target.value) || 0})}
-                  required 
-                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ color: '#cbd5e1' }}>Điểm Tiếng Anh</label>
-                <input 
-                  type="number" 
-                  step="0.1" 
-                  min="0" 
-                  max="10" 
-                  className="form-control" 
-                  value={gradesInput.English}
-                  onChange={e => setGradesInput({...gradesInput, English: parseFloat(e.target.value) || 0})}
-                  required 
-                  style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                />
+
+              <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 500 }}>Điểm trung bình tạm tính:</span>
+                <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10b981' }}>
+                  {((detailedGradesInput.oral + detailedGradesInput.quiz15m + detailedGradesInput.test1Period * 2 + detailedGradesInput.semester * 3) / 7).toFixed(1)}
+                </span>
               </div>
 
               {/* AI Auto Comment Section */}

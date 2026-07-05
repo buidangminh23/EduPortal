@@ -12,7 +12,8 @@ import {
   Plus,
   Send,
   RotateCcw,
-  Eraser
+  Eraser,
+  Sparkles
 } from 'lucide-react';
 
 export default function EduMeet() {
@@ -26,6 +27,9 @@ export default function EduMeet() {
   const [camOn, setCamOn] = useState(true);
   const [screenShare, setScreenShare] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
+  const [showReactionMenu, setShowReactionMenu] = useState(false);
+  const [reactions, setReactions] = useState([]);
+  const [camFilter, setCamFilter] = useState('none');
   
   // Tabs & panels
   const [activePanel, setActivePanel] = useState('chat'); // chat, whiteboard, polls
@@ -35,6 +39,8 @@ export default function EduMeet() {
   // WebRTC User Video stream
   const localVideoRef = useRef(null);
   const [stream, setStream] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
+  const screenVideoRef = useRef(null);
 
   // Whiteboard canvas refs
   const whiteboardCanvasRef = useRef(null);
@@ -57,6 +63,49 @@ export default function EduMeet() {
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollOpt1, setNewPollOpt1] = useState('');
   const [newPollOpt2, setNewPollOpt2] = useState('');
+
+  // Web Audio API Sound Synthesizer for notifications
+  const playSound = (type) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      if (type === 'hand') {
+        // Double notification ding
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.35);
+      } else if (type === 'reaction') {
+        // Pop sound
+        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.12);
+      }
+    } catch (err) {
+      console.warn("Web Audio API not allowed/supported:", err);
+    }
+  };
+
+  const triggerReaction = (emoji) => {
+    playSound('reaction');
+    const id = Date.now() + Math.random();
+    const style = {
+      left: `${20 + Math.random() * 60}%`,
+    };
+    setReactions(prev => [...prev, { id, emoji, style }]);
+    setTimeout(() => {
+      setReactions(prev => prev.filter(r => r.id !== id));
+    }, 3000);
+  };
 
   // Get name for meeting label
   const getUserNameLabel = () => {
@@ -96,11 +145,41 @@ export default function EduMeet() {
     }
   };
 
+  const startScreenShare = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      setScreenStream(mediaStream);
+      setScreenShare(true);
+      
+      mediaStream.getVideoTracks()[0].onended = () => {
+        stopScreenShare(mediaStream);
+      };
+      
+      setTimeout(() => {
+        if (screenVideoRef.current) {
+          screenVideoRef.current.srcObject = mediaStream;
+        }
+      }, 100);
+    } catch (err) {
+      console.warn("Screen share cancelled or failed, falling back to mock:", err.message);
+      setScreenShare(true);
+    }
+  };
+
+  const stopScreenShare = (customStream = null) => {
+    const activeStream = customStream || screenStream;
+    if (activeStream) {
+      activeStream.getTracks().forEach(track => track.stop());
+    }
+    setScreenStream(null);
+    setScreenShare(false);
+  };
+
   const handleLeaveCall = () => {
     stopCamera();
+    stopScreenShare();
     setInCall(false);
     setHandRaised(false);
-    setScreenShare(false);
   };
 
   // Sync camera track with camOn state toggle
@@ -132,6 +211,7 @@ export default function EduMeet() {
   useEffect(() => {
     return () => {
       stopCamera();
+      stopScreenShare();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -293,6 +373,49 @@ export default function EduMeet() {
 
   return (
     <div className="animate-fade" style={{ height: 'calc(100vh - 120px)' }}>
+      <style>{`
+        @keyframes floatUp {
+          0% {
+            transform: translateY(0) scale(0.5);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+            transform: translateY(-40px) scale(1.2);
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-360px) scale(0.9) rotate(15deg);
+            opacity: 0;
+          }
+        }
+        .reaction-menu {
+          position: absolute;
+          bottom: 56px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(30, 30, 36, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 20px;
+          padding: 6px 12px;
+          display: flex;
+          gap: 10px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+          z-index: 1000;
+        }
+        .reaction-emoji-btn {
+          font-size: 1.35rem;
+          background: none;
+          border: none;
+          cursor: pointer;
+          transition: transform 0.15s ease;
+        }
+        .reaction-emoji-btn:hover {
+          transform: scale(1.35);
+        }
+      `}</style>
       {!inCall ? (
         // Lobby view
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '20px' }}>
@@ -330,7 +453,25 @@ export default function EduMeet() {
         // Call screen view
         <div className="meet-layout">
           {/* Main Stage: Videos / Whiteboard */}
-          <div className="meet-stage">
+          <div className="meet-stage" style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* Floating reactions overlay */}
+            {reactions.map(r => (
+              <span
+                key={r.id}
+                style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  fontSize: '2.5rem',
+                  zIndex: 100,
+                  animation: 'floatUp 3s cubic-bezier(0.08, 0.82, 0.17, 1) forwards',
+                  pointerEvents: 'none',
+                  ...r.style
+                }}
+              >
+                {r.emoji}
+              </span>
+            ))}
+
             {activePanel === 'whiteboard' ? (
               // Whiteboard Stage
               <div className="whiteboard-container">
@@ -401,15 +542,112 @@ export default function EduMeet() {
                   />
                 </div>
               </div>
+            ) : screenShare ? (
+              /* Screen Share View */
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#09090b', borderRadius: 12, overflow: 'hidden', border: '2.5px solid var(--accent-primary, #6366f1)', position: 'relative' }}>
+                <div style={{ background: '#18181b', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Monitor size={14} /> Trình chiếu màn hình {screenStream ? 'thực tế' : 'giả lập'}
+                  </span>
+                  <button 
+                    onClick={() => stopScreenShare()} 
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '4px 10px', fontSize: '0.72rem', background: '#ef4444', color: 'white', border: 'none' }}
+                  >
+                    Dừng trình chiếu
+                  </button>
+                </div>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 20 }}>
+                  {screenStream ? (
+                    <video 
+                      ref={screenVideoRef} 
+                      autoPlay 
+                      playsInline 
+                      style={{ width: '100%', height: '100%', borderRadius: 8, background: '#000', objectFit: 'contain' }} 
+                    />
+                  ) : (
+                    /* Slide Mockup */
+                    <div style={{ background: '#1e1e24', width: '100%', height: '100%', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '40px', color: '#f8fafc', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                      <span style={{ fontSize: '1.25rem', color: '#818cf8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Bài giảng Tích phân ôn tập HK2</span>
+                      <h1 style={{ fontSize: '2.4rem', fontWeight: 900, margin: '14px 0', textAlign: 'center' }}>Chuyên đề III: Ứng dụng Tích phân tính diện tích</h1>
+                      <p style={{ fontSize: '1rem', color: '#cbd5e1', maxWidth: '500px', textAlign: 'center', lineHeight: 1.5 }}>
+                        Công thức tính diện tích hình phẳng giới hạn bởi đồ thị hàm số y = f(x), trục hoành và hai đường thẳng x=a, x=b:
+                      </p>
+                      <div style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, padding: '12px 24px', fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981', margin: '20px 0' }}>
+                        S = ∫ |f(x)| dx (từ a đến b)
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               // Webcam Video Grid
               <div className="video-grid">
                 {/* User Camera Card */}
-                <div className={`video-card ${currentRole === 'teacher' ? 'active-speaker' : ''}`}>
+                <div className={`video-card ${currentRole === 'teacher' ? 'active-speaker' : ''}`} style={{ position: 'relative' }}>
+                  {/* Hand raise badge */}
+                  {handRaised && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      background: '#10b981',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '99px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      boxShadow: '0 0 12px rgba(16,185,129,0.5)',
+                      zIndex: 10
+                    }}>
+                      <Hand size={12} fill="white" /> Đang phát biểu
+                    </div>
+                  )}
+
+                  {/* Filter selector */}
+                  <select
+                    value={camFilter}
+                    onChange={e => setCamFilter(e.target.value)}
+                    style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      right: '8px',
+                      background: 'rgba(30, 30, 36, 0.85)',
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '6px',
+                      fontSize: '0.68rem',
+                      padding: '2px 4px',
+                      cursor: 'pointer',
+                      zIndex: 10
+                    }}
+                    title="Chọn bộ lọc camera"
+                  >
+                    <option value="none">Không bộ lọc</option>
+                    <option value="grayscale">Trắng đen</option>
+                    <option value="sepia">Hoài cổ</option>
+                    <option value="dreamy">Mơ mộng</option>
+                    <option value="warm">Ấm áp</option>
+                  </select>
+
                   {camOn ? (
-                    <video ref={localVideoRef} autoPlay playsInline muted />
+                    <video 
+                      ref={localVideoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      style={{ 
+                        width: '100%', height: '100%', objectFit: 'cover',
+                        filter: camFilter === 'none' ? 'none' : camFilter === 'grayscale' ? 'grayscale(1)' : camFilter === 'sepia' ? 'sepia(0.8) hue-rotate(-10deg)' : camFilter === 'dreamy' ? 'brightness(1.1) saturate(1.2) contrast(0.9)' : 'sepia(0.2) saturate(1.4)' 
+                      }} 
+                    />
                   ) : (
-                    <div className="video-placeholder">
+                    <div className="video-placeholder" style={{
+                      filter: camFilter === 'none' ? 'none' : camFilter === 'grayscale' ? 'grayscale(1)' : camFilter === 'sepia' ? 'sepia(0.8) hue-rotate(-10deg)' : camFilter === 'dreamy' ? 'brightness(1.1) saturate(1.2) contrast(0.9)' : 'sepia(0.2) saturate(1.4)'
+                    }}>
                       <div className="avatar" style={{ width: '70px', height: '70px', fontSize: '1.8rem' }}>
                         {getUserNameLabel().charAt(0)}
                       </div>
@@ -458,7 +696,13 @@ export default function EduMeet() {
               </button>
 
               <button 
-                onClick={() => setScreenShare(!screenShare)} 
+                onClick={() => {
+                  if (screenShare) {
+                    stopScreenShare();
+                  } else {
+                    startScreenShare();
+                  }
+                }} 
                 className={`control-btn ${screenShare ? 'active' : ''}`}
                 title="Trình chiếu màn hình"
               >
@@ -466,12 +710,42 @@ export default function EduMeet() {
               </button>
 
               <button 
-                onClick={() => setHandRaised(!handRaised)} 
+                onClick={() => {
+                  playSound('hand');
+                  setHandRaised(!handRaised);
+                }} 
                 className={`control-btn ${handRaised ? 'active' : ''}`}
                 title="Giơ tay phát biểu"
               >
                 <Hand size={18} />
               </button>
+
+              <div style={{ position: 'relative' }}>
+                <button 
+                  onClick={() => setShowReactionMenu(!showReactionMenu)} 
+                  className={`control-btn ${showReactionMenu ? 'active' : ''}`}
+                  title="Thả cảm xúc"
+                >
+                  <Sparkles size={18} />
+                </button>
+                {showReactionMenu && (
+                  <div className="reaction-menu">
+                    {['❤️', '👏', '🎉', '👍', '😮'].map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          triggerReaction(emoji);
+                          setShowReactionMenu(false);
+                        }}
+                        className="reaction-emoji-btn"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
 

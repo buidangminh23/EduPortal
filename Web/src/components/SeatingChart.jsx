@@ -170,7 +170,7 @@ function shuffle(arr) {
 /* ─────────────────────────────────────────────
    Seat Card
 ───────────────────────────────────────────── */
-function SeatCard({ seat, isSelected, onClick }) {
+function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggedOver }) {
   const { student } = seat;
   const isEmpty = !student;
 
@@ -182,13 +182,22 @@ function SeatCard({ seat, isSelected, onClick }) {
     borderColor = 'var(--accent-primary, #6366f1)';
     bg = 'rgba(99,102,241,0.15)';
     glowStyle = { boxShadow: '0 0 0 3px rgba(99,102,241,0.3)' };
+  } else if (isDraggedOver) {
+    borderColor = 'var(--accent-secondary, #10b981)';
+    bg = 'rgba(16,185,129,0.15)';
+    glowStyle = { boxShadow: '0 0 0 4px rgba(16,185,129,0.35)', transform: 'scale(1.02)' };
   } else if (isEmpty) {
     borderColor = 'rgba(255,255,255,0.08)';
     bg = 'transparent';
   }
 
   return (
-    <button
+    <div
+      draggable={!isEmpty}
+      onDragStart={(e) => onDragStart(e, seat.index)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, seat.index)}
+      onDrop={(e) => onDrop(e, seat.index)}
       onClick={() => onClick(seat.index)}
       style={{
         width: '100%',
@@ -196,7 +205,7 @@ function SeatCard({ seat, isSelected, onClick }) {
         borderRadius: 12,
         border: `2px ${isEmpty ? 'dashed' : 'solid'} ${borderColor}`,
         background: bg,
-        cursor: 'pointer',
+        cursor: isEmpty ? 'default' : 'grab',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -205,6 +214,7 @@ function SeatCard({ seat, isSelected, onClick }) {
         transition: 'all 0.18s ease',
         position: 'relative',
         overflow: 'hidden',
+        userSelect: 'none',
         ...glowStyle,
       }}
     >
@@ -266,18 +276,20 @@ function SeatCard({ seat, isSelected, onClick }) {
           </span>
         </>
       )}
-    </button>
+    </div>
   );
 }
 
 /* ─────────────────────────────────────────────
    Main Component
-───────────────────────────────────────────── */
+   ───────────────────────────────────────────── */
 export default function SeatingChart() {
   const { students: contextStudents, seatingCharts, setSeatingCharts } = useContext(AppContext);
 
   const [selectedClass, setSelectedClass] = useState(CLASS_LIST[0]);
   const [selectedSeat, setSelectedSeat] = useState(null); // index | null
+  const [draggedSeat, setDraggedSeat] = useState(null); // index | null
+  const [dragOverSeat, setDragOverSeat] = useState(null); // index | null
 
   // Ensure all classes in CLASS_LIST are initialized in seatingCharts
   const activeCharts = useMemo(() => {
@@ -304,24 +316,54 @@ export default function SeatingChart() {
 
   const seats = seatsByClass[selectedClass] ?? [];
 
+  const swapSeats = useCallback((prev, index) => {
+    setSeatsByClass(map => {
+      const cls = selectedClass;
+      const newSeats = [...map[cls]];
+      const tmp = newSeats[prev].student;
+      newSeats[prev] = { ...newSeats[prev], student: newSeats[index].student };
+      newSeats[index] = { ...newSeats[index], student: tmp };
+      return { ...map, [cls]: newSeats };
+    });
+    setSwapCount(c => c + 1);
+  }, [selectedClass, setSeatsByClass]);
+
   /* Handle seat click: first click selects, second click swaps */
   const handleSeatClick = useCallback((index) => {
     setSelectedSeat(prev => {
       if (prev === null) return index;
       if (prev === index) return null; // deselect same
       // Swap
-      setSeatsByClass(map => {
-        const cls = selectedClass;
-        const newSeats = [...map[cls]];
-        const tmp = newSeats[prev].student;
-        newSeats[prev] = { ...newSeats[prev], student: newSeats[index].student };
-        newSeats[index] = { ...newSeats[index], student: tmp };
-        return { ...map, [cls]: newSeats };
-      });
-      setSwapCount(c => c + 1);
+      swapSeats(prev, index);
       return null;
     });
-  }, [selectedClass]);
+  }, [swapSeats]);
+
+  const handleDragStart = useCallback((e, index) => {
+    setDraggedSeat(index);
+    e.dataTransfer.setData('text/plain', index);
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedSeat(null);
+    setDragOverSeat(null);
+  }, []);
+
+  const handleDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    setDragOverSeat(index);
+  }, []);
+
+  const handleDrop = useCallback((e, targetIndex) => {
+    e.preventDefault();
+    const sourceIndex = draggedSeat;
+    if (sourceIndex !== null && sourceIndex !== targetIndex) {
+      swapSeats(sourceIndex, targetIndex);
+    }
+    setDraggedSeat(null);
+    setDragOverSeat(null);
+  }, [draggedSeat, swapSeats]);
 
   /* Shuffle all students in current class */
   const handleShuffle = useCallback(() => {
@@ -405,6 +447,17 @@ export default function SeatingChart() {
             <button className="btn btn-secondary" onClick={handleShuffle} title="Xếp ngẫu nhiên">
               <Shuffle size={15} />
               Xếp ngẫu nhiên
+            </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                alert(`Đã lưu sơ đồ chỗ ngồi của lớp ${selectedClass} vào cấu hình hệ thống thành công!`);
+              }}
+              style={{ background: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontWeight: 700 }}
+              title="Lưu sơ đồ hiện tại"
+            >
+              Lưu sơ đồ
             </button>
 
             <button
@@ -512,6 +565,11 @@ export default function SeatingChart() {
                 seat={seat}
                 isSelected={selectedSeat === seat.index}
                 onClick={handleSeatClick}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                isDraggedOver={dragOverSeat === seat.index && draggedSeat !== seat.index}
               />
             ))}
           </div>

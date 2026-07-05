@@ -22,6 +22,7 @@ export default function AssetManager() {
   const { schoolAssets, bookAsset, approveAssetBooking, currentRole, userSession, teachers } = useContext(AppContext);
   const [selectedType, setSelectedType] = useState('all');
   const [bookingModal, setBookingModal] = useState(null); // assetId
+  const [hoveredAsset, setHoveredAsset] = useState(null);
   const [form, setForm] = useState({ date: '', period: '', purpose: '' });
 
   const myTeacher = teachers?.find(t => t.id === (userSession?.userId || 'T01')) || teachers?.[0];
@@ -81,6 +82,96 @@ export default function AssetManager() {
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* 2D School Map Panel */}
+      <div className="glass-panel" style={{ padding: 20, marginBottom: 24, background: 'rgba(255, 255, 255, 0.65)' }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          🗺️ Sơ đồ Mặt bằng & Trạng thái Phòng/Thiết bị Trực quan (2D Campus Map)
+        </h3>
+        <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          Nhấp chuột trực tiếp vào phòng trên sơ đồ để xem thông tin nhanh hoặc đăng ký lịch sử dụng (chỉ dành cho giáo viên).
+        </p>
+
+        <div style={{ position: 'relative' }}>
+          <svg viewBox="0 0 800 240" style={{ width: '100%', height: 'auto', background: '#18181b', borderRadius: 14, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            {/* Background grids */}
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+
+            {/* School Corridor / Hallway */}
+            <rect x="20" y="110" width="760" height="15" fill="rgba(255, 255, 255, 0.07)" rx="4" />
+            <text x="380" y="121" fill="rgba(255,255,255,0.3)" fontSize="9" fontWeight="bold" textAnchor="middle" letterSpacing="2">HÀNH LANG TẦNG 1 & DÃY LỚP HỌC</text>
+
+            {[
+              { id: 'SA01', name: 'Phòng Máy tính 101', x: 20, y: 20, w: 140, h: 75, type: 'room' },
+              { id: 'SA02', name: 'Phòng Lab Vật lý', x: 180, y: 20, w: 140, h: 75, type: 'lab' },
+              { id: 'SA06', name: 'Phòng Lab Hóa học', x: 340, y: 20, w: 140, h: 75, type: 'lab' },
+              { id: 'SA05', name: 'Hội trường lớn', x: 500, y: 20, w: 280, h: 75, type: 'room' },
+              { id: 'SA04', name: 'Sân bóng đá', x: 20, y: 140, w: 460, h: 80, type: 'outdoor' },
+              { id: 'SA03', name: 'Kho thiết bị (Máy chiếu)', x: 500, y: 140, w: 280, h: 80, type: 'equipment' },
+            ].map(zone => {
+              const asset = schoolAssets?.find(a => a.id === zone.id);
+              if (!asset) return null;
+              const isBusy = getAssetStatus(asset) === 'busy';
+              const fillBg = isBusy ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+              const strokeColor = isBusy ? '#ef4444' : '#10b981';
+              const isHovered = hoveredAsset === zone.id;
+
+              return (
+                <g 
+                  key={zone.id}
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={() => setHoveredAsset(zone.id)}
+                  onMouseLeave={() => setHoveredAsset(null)}
+                  onClick={() => {
+                    if (currentRole === 'teacher') {
+                      setBookingModal(zone.id);
+                    } else {
+                      alert(`Tài sản: ${asset.name}\nĐịa điểm: ${asset.location}\nSức chứa: ${asset.capacity} người\nTrạng thái: ${isBusy ? 'Đang bận' : 'Sẵn sàng sử dụng'}`);
+                    }
+                  }}
+                >
+                  <rect 
+                    x={zone.x} 
+                    y={zone.y} 
+                    width={zone.w} 
+                    height={zone.h} 
+                    fill={isHovered ? (isBusy ? 'rgba(239, 68, 68, 0.28)' : 'rgba(16, 185, 129, 0.28)') : fillBg}
+                    stroke={strokeColor} 
+                    strokeWidth={isHovered ? 2.5 : 1.5}
+                    rx={8}
+                    style={{ transition: 'all 0.2s ease' }}
+                  />
+                  <text 
+                    x={zone.x + zone.w / 2} 
+                    y={zone.y + zone.h / 2 - 2} 
+                    fill="#f8fafc" 
+                    fontSize="11" 
+                    fontWeight="700" 
+                    textAnchor="middle"
+                  >
+                    {zone.name}
+                  </text>
+                  <text 
+                    x={zone.x + zone.w / 2} 
+                    y={zone.y + zone.h / 2 + 13} 
+                    fill={strokeColor} 
+                    fontSize="9" 
+                    fontWeight="600" 
+                    textAnchor="middle"
+                  >
+                    {isBusy ? '⚡ ĐANG DÙNG' : '✓ TRỐNG'}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
       </div>
 
       {/* Asset cards */}

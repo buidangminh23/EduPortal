@@ -84,96 +84,127 @@ export default function BusTracker() {
                     </div>
                   </div>
 
-                  {/* Visual Timeline Map representing Stations */}
-                  <div style={{ position: 'relative', padding: '10px 0 30px 0', marginTop: 10 }}>
-                    <div style={{ 
-                      position: 'absolute', 
-                      top: 29, 
-                      left: 20, 
-                      right: 20, 
-                      height: 4, 
-                      background: 'rgba(99, 102, 241, 0.15)', 
-                      zIndex: 1 
-                    }}></div>
-                    
-                    {/* Running Bus Progress indicator overlay */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 29,
-                      left: 20,
-                      width: `${(registeredRoute.currentStopIndex / (registeredRoute.stops.length - 1)) * 90}%`,
-                      height: 4,
-                      background: 'var(--accent-primary)',
-                      zIndex: 2,
-                      transition: 'width 1s ease-in-out'
-                    }}></div>
+                  {/* Live Interactive 2D GPS Map */}
+                  <div style={{ background: '#09090b', borderRadius: 16, padding: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <span style={{ fontSize: '0.82rem', color: '#a1a1aa', fontWeight: 600 }}>🗺️ Live GPS Tracker Map (Bản đồ di chuyển thời gian thực)</span>
+                      <span className="animate-pulse" style={{ fontSize: '0.72rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 6, height: 6, background: '#10b981', borderRadius: '50%' }}></span> ĐANG TRUYỀN TÍN HIỆU
+                      </span>
+                    </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 3 }}>
-                      {registeredRoute.stops.map((stop, index) => {
-                        const isCurrent = registeredRoute.currentStopIndex === index;
-                        const isPassed = registeredRoute.currentStopIndex >= index;
-                        
-                        return (
-                          <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 64, position: 'relative' }}>
-                            {/* Stop dot node */}
-                            <div 
-                              style={{
-                                width: 22,
-                                height: 22,
-                                borderRadius: '50%',
-                                background: isCurrent 
-                                  ? 'var(--accent-primary)' 
-                                  : isPassed 
-                                    ? 'rgba(99, 102, 241, 0.3)' 
-                                    : '#fff',
-                                border: isCurrent 
-                                  ? '4px solid #fff' 
-                                  : '2.5px solid rgba(99, 102, 241, 0.5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.5s ease-in-out',
-                                boxShadow: isCurrent ? '0 0 10px rgba(99, 102, 241, 0.6)' : 'none'
-                              }}
-                              className={isCurrent ? 'animate-pulse' : ''}
+                    <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+                      <svg viewBox="0 0 600 220" style={{ width: '100%', height: 'auto', background: '#18181b', borderRadius: 12 }}>
+                        {/* Map grids */}
+                        <defs>
+                          <pattern id="busGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.04)" />
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#busGrid)" />
+
+                        {/* Road coordinates mapping */}
+                        {/* Coordinates of stops: Stop 0 (60,160) -> Stop 1 (170,50) -> Stop 2 (300,50) -> Stop 3 (430,160) -> Stop 4 (540,110) */}
+                        {/* Draw road paths */}
+                        <path 
+                          d="M 60 160 Q 115 105 170 50 T 300 50 Q 365 105 430 160 Q 485 135 540 110" 
+                          fill="none" 
+                          stroke="rgba(255,255,255,0.08)" 
+                          strokeWidth="10" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                        />
+                        <path 
+                          d="M 60 160 Q 115 105 170 50 T 300 50 Q 365 105 430 160 Q 485 135 540 110" 
+                          fill="none" 
+                          stroke="#6366f1" 
+                          strokeWidth="3" 
+                          strokeDasharray="5,6" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                        />
+
+                        {/* Draw decorative elements (Trees, Buildings) */}
+                        {/* School building icon at the end */}
+                        <g transform="translate(525, 65)">
+                          <rect width="30" height="25" fill="#f43f5e" rx="3" />
+                          <polygon points="10,0 20,0 30,12 0,12" fill="#be123c" />
+                          <rect x="11" y="15" width="8" height="10" fill="#fee2e2" />
+                          <text x="15" y="-6" fill="#f43f5e" fontSize="8" fontWeight="bold" textAnchor="middle">TRƯỜNG HỌC</text>
+                        </g>
+
+                        {/* Draw stops */}
+                        {[
+                          { x: 60, y: 160, name: 'Trạm 1' },
+                          { x: 170, y: 50, name: 'Trạm 2' },
+                          { x: 300, y: 50, name: 'Trạm 3' },
+                          { x: 430, y: 160, name: 'Trạm 4' },
+                          { x: 540, y: 110, name: 'Trường học' }
+                        ].map((stopCoord, index) => {
+                          const stopName = registeredRoute.stops[index] || stopCoord.name;
+                          const isCurrent = registeredRoute.currentStopIndex === index;
+                          const isPassed = registeredRoute.currentStopIndex >= index;
+                          const pinColor = isCurrent ? '#10b981' : (isPassed ? '#6366f1' : '#52525b');
+
+                          return (
+                            <g key={index}>
+                              {/* Glowing current indicator */}
+                              {isCurrent && (
+                                <circle cx={stopCoord.x} cy={stopCoord.y} r="18" fill="rgba(16, 185, 129, 0.15)" className="animate-pulse" />
+                              )}
+                              {/* Stop circle node */}
+                              <circle 
+                                cx={stopCoord.x} 
+                                cy={stopCoord.y} 
+                                r="8" 
+                                fill={pinColor} 
+                                stroke="#1e1e24" 
+                                strokeWidth="2.5" 
+                              />
+                              {/* Stop Name tooltip/label */}
+                              <text 
+                                x={stopCoord.x} 
+                                y={index % 2 === 0 ? stopCoord.y + 20 : stopCoord.y - 14} 
+                                fill={isCurrent ? '#f8fafc' : '#a1a1aa'} 
+                                fontSize="9" 
+                                fontWeight={isCurrent ? 'bold' : 'normal'} 
+                                textAnchor="middle"
+                              >
+                                {stopName}
+                              </text>
+                            </g>
+                          );
+                        })}
+
+                        {/* Interpolate Bus Location dynamically along path */}
+                        {(() => {
+                          const busPositions = [
+                            { x: 60, y: 160 },
+                            { x: 170, y: 50 },
+                            { x: 300, y: 50 },
+                            { x: 430, y: 160 },
+                            { x: 540, y: 110 }
+                          ];
+                          const activePos = busPositions[registeredRoute.currentStopIndex] || busPositions[0];
+
+                          return (
+                            <g 
+                              transform={`translate(${activePos.x - 12}, ${activePos.y - 12})`}
+                              style={{ transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                             >
-                              {isCurrent && <div style={{ width: 8, height: 8, background: '#fff', borderRadius: '50%' }}></div>}
-                            </div>
-                            
-                            {/* Stop Label text */}
-                            <div style={{ 
-                              marginTop: 8, 
-                              fontSize: '0.68rem', 
-                              fontWeight: isCurrent ? 700 : 500, 
-                              color: isCurrent ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                              textAlign: 'center',
-                              lineHeight: '1.2',
-                              wordWrap: 'break-word',
-                              width: 80
-                            }}>
-                              {stop}
-                            </div>
-
-                            {/* Floating Bus Icon over active stop node */}
-                            {isCurrent && (
-                              <div style={{
-                                position: 'absolute',
-                                top: -28,
-                                background: 'var(--accent-primary)',
-                                color: 'white',
-                                padding: 4,
-                                borderRadius: 6,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 4px 6px rgba(99, 102, 241, 0.2)'
-                              }}>
-                                <Bus size={12} />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {/* Bus Glow */}
+                              <circle cx="12" cy="12" r="14" fill="rgba(245, 158, 11, 0.35)" />
+                              {/* Bus Icon Container */}
+                              <rect width="24" height="24" rx="6" fill="#f59e0b" stroke="#ffffff" strokeWidth="1.5" />
+                              <svg x="4" y="4" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="12" rx="2" />
+                                <circle cx="7.5" cy="18.5" r="2.5" />
+                                <circle cx="16.5" cy="18.5" r="2.5" />
+                              </svg>
+                            </g>
+                          );
+                        })()}
+                      </svg>
                     </div>
                   </div>
                 </div>

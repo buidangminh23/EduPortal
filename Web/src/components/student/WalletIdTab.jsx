@@ -3,18 +3,31 @@ import { AppContext } from '../../context/AppContext';
 import { Wallet, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function WalletIdTab({ student }) {
-  const { studentWallets, spendStudentWallet } = useContext(AppContext);
+  const { studentWallets, spendStudentWallet, topUpStudentWallet } = useContext(AppContext);
   const [idCardFlipped, setIdCardFlipped] = useState(false);
   const [canteenItem, setCanteenItem] = useState('Nước ngọt');
   const [canteenPrice, setCanteenPrice] = useState(15000);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState(50000);
+  const [isProcessingTopUp, setIsProcessingTopUp] = useState(false);
 
   const handleCanteenPurchase = (e) => {
     e.preventDefault();
     spendStudentWallet(student.id, canteenPrice, `Mua ${canteenItem} tại Canteen`);
   };
 
+  const handleTopUpConfirm = () => {
+    setIsProcessingTopUp(true);
+    setTimeout(() => {
+      topUpStudentWallet(student.id, topUpAmount);
+      setIsProcessingTopUp(false);
+      setShowTopUpModal(false);
+      alert(`Đã nạp thành công ${topUpAmount.toLocaleString()}đ vào ví của ${student.name}!`);
+    }, 1500);
+  };
+
   const wallet = studentWallets[student.id] || { balance: 0, dailyLimit: 100000, transactions: [] };
-  const todaySpend = wallet.transactions ? wallet.transactions.filter(t => t.date === '2026-06-03' && t.type === 'spend').reduce((sum, t) => sum + t.amount, 0) : 0;
+  const todaySpend = wallet.transactions ? wallet.transactions.filter(t => t.date === new Date().toISOString().split('T')[0] && t.type === 'spend').reduce((sum, t) => sum + t.amount, 0) : 0;
   const remainLimit = Math.max(0, wallet.dailyLimit - todaySpend);
 
   return (
@@ -177,6 +190,18 @@ export default function WalletIdTab({ student }) {
               <strong style={{ fontSize: '1.75rem', color: 'var(--accent-primary)', fontWeight: 800 }}>
                 {wallet.balance.toLocaleString()}đ
               </strong>
+              <button
+                type="button"
+                onClick={() => setShowTopUpModal(true)}
+                className="btn btn-secondary btn-sm animate-pulse"
+                style={{
+                  marginTop: '8px', padding: '4px 10px', fontSize: '0.72rem', fontWeight: 700,
+                  background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)',
+                  cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: 4
+                }}
+              >
+                📥 Nạp Tiền VietQR
+              </button>
             </div>
             <div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>HẠN MỨC NGÀY CÒN LẠI</div>
@@ -266,6 +291,84 @@ export default function WalletIdTab({ student }) {
           </div>
         </div>
       </div>
+
+      {/* VietQR Top Up Modal */}
+      {showTopUpModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} className="animate-fade">
+          <div style={{ background: '#ffffff', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', color: '#1e293b' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>📥 Nạp tiền qua VietQR</h3>
+              <button onClick={() => setShowTopUpModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>Chọn số tiền cần nạp:</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[50000, 100000, 200000].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTopUpAmount(amt)}
+                      style={{
+                        padding: '10px 4px', fontSize: '0.82rem', fontWeight: 700, borderRadius: '10px',
+                        border: `2.5px solid ${topUpAmount === amt ? '#10b981' : '#e2e8f0'}`,
+                        background: topUpAmount === amt ? 'rgba(16, 185, 129, 0.05)' : 'white',
+                        color: topUpAmount === amt ? '#10b981' : '#475569', cursor: 'pointer', transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {amt.toLocaleString()}đ
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* VietQR Box */}
+              <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0052cc', letterSpacing: '0.5px' }}>VIET<span style={{ color: '#ea1b25' }}>QR</span> • CHUYỂN KHOẢN NHANH 247</span>
+                
+                {/* Simulated QR Code SVG */}
+                <div style={{ background: 'white', padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                  <svg width="130" height="130" viewBox="0 0 29 29">
+                    <path d="M0 0h9v9H0zm1 1v7h7V1zm8 8h1v1h-1zm1 1v1h1v1h-1v-2zm-1 2H7v1H6v-1H5v2H4v-1H3v1H1v-1H0v2h2v1h1v-1h2v1h1v-1h1v1h1v-2H8v-1zm1-9h9v9H9zm1 1v7h7V1zm-1 8H0v9h9zm1 1v7h7V10zm8 0h1v1h-1zm2 1h1v1h-1zm-2 2h2v1h-2zm2 1h1v1h-1zm-2 2h1v1h-1zm1 1v1H9v-1h1v-1h7v1zm1 1h1v1h-1zM20 0h9v9h-9zm1 1v7h7V1zm-1 8h1v1h-1zm2 1h2v1h-2zm-2 2h1v1h-1zm2 1h1v1h-1zm-2 2h2v1h-2z" fill="#000" />
+                    {/* Tiny VietQR Logo overlay in center */}
+                    <rect x="11" y="11" width="7" height="7" rx="1.5" fill="#0052cc" />
+                    <rect x="12" y="12" width="5" height="5" rx="1" fill="white" />
+                    <circle cx="14.5" cy="14.5" r="1.5" fill="#ea1b25" />
+                  </svg>
+                </div>
+
+                <div style={{ fontSize: '0.76rem', color: '#475569', width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Ngân hàng:</span> <strong>MB Bank (Quân Đội)</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Số TK:</span> <strong>190356789012</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Tên TK:</span> <strong>EDUPORTAL SCHOOL</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '6px', marginTop: '4px' }}>
+                    <span>Nội dung:</span> <strong style={{ color: '#ef4444' }}>NAP VIS {student.id} {topUpAmount}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTopUpConfirm}
+                disabled={isProcessingTopUp}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '12px 0', fontSize: '0.85rem', fontWeight: 700, background: '#10b981', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {isProcessingTopUp ? '⏳ Đang kiểm tra giao dịch...' : '✓ Xác nhận đã chuyển khoản (Giả lập)'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
