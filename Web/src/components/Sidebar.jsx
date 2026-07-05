@@ -40,52 +40,55 @@ import {
 } from 'lucide-react';
 
 // Sub-nav items for student dashboard
+// Nhóm: Tổng quan → Học tập & Kiểm tra → Điểm danh & Rèn luyện → Giao tiếp & Hoạt động → Hướng nghiệp & Tiện ích
 const STUDENT_SUB_ITEMS = [
   { id: 'overview',            label: 'Tổng Quan Học Tập',     icon: LayoutDashboard },
   { id: 'deadlines',           label: 'Deadline & Lịch Thi',    icon: AlarmClock },
-  { id: 'mock_exams',          label: 'Thi Thử Đại Học',       icon: ClipboardList, studentOnly: true },
-  { id: 'study_plan',          label: 'Kế Hoạch Ôn Thi AI',    icon: Target },
-  { id: 'class_chat',          label: 'Chat Nhóm Lớp',         icon: MessageSquare },
-  { id: 'tournament',          label: 'Cuộc Thi Thách Đấu',    icon: Trophy },
-  { id: 'attendance',          label: 'Điểm Danh Chuyên Cần',  icon: ClipboardCheck },
-  { id: 'conduct',             label: 'Rèn Luyện',             icon: Award },
   { id: 'assignments',         label: 'Bài Tập Về Nhà',        icon: CheckSquare },
   { id: 'library',             label: 'Học Liệu & Flashcards',  icon: Library },
+  { id: 'mock_exams',          label: 'Thi Thử Đại Học',       icon: ClipboardList, studentOnly: true },
+  { id: 'study_plan',          label: 'Kế Hoạch Ôn Thi AI',    icon: Target },
+  { id: 'competency_heatmap',  label: 'Bản Đồ Năng Lực AI',   icon: Activity },
+  { id: 'attendance',          label: 'Điểm Danh Chuyên Cần',  icon: ClipboardCheck },
+  { id: 'conduct',             label: 'Rèn Luyện',             icon: Award },
+  { id: 'class_chat',          label: 'Chat Nhóm Lớp',         icon: MessageSquare },
+  { id: 'tournament',          label: 'Cuộc Thi Thách Đấu',    icon: Trophy },
   { id: 'clubs',               label: 'Câu Lạc Bộ',            icon: UsersRound },
   { id: 'counseling',          label: 'Tư Vấn & Hướng Nghiệp', icon: Brain },
   { id: 'university_matchmaker',  label: 'Định Hướng Đại Học AI', icon: GraduationCap },
   { id: 'cafeteria',           label: 'Bán Trú & Dinh Dưỡng',  icon: UtensilsCrossed },
-  { id: 'competency_heatmap',  label: 'Bản Đồ Năng Lực AI',   icon: Activity },
   { id: 'wallet_id',           label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard },
 ];
 
 // Sub-nav items for teacher dashboard
+// Nhóm: Quản lý HS → Điểm danh & Rèn luyện → Bài giảng & Giáo án → Bài tập & Kiểm tra → Phụ huynh & Nghỉ phép
 const TEACHER_SUB_ITEMS = [
   { id: 'students',            label: 'Học Sinh & Điểm Số',    icon: Users },
   { id: 'attendance',          label: 'Điểm Danh Lớp',         icon: ClipboardCheck },
+  { id: 'conduct',             label: 'Điểm Rèn Luyện Lớp',     icon: Award },
   { id: 'resources',           label: 'Học Liệu Bài Giảng',     icon: BookOpen },
+  { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
+  { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
+  { id: 'assignments',         label: 'Giao Bài Tập',          icon: CheckSquare },
+  { id: 'mock_exams',          label: 'Điểm Thi Thử Lớp',      icon: ClipboardList },
   { id: 'qa',                  label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare },
   { id: 'leaves',              label: 'Duyệt Nghỉ Phép',       icon: Calendar },
   { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
-  { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
-  { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
-  { id: 'conduct',             label: 'Điểm Rèn Luyện Lớp',     icon: Award },
-  { id: 'assignments',         label: 'Giao Bài Tập',          icon: CheckSquare },
-  { id: 'mock_exams',          label: 'Điểm Thi Thử Lớp',      icon: ClipboardList },
 ];
 
 // Sub-nav items for parent dashboard
+// Nhóm: Học tập & Điểm → Tài chính → Sinh hoạt → Giao tiếp & Quản lý
 const PARENT_SUB_ITEMS = [
   { id: 'grades',              label: 'Bảng Điểm & Ký Nhận',   icon: Award },
+  { id: 'attendance',          label: 'Chuyên Cần Của Con',    icon: ClipboardCheck },
+  { id: 'assignments',         label: 'Xem Bài Tập',           icon: CheckSquare },
   { id: 'fees',                label: 'Học Phí & Đóng Tiền',   icon: CreditCard },
   { id: 'cafeteria',           label: 'Bán Trú Con',           icon: UtensilsCrossed },
   { id: 'wallet',              label: 'Ví Điện Tử Con',        icon: CreditCard },
   { id: 'qa',                  label: 'Hỏi Đáp Chủ Nhiệm',     icon: MessageSquare },
   { id: 'leaves',              label: 'Xin Nghỉ Phép',         icon: Calendar },
-  { id: 'attendance',          label: 'Chuyên Cần Của Con',    icon: ClipboardCheck },
-  { id: 'ai_guidance',         label: 'Định Hướng AI',         icon: Sparkles },
   { id: 'evaluations',         label: 'Đánh Giá Giáo Viên',    icon: Star },
-  { id: 'assignments',         label: 'Xem Bài Tập',           icon: CheckSquare },
+  { id: 'ai_guidance',         label: 'Định Hướng AI',         icon: Sparkles },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab }) {
@@ -174,73 +177,77 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const getNavItems = () => {
     switch (currentRole) {
       case 'admin':
+        // Nhóm: Tổng quan → Quản lý nhân sự → Quản lý lớp → Phân tích AI → Học liệu & Kiểm tra → Hành chính & Tài sản → Tiện ích → Lịch
         return [
           { id: 'dashboard',           label: 'Tổng quan BGH',        icon: LayoutDashboard },
           { id: 'students',            label: 'Quản lý Học sinh',     icon: Users },
           { id: 'teachers',            label: 'Quản lý Giáo viên',    icon: GraduationCap },
           { id: 'journal',             label: 'Sổ đầu bài',           icon: BookOpen },
-          { id: 'duty_schedule',       label: 'Phân Công Lịch Trực',  icon: Calendar },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
           { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
+          { id: 'duty_schedule',       label: 'Phân Công Lịch Trực',  icon: Calendar },
           { id: 'ai_risk',             label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle },
           { id: 'class_comparison',    label: 'So Sánh Các Lớp',      icon: Activity },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
+          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
+          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
+          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
           { id: 'asset_manager',       label: 'Tài Sản Trường',       icon: Layers },
           { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
           { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',   icon: Calendar },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'teacher':
+        // Nhóm: Tổng quan → Quản lý lớp → Giảng dạy & Học liệu → Đánh giá → Giao tiếp → Hành chính → Phòng học → Lịch
         return [
           { id: 'dashboard',           label: 'Tổng quan lớp học',    icon: LayoutDashboard },
           { id: 'journal',             label: 'Ghi sổ đầu bài',      icon: BookOpen },
-          { id: 'duty_schedule',       label: 'Lịch Trực Tuần GV',    icon: Calendar },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
           { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
-          { id: 'ai_risk',             label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
+          { id: 'duty_schedule',       label: 'Lịch Trực Tuần GV',    icon: Calendar },
+          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
+          { id: 'ai_risk',             label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle },
           { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
           { id: 'chat',                label: 'Nhắn Tin Phụ Huynh',   icon: MessageCircle },
           { id: 'meeting_booking',     label: 'Lịch Hẹn Gặp Mặt',    icon: CalendarCheck },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
+          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
           { id: 'asset_manager',       label: 'Đặt Phòng/Thiết Bị',   icon: Layers },
           { id: 'meet',                label: 'Phòng học EduMeet',    icon: Video },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'student':
+        // Nhóm: Tổng quan → Học tập & Bài giảng → Kiểm tra & Thành tích → Lớp học & Sơ đồ → Tiện ích trường → Lịch
         return [
           { id: 'dashboard',           label: 'Bảng Điều Khiển HS',   icon: LayoutDashboard },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'canteen',             label: 'Căng tin Trường',      icon: UtensilsCrossed },
-          { id: 'wellness',            label: 'Hỗ trợ Tâm lý',        icon: Brain },
-          { id: 'study_group',         label: 'Học nhóm & Gia sư',    icon: Users },
+          { id: 'lectures',            label: 'Video bài giảng',      icon: FileText },
           { id: 'library_hub',         label: 'Thư viện số',         icon: Library },
           { id: 'weblab',              label: 'Phòng Thí Nghiệm ảo',  icon: FlaskConical },
           { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
-          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
-          { id: 'lectures',            label: 'Video bài giảng',      icon: FileText },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'gamification',        label: 'Thành Tích & Xếp Hạng',icon: Trophy },
-          { id: 'seating_chart',     label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
+          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
+          { id: 'study_group',         label: 'Học nhóm & Gia sư',    icon: Users },
           { id: 'meet',                label: 'Vào lớp EduMeet',      icon: Video },
+          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
+          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
+          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
+          { id: 'canteen',             label: 'Căng tin Trường',      icon: UtensilsCrossed },
+          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
+          { id: 'wellness',            label: 'Hỗ trợ Tâm lý',        icon: Brain },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'parent':
+        // Nhóm: Điểm số → Lớp học → Giao tiếp → Thông tin trường → Tiện ích → Lịch
         return [
           { id: 'dashboard',           label: 'Bảng điểm của con',    icon: Award },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
+          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
           { id: 'chat',                label: 'Nhắn Tin Giáo Viên',   icon: MessageCircle },
           { id: 'meeting_booking',     label: 'Đặt Lịch Gặp Mặt',    icon: CalendarCheck },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'seating_chart',     label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
+          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
+          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       default:
