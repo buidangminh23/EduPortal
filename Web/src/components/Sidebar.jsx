@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 
 // Sub-nav items for student dashboard
-// Nhóm: Tổng quan → Học tập & Kiểm tra → Điểm danh & Rèn luyện → Giao tiếp & Hoạt động → Hướng nghiệp & Tiện ích
+// Nhóm: Tổng quan → Học tập & Học liệu → Điểm danh & Rèn luyện → Giao tiếp & Hoạt động lớp → Hướng nghiệp & Tiện ích
 const STUDENT_SUB_ITEMS = [
   { id: 'overview',            label: 'Tổng Quan Học Tập',     icon: LayoutDashboard },
   { id: 'deadlines',           label: 'Deadline & Lịch Thi',    icon: AlarmClock },
@@ -61,7 +61,7 @@ const STUDENT_SUB_ITEMS = [
 ];
 
 // Sub-nav items for teacher dashboard
-// Nhóm: Quản lý HS → Điểm danh & Rèn luyện → Bài giảng & Giáo án → Bài tập & Kiểm tra → Phụ huynh & Nghỉ phép
+// Nhóm: Học sinh & Điểm → Điểm danh → Rèn luyện → Học liệu & Giáo án → Trợ lý AI → Bài tập → Thi thử → Phụ huynh & Nghỉ phép
 const TEACHER_SUB_ITEMS = [
   { id: 'students',            label: 'Học Sinh & Điểm Số',    icon: Users },
   { id: 'attendance',          label: 'Điểm Danh Lớp',         icon: ClipboardCheck },
@@ -77,7 +77,7 @@ const TEACHER_SUB_ITEMS = [
 ];
 
 // Sub-nav items for parent dashboard
-// Nhóm: Học tập & Điểm → Tài chính → Sinh hoạt → Giao tiếp & Quản lý
+// Nhóm: Điểm & Chuyên cần → Bài tập → Tài chính → Bán trú & Ví → Hỏi đáp → Xin nghỉ phép → Đánh giá GV → Định hướng AI
 const PARENT_SUB_ITEMS = [
   { id: 'grades',              label: 'Bảng Điểm & Ký Nhận',   icon: Award },
   { id: 'attendance',          label: 'Chuyên Cần Của Con',    icon: ClipboardCheck },
@@ -177,34 +177,33 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const getNavItems = () => {
     switch (currentRole) {
       case 'admin':
-        // Nhóm: Tổng quan → Quản lý nhân sự → Quản lý lớp → Phân tích AI → Học liệu & Kiểm tra → Hành chính & Tài sản → Tiện ích → Lịch
+        // Nhóm: Tổng quan → Quản lý & Nhân sự → Tổ chức dạy học → Phân tích AI → Truyền thông & Cơ sở vật chất → Lịch
         return [
           { id: 'dashboard',           label: 'Tổng quan BGH',        icon: LayoutDashboard },
-          { id: 'students',            label: 'Quản lý Học sinh',     icon: Users },
           { id: 'teachers',            label: 'Quản lý Giáo viên',    icon: GraduationCap },
+          { id: 'students',            label: 'Quản lý Học sinh',     icon: Users },
+          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
+          { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',   icon: Calendar },
           { id: 'journal',             label: 'Sổ đầu bài',           icon: BookOpen },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
           { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
-          { id: 'duty_schedule',       label: 'Phân Công Lịch Trực',  icon: Calendar },
+          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'ai_risk',             label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle },
           { id: 'class_comparison',    label: 'So Sánh Các Lớp',      icon: Activity },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
+          { id: 'duty_schedule',       label: 'Phân Công Lịch Trực',  icon: Calendar },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
           { id: 'asset_manager',       label: 'Tài Sản Trường',       icon: Layers },
           { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',   icon: Calendar },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'teacher':
-        // Nhóm: Tổng quan → Quản lý lớp → Giảng dạy & Học liệu → Đánh giá → Giao tiếp → Hành chính → Phòng học → Lịch
+        // Nhóm: Tổng quan → Nghiệp vụ dạy & Quản lý lớp → Công cụ & Đánh giá → Liên lạc PH → Tiện ích trường → Lịch
         return [
           { id: 'dashboard',           label: 'Tổng quan lớp học',    icon: LayoutDashboard },
           { id: 'journal',             label: 'Ghi sổ đầu bài',      icon: BookOpen },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
           { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
-          { id: 'duty_schedule',       label: 'Lịch Trực Tuần GV',    icon: Calendar },
           { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
           { id: 'ai_risk',             label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle },
@@ -213,33 +212,34 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'meeting_booking',     label: 'Lịch Hẹn Gặp Mặt',    icon: CalendarCheck },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
+          { id: 'duty_schedule',       label: 'Lịch Trực Tuần GV',    icon: Calendar },
           { id: 'asset_manager',       label: 'Đặt Phòng/Thiết Bị',   icon: Layers },
           { id: 'meet',                label: 'Phòng học EduMeet',    icon: Video },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'student':
-        // Nhóm: Tổng quan → Học tập & Bài giảng → Kiểm tra & Thành tích → Lớp học & Sơ đồ → Tiện ích trường → Lịch
+        // Nhóm: Tổng quan → Học tập & Tương tác → Đánh giá & Thành tích → Truyền thông → Đời sống & Tiện ích → Lịch
         return [
           { id: 'dashboard',           label: 'Bảng Điều Khiển HS',   icon: LayoutDashboard },
           { id: 'lectures',            label: 'Video bài giảng',      icon: FileText },
           { id: 'library_hub',         label: 'Thư viện số',         icon: Library },
           { id: 'weblab',              label: 'Phòng Thí Nghiệm ảo',  icon: FlaskConical },
-          { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
-          { id: 'gamification',        label: 'Thành Tích & Xếp Hạng',icon: Trophy },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
           { id: 'study_group',         label: 'Học nhóm & Gia sư',    icon: Users },
           { id: 'meet',                label: 'Vào lớp EduMeet',      icon: Video },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
+          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
+          { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
+          { id: 'gamification',        label: 'Thành Tích & Xếp Hạng',icon: Trophy },
+          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
+          { id: 'wellness',            label: 'Hỗ trợ Tâm lý',        icon: Brain },
           { id: 'canteen',             label: 'Căng tin Trường',      icon: UtensilsCrossed },
           { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'wellness',            label: 'Hỗ trợ Tâm lý',        icon: Brain },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'parent':
-        // Nhóm: Điểm số → Lớp học → Giao tiếp → Thông tin trường → Tiện ích → Lịch
+        // Nhóm: Học tập & Lớp học → Giao tiếp & Cuộc hẹn → Thông tin trường & Xe bus → Lịch
         return [
           { id: 'dashboard',           label: 'Bảng điểm của con',    icon: Award },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
