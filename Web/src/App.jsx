@@ -21,7 +21,6 @@ const DirectChat = lazy(() => import('./components/DirectChat'));
 const MeetingBooking = lazy(() => import('./components/MeetingBooking'));
 const ExamRepository = lazy(() => import('./components/ExamRepository'));
 const AssetManager = lazy(() => import('./components/AssetManager'));
-const TeacherAttendance = lazy(() => import('./components/TeacherAttendance'));
 const BadgesPanel = lazy(() => import('./components/BadgesPanel'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const GradeTrendChart = lazy(() => import('./components/GradeTrendChart'));
@@ -121,8 +120,6 @@ function App() {
           return <ExamRepository />;
         case 'asset_manager':
           return <AssetManager />;
-        case 'teacher_attendance':
-          return <TeacherAttendance />;
         default:
           return <PrincipalDashboard />;
       }
@@ -157,8 +154,6 @@ function App() {
           return <BulletinBoard />;
         case 'exam_repository':
           return <ExamRepository />;
-        case 'teacher_attendance':
-          return <TeacherAttendance />;
         case 'asset_manager':
           return <AssetManager />;
         default:
