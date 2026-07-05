@@ -15,8 +15,8 @@ import { AppContext } from '../context/AppContext';
    Constants
 ───────────────────────────────────────────── */
 const COLS = 5;
-const ROWS = 8;
-const TOTAL_SEATS = COLS * ROWS; // 40
+const ROWS = 9;
+const TOTAL_SEATS = COLS * ROWS; // 45
 
 const CLASS_LIST = ['12A1', '12A2', '11A1', '10A1'];
 

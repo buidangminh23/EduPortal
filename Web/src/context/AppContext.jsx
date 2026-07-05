@@ -44,7 +44,7 @@ const initialTeachers = [
   }
 ];
 
-const initialStudents = [
+const staticStudents = [
   { 
     id: 'HS001', 
     name: 'Nguyễn Hoàng Nam', 
@@ -54,41 +54,6 @@ const initialStudents = [
     parentPhone: '0987654321',
     gradesSem1: { Math: 8.2, Literature: 7.5, Physics: 8.8, English: 8.0 },
     grades: { Math: 8.5, Literature: 7.8, Physics: 9.0, English: 8.2 },
-    gradeHistory: [
-      {
-        gradeLevel: '10',
-        class: '10A1',
-        schoolYear: '2023–2024',
-        sem1: { Math: 7.8, Literature: 7.2, Physics: 7.5, English: 7.0 },
-        sem2: { Math: 8.0, Literature: 7.5, Physics: 7.8, English: 7.3 },
-        conduct: { sem1: 'Tốt', sem2: 'Tốt', year: 'Tốt' },
-        attendance: { totalSessions: 175, absences: 3, absencesExcused: 2 },
-        achievement: 'Học sinh Khá',
-        rank: 8
-      },
-      {
-        gradeLevel: '11',
-        class: '11A1',
-        schoolYear: '2024–2025',
-        sem1: { Math: 8.0, Literature: 7.3, Physics: 8.2, English: 7.8 },
-        sem2: { Math: 8.2, Literature: 7.6, Physics: 8.5, English: 8.0 },
-        conduct: { sem1: 'Tốt', sem2: 'Tốt', year: 'Tốt' },
-        attendance: { totalSessions: 175, absences: 2, absencesExcused: 2 },
-        achievement: 'Học sinh Giỏi',
-        rank: 5
-      },
-      {
-        gradeLevel: '12',
-        class: '12A1',
-        schoolYear: '2025–2026',
-        sem1: { Math: 8.2, Literature: 7.5, Physics: 8.8, English: 8.0 },
-        sem2: { Math: 8.5, Literature: 7.8, Physics: 9.0, English: 8.2 },
-        conduct: { sem1: 'Tốt', sem2: 'Tốt', year: 'Tốt' },
-        attendance: { totalSessions: 175, absences: 1, absencesExcused: 1 },
-        achievement: 'Học sinh Giỏi',
-        rank: 3
-      }
-    ],
     feeStatus: [
       { id: 'F01', name: 'Học phí tháng 6/2026', amount: 2500000, paid: false, deadline: '2026-06-15' },
       { id: 'F02', name: 'Tiền ăn bán trú tháng 6/2026', amount: 950000, paid: false, deadline: '2026-06-15' },
@@ -178,6 +143,70 @@ const initialStudents = [
     avatarUrl: 'https://images.unsplash.com/photo-1488161628813-04466f872be2?w=150&auto=format&fit=crop&q=80'
   }
 ];
+
+const classes = ['12A1', '12A2', '11A1', '10A1'];
+const ho = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Huỳnh', 'Phan', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô'];
+const dem = ['Hoàng', 'Thị', 'Văn', 'Minh', 'Anh', 'Hữu', 'Ngọc', 'Khánh', 'Đức', 'Tuấn', 'Quang', 'Xuân'];
+const ten = ['Nam', 'Chi', 'Triết', 'Đăng', 'Hương', 'Anh', 'Hùng', 'Hà', 'Duy', 'Vân', 'Bảo', 'Tuấn', 'Hải', 'Linh', 'Trang', 'Huyền', 'Phương', 'Sơn', 'Tùng', 'Đức', 'Tân', 'Lộc', 'Dương', 'Huy', 'Khánh', 'Long', 'Phong', 'Thịnh', 'Trung', 'Tiến', 'Việt', 'Vy', 'Yến', 'Khoa', 'Khang', 'Thảo', 'Trúc', 'Quỳnh', 'Giang', 'Nhân', 'Kiệt', 'Thư'];
+
+const generatedStudents = [...staticStudents];
+let studentCount = 7;
+
+classes.forEach((cls) => {
+  const grade = cls.substring(0, 2);
+  const existingCount = staticStudents.filter(s => s.class === cls).length;
+  const needCount = 42 - existingCount;
+
+  for (let i = 1; i <= needCount; i++) {
+    const id = `HS${String(studentCount).padStart(3, '0')}`;
+    const studentHo = ho[Math.floor(Math.random() * ho.length)];
+    const studentDem = dem[Math.floor(Math.random() * dem.length)];
+    const studentTen = ten[Math.floor(Math.random() * ten.length)];
+    const name = `${studentHo} ${studentDem} ${studentTen}`;
+    
+    const parentHo = studentHo;
+    const parentDem = dem[Math.floor(Math.random() * dem.length)];
+    const parentTen = ten[Math.floor(Math.random() * ten.length)];
+    const parentName = `${parentHo} ${parentDem} ${parentTen}`;
+    
+    const math = Math.round((6.0 + Math.random() * 4.0) * 10) / 10;
+    const literature = Math.round((6.0 + Math.random() * 4.0) * 10) / 10;
+    const physics = Math.round((6.0 + Math.random() * 4.0) * 10) / 10;
+    const english = Math.round((6.0 + Math.random() * 4.0) * 10) / 10;
+
+    const mathSem1 = Math.round((math - 0.5 + Math.random() * 0.8) * 10) / 10;
+    const litSem1 = Math.round((literature - 0.5 + Math.random() * 0.8) * 10) / 10;
+    const phySem1 = Math.round((physics - 0.5 + Math.random() * 0.8) * 10) / 10;
+    const engSem1 = Math.round((english - 0.5 + Math.random() * 0.8) * 10) / 10;
+
+    generatedStudents.push({
+      id,
+      name,
+      class: cls,
+      grade,
+      parentName,
+      parentPhone: `09${Math.floor(10000000 + Math.random() * 90000000)}`,
+      gradesSem1: { Math: mathSem1, Literature: litSem1, Physics: phySem1, English: engSem1 },
+      grades: { Math: math, Literature: literature, Physics: physics, English: english },
+      feeStatus: [
+        { id: 'F01', name: 'Học phí tháng 6/2026', amount: 2500000, paid: Math.random() > 0.3, deadline: '2026-06-15' },
+        { id: 'F02', name: 'Tiền ăn bán trú tháng 6/2026', amount: 950000, paid: Math.random() > 0.4, deadline: '2026-06-15' }
+      ],
+      parentSignature: null,
+      avatarUrl: `https://images.unsplash.com/photo-${[
+        '1539571696357-5a69c17a67c6',
+        '1494790108377-be9c29b29330',
+        '1501196354995-cbb51c65aaea',
+        '1519085360753-af0119f7cbe7',
+        '1438761681033-6461ffad8d80',
+        '1488161628813-04466f872be2'
+      ][(studentCount - 1) % 6]}?w=150&auto=format&fit=crop&q=80`
+    });
+    studentCount++;
+  }
+});
+
+const initialStudents = generatedStudents;
 
 const initialAnnouncements = [
   { id: 'A01', date: '2026-06-02', sender: 'Ban Giám Hiệu', title: 'Kế hoạch thi học kỳ 2 bổ sung và tổng kết năm học', content: 'Ban giám hiệu thông báo kế hoạch ôn tập và kiểm tra bổ sung cho khối 10, 11, 12 bắt đầu từ ngày 08/06. Đề nghị các giáo viên bộ môn lên đề cương chi tiết.' },
