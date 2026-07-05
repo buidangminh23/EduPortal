@@ -8,6 +8,7 @@ import {
   BookOpen,
   ArrowLeftRight,
   Info,
+  Star,
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -170,7 +171,7 @@ function shuffle(arr) {
 /* ─────────────────────────────────────────────
    Seat Card
 ───────────────────────────────────────────── */
-function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggedOver }) {
+function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggedOver, isHighlighted, readOnly }) {
   const { student } = seat;
   const isEmpty = !student;
 
@@ -178,7 +179,11 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
   let bg = 'rgba(255,255,255,0.04)';
   let glowStyle = {};
 
-  if (isSelected) {
+  if (isHighlighted) {
+    borderColor = '#f59e0b';
+    bg = 'rgba(245,158,11,0.18)';
+    glowStyle = { boxShadow: '0 0 0 3px rgba(245,158,11,0.45), 0 0 16px rgba(245,158,11,0.2)', transform: 'scale(1.04)' };
+  } else if (isSelected) {
     borderColor = 'var(--accent-primary, #6366f1)';
     bg = 'rgba(99,102,241,0.15)';
     glowStyle = { boxShadow: '0 0 0 3px rgba(99,102,241,0.3)' };
@@ -193,19 +198,19 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
 
   return (
     <div
-      draggable={!isEmpty}
-      onDragStart={(e) => onDragStart(e, seat.index)}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => onDragOver(e, seat.index)}
-      onDrop={(e) => onDrop(e, seat.index)}
-      onClick={() => onClick(seat.index)}
+      draggable={!isEmpty && !readOnly}
+      onDragStart={readOnly ? undefined : (e) => onDragStart(e, seat.index)}
+      onDragEnd={readOnly ? undefined : onDragEnd}
+      onDragOver={readOnly ? undefined : (e) => onDragOver(e, seat.index)}
+      onDrop={readOnly ? undefined : (e) => onDrop(e, seat.index)}
+      onClick={readOnly ? undefined : () => onClick(seat.index)}
       style={{
         width: '100%',
         aspectRatio: '3/2',
         borderRadius: 12,
         border: `2px ${isEmpty ? 'dashed' : 'solid'} ${borderColor}`,
         background: bg,
-        cursor: isEmpty ? 'default' : 'grab',
+        cursor: readOnly ? 'default' : (isEmpty ? 'default' : 'grab'),
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -242,9 +247,11 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
               width: 28,
               height: 28,
               borderRadius: '50%',
-              background: isSelected
-                ? 'var(--accent-primary, #6366f1)'
-                : 'rgba(255,255,255,0.1)',
+              background: isHighlighted
+                ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                : isSelected
+                  ? 'var(--accent-primary, #6366f1)'
+                  : 'rgba(255,255,255,0.1)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -252,7 +259,7 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
               flexShrink: 0,
             }}
           >
-            <User size={14} color={isSelected ? '#fff' : 'rgba(255,255,255,0.5)'} />
+            {isHighlighted ? <Star size={14} color="#fff" /> : <User size={14} color={isSelected || isHighlighted ? '#fff' : 'rgba(255,255,255,0.5)'} />}
           </div>
           {/* Name */}
           <span
@@ -283,10 +290,16 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
 /* ─────────────────────────────────────────────
    Main Component
    ───────────────────────────────────────────── */
-export default function SeatingChart() {
-  const { students: contextStudents, seatingCharts, setSeatingCharts } = useContext(AppContext);
+export default function SeatingChart({ readOnly = false, fixedClass, highlightStudentId }) {
+  const { students: contextStudents, seatingCharts, setSeatingCharts, currentRole, selectedStudentId } = useContext(AppContext);
 
-  const [selectedClass, setSelectedClass] = useState(CLASS_LIST[0]);
+  // Determine effective readOnly and highlight from context
+  const isReadOnly = readOnly || currentRole === 'student' || currentRole === 'parent';
+  const activeStudent = contextStudents?.find(s => s.id === selectedStudentId);
+  const effectiveFixedClass = fixedClass || (isReadOnly && activeStudent ? activeStudent.class : null);
+  const effectiveHighlightId = highlightStudentId || (isReadOnly ? selectedStudentId : null);
+
+  const [selectedClass, setSelectedClass] = useState(effectiveFixedClass || CLASS_LIST[0]);
   const [selectedSeat, setSelectedSeat] = useState(null); // index | null
   const [draggedSeat, setDraggedSeat] = useState(null); // index | null
   const [dragOverSeat, setDragOverSeat] = useState(null); // index | null
@@ -444,21 +457,25 @@ export default function SeatingChart() {
               ))}
             </div>
 
-            <button className="btn btn-secondary" onClick={handleShuffle} title="Xếp ngẫu nhiên">
-              <Shuffle size={15} />
-              Xếp ngẫu nhiên
-            </button>
+            {!isReadOnly && (
+              <button className="btn btn-secondary" onClick={handleShuffle} title="Xếp ngẫu nhiên">
+                <Shuffle size={15} />
+                Xếp ngẫu nhiên
+              </button>
+            )}
 
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                alert(`Đã lưu sơ đồ chỗ ngồi của lớp ${selectedClass} vào cấu hình hệ thống thành công!`);
-              }}
-              style={{ background: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontWeight: 700 }}
-              title="Lưu sơ đồ hiện tại"
-            >
-              Lưu sơ đồ
-            </button>
+            {!isReadOnly && (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  alert(`Đã lưu sơ đồ chỗ ngồi của lớp ${selectedClass} vào cấu hình hệ thống thành công!`);
+                }}
+                style={{ background: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontWeight: 700 }}
+                title="Lưu sơ đồ hiện tại"
+              >
+                Lưu sơ đồ
+              </button>
+            )}
 
             <button
               className="btn btn-secondary"
@@ -564,6 +581,8 @@ export default function SeatingChart() {
                 key={seat.index}
                 seat={seat}
                 isSelected={selectedSeat === seat.index}
+                isHighlighted={!!(effectiveHighlightId && seat.student && seat.student.id === effectiveHighlightId)}
+                readOnly={isReadOnly}
                 onClick={handleSeatClick}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
@@ -599,10 +618,17 @@ export default function SeatingChart() {
             <div style={{ width: 28, height: 18, borderRadius: 5, border: '2px dashed rgba(255,255,255,0.08)', background: 'transparent' }} />
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Ghế trống</span>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
-            <Info size={12} />
-            Nhấp ghế để chọn · Nhấp ghế thứ hai để hoán đổi
-          </div>
+          {isReadOnly ? (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, color: '#f59e0b', fontSize: 12 }}>
+              <Star size={12} />
+              Chỗ ngồi của {currentRole === 'parent' ? 'con bạn' : 'bạn'} được đánh dấu ngôi sao
+            </div>
+          ) : (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
+              <Info size={12} />
+              Nhấp ghế để chọn · Nhấp ghế thứ hai để hoán đổi
+            </div>
+          )}
         </div>
 
         {/* ── Mini Stats ── */}

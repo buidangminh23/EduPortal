@@ -180,6 +180,8 @@ function App() {
           return <ExamRepository />;
         case 'gamification':
           return <GamificationPage />;
+        case 'seating_chart':
+          return <SeatingChart />;
         default:
           return <StudentDashboard setActiveTab={setActiveTab} />;
       }
@@ -196,6 +198,8 @@ function App() {
           return <MeetingBooking />;
         case 'bulletin':
           return <BulletinBoard />;
+        case 'seating_chart':
+          return <SeatingChart />;
         default:
           return <ParentHub activeTab={activeTab} setActiveTab={setActiveTab} />;
       }

@@ -228,6 +228,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
           { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'gamification',        label: 'Thành Tích & Xếp Hạng',icon: Trophy },
+          { id: 'seating_chart',     label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
           { id: 'meet',                label: 'Vào lớp EduMeet',      icon: Video },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
@@ -239,6 +240,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'chat',                label: 'Nhắn Tin Giáo Viên',   icon: MessageCircle },
           { id: 'meeting_booking',     label: 'Đặt Lịch Gặp Mặt',    icon: CalendarCheck },
           { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
+          { id: 'seating_chart',     label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       default:
