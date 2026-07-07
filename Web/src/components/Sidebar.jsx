@@ -6,7 +6,6 @@ import {
   BookOpen,
   Video,
   MessageSquare,
-  DollarSign,
   FileText,
   GraduationCap,
   Award,

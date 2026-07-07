@@ -63,6 +63,7 @@ export default function EduMeet() {
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollOpt1, setNewPollOpt1] = useState('');
   const [newPollOpt2, setNewPollOpt2] = useState('');
+  const reactionIdRef = useRef(0);
 
   // Web Audio API Sound Synthesizer for notifications
   const playSound = (type) => {
@@ -97,9 +98,10 @@ export default function EduMeet() {
 
   const triggerReaction = (emoji) => {
     playSound('reaction');
-    const id = Date.now() + Math.random();
+    reactionIdRef.current += 1;
+    const id = `reaction-${reactionIdRef.current}`;
     const style = {
-      left: `${20 + Math.random() * 60}%`,
+      left: `${20 + ((reactionIdRef.current * 37) % 60)}%`,
     };
     setReactions(prev => [...prev, { id, emoji, style }]);
     setTimeout(() => {

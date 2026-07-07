@@ -6,7 +6,6 @@ import {
   Coffee,
   DoorOpen,
   Plus,
-  Trash2,
   ChevronDown,
   X,
   BarChart2,
@@ -23,15 +22,6 @@ const mockTeachers = [
   { id: 'T02', name: 'Trần Thị Hồng Vân' },
   { id: 'T03', name: 'Phạm Đức Duy' },
   { id: 'T04', name: 'Lê Thu Hà' },
-];
-
-const initialDuties = [
-  { id: 'D01', day: 'Thứ Hai', shift: 'Sáng', type: 'Trực cổng',    teacherId: 'T01', teacherName: 'Nguyễn Minh Triết' },
-  { id: 'D02', day: 'Thứ Hai', shift: 'Chiều', type: 'Trực trường',  teacherId: 'T02', teacherName: 'Trần Thị Hồng Vân' },
-  { id: 'D03', day: 'Thứ Ba',  shift: 'Sáng', type: 'Trực cổng',    teacherId: 'T03', teacherName: 'Phạm Đức Duy' },
-  { id: 'D04', day: 'Thứ Tư',  shift: 'Sáng', type: 'Trực căng tin', teacherId: 'T04', teacherName: 'Lê Thu Hà' },
-  { id: 'D05', day: 'Thứ Năm', shift: 'Chiều', type: 'Trực cổng',   teacherId: 'T01', teacherName: 'Nguyễn Minh Triết' },
-  { id: 'D06', day: 'Thứ Sáu', shift: 'Sáng', type: 'Trực trường',  teacherId: 'T02', teacherName: 'Trần Thị Hồng Vân' },
 ];
 
 const DAYS = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -233,11 +223,11 @@ export default function DutySchedule() {
 
   const addDuty = useCallback((duty) => {
     setDuties(prev => [...prev, duty]);
-  }, []);
+  }, [setDuties]);
 
   const removeDuty = useCallback((id) => {
     setDuties(prev => prev.filter(d => d.id !== id));
-  }, []);
+  }, [setDuties]);
 
   /* Stats */
   const statsData = mockTeachers.map(t => ({

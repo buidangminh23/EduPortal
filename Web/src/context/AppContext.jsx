@@ -1694,7 +1694,7 @@ export const AppProvider = ({ children }) => {
             }
             calculated = true;
           }
-        } catch (err) {
+        } catch {
           // Ignore and let standard flow handle it
         }
       }

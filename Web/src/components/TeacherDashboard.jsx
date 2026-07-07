@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
@@ -23,7 +23,7 @@ import TeacherOverview from './dash/TeacherOverview';
 import AiLessonPlannerTab from './teacher/AiLessonPlannerTab';
 
 
-export default function TeacherDashboard({ activeTab: globalActiveTab, setActiveTab: setGlobalActiveTab }) {
+export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const { 
     students, 
     parentQAs, 
@@ -64,25 +64,18 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showGradeEntryModal, setShowGradeEntryModal] = useState(false);
-  const [gradesInput, setGradesInput] = useState({ Math: 0, Literature: 0, Physics: 0, English: 0 });
   const [selectedSubject, setSelectedSubject] = useState('Math');
   const [detailedGradesInput, setDetailedGradesInput] = useState({ oral: 0, quiz15m: 0, test1Period: 0, semester: 0 });
 
-  const loadDetailedGradesForSubject = (student, subject) => {
+  const getDetailedGradesForSubject = (student, subject) => {
     if (!student) return;
     if (student.gradesDetailed && student.gradesDetailed[subject]) {
-      setDetailedGradesInput(student.gradesDetailed[subject]);
-    } else {
-      const score = student.grades[subject] || 0;
-      setDetailedGradesInput({ oral: score, quiz15m: score, test1Period: score, semester: score });
+      return student.gradesDetailed[subject];
     }
+    const score = student.grades[subject] || 0;
+    return { oral: score, quiz15m: score, test1Period: score, semester: score };
   };
 
-  useEffect(() => {
-    if (selectedStudent) {
-      loadDetailedGradesForSubject(selectedStudent, selectedSubject);
-    }
-  }, [selectedStudent, selectedSubject]);
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
 
   // Teacher Leave States
@@ -146,16 +139,13 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
     const conductScore = 100 + logs.reduce((sum, curr) => sum + curr.points, 0);
     const conduct = conductScore >= 90 ? 'Tốt' : conductScore >= 70 ? 'Khá' : 'Trung bình';
 
-    let commentText = '';
-    if (avg >= 8.5 && conduct === 'Tốt') {
-      commentText = `Học sinh ${selectedStudent.name} học lực giỏi toàn diện, tích cực xây dựng bài, đặc biệt xuất sắc ở các môn học tự nhiên. Ý thức thi đua rất tốt, gương mẫu trong học tập và rèn luyện.`;
-    } else if (avg >= 8.0 && conduct === 'Tốt') {
-      commentText = `Học sinh ${selectedStudent.name} có học lực Giỏi, tiếp thu bài nhanh, chăm ngoan. Chấp hành nghiêm chỉnh nội quy nhà trường và nề nếp thi đua của lớp.`;
-    } else if (avg >= 6.5 && conduct !== 'Yếu') {
-      commentText = `Học sinh ${selectedStudent.name} có học lực Khá, tiếp thu bài ổn định. Cần rèn luyện thêm tính kiên trì ở các môn tự nhiên. Hạnh kiểm ngoan ngoãn, lễ phép với thầy cô.`;
-    } else {
-      commentText = `Học sinh ${selectedStudent.name} học lực trung bình, còn hổng kiến thức căn bản ở một số môn. Cần tăng cường học nhóm và chú ý nghe giảng. Cần cố gắng rèn nề nếp thêm.`;
-    }
+    const commentText = avg >= 8.5 && conduct === 'Tốt'
+      ? `Học sinh ${selectedStudent.name} học lực giỏi toàn diện, tích cực xây dựng bài, đặc biệt xuất sắc ở các môn học tự nhiên. Ý thức thi đua rất tốt, gương mẫu trong học tập và rèn luyện.`
+      : avg >= 8.0 && conduct === 'Tốt'
+      ? `Học sinh ${selectedStudent.name} có học lực Giỏi, tiếp thu bài nhanh, chăm ngoan. Chấp hành nghiêm chỉnh nội quy nhà trường và nề nếp thi đua của lớp.`
+      : avg >= 6.5 && conduct !== 'Yếu'
+      ? `Học sinh ${selectedStudent.name} có học lực Khá, tiếp thu bài ổn định. Cần rèn luyện thêm tính kiên trì ở các môn tự nhiên. Hạnh kiểm ngoan ngoãn, lễ phép với thầy cô.`
+      : `Học sinh ${selectedStudent.name} học lực trung bình, còn hổng kiến thức căn bản ở một số môn. Cần tăng cường học nhóm và chú ý nghe giảng. Cần cố gắng rèn nề nếp thêm.`;
     setGeneratedComment(commentText);
   };
 
@@ -356,26 +346,23 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
     }
     setIsGeneratingQuiz(true);
     setTimeout(() => {
-      let questions = [];
-      if (aiQuizSubject === 'English') {
-        questions = [
+      const questions = aiQuizSubject === 'English'
+        ? [
           { question: `Tìm câu đúng sử dụng Thì Hiện tại hoàn thành với chủ đề "${aiQuizTopic}":`, options: [`A. She has just learned about ${aiQuizTopic}.`, `B. She is learning about ${aiQuizTopic}.`, `C. She learned about ${aiQuizTopic} yesterday.`, `D. She will learn about ${aiQuizTopic}.`], correctKey: 'A' },
           { question: `Chia động từ: "We ___ (study) ${aiQuizTopic} for three weeks."`, options: ['A. studied', 'B. have studied', 'C. are studying', 'D. will study'], correctKey: 'B' },
           { question: `Chọn đáp án đúng nhất điền vào chỗ trống: "They haven't finished the test about ${aiQuizTopic} ___."`, options: ['A. already', 'B. yet', 'C. since', 'D. ago'], correctKey: 'B' },
-        ];
-      } else if (aiQuizSubject === 'Physics') {
-        questions = [
+        ]
+        : aiQuizSubject === 'Physics'
+        ? [
           { question: `Định luật/Công thức cốt lõi liên quan đến chủ đề "${aiQuizTopic}":`, options: ['A. Công thức liên hệ độc lập thời gian', 'B. Định luật bảo toàn cơ năng', 'C. Hệ thức Anh-xtanh', 'D. Tất cả đều đúng'], correctKey: 'D' },
           { question: `Tính chất quan trọng nhất khi nghiên cứu về "${aiQuizTopic}":`, options: ['A. Biên độ luôn suy giảm theo thời gian', 'B. Pha ban đầu luôn bằng không', 'C. Tần số luôn phụ thuộc vào ngoại lực', 'D. Chu kỳ dao động không đổi'], correctKey: 'D' },
           { question: `Đơn vị đo lường tương ứng của đại lượng trong bài tập "${aiQuizTopic}":`, options: ['A. Hz (Héc)', 'B. J (Jun)', 'C. N (Niuton)', 'D. Tùy thuộc vào đại lượng cụ thể'], correctKey: 'D' },
-        ];
-      } else { // Math
-        questions = [
+        ]
+        : [
           { question: `Giải phương trình/bài toán ứng dụng chủ đề "${aiQuizTopic}":`, options: ['A. Nghiệm duy nhất x = 0', 'B. Nghiệm x thuộc khoảng (0;1)', 'C. Vô số nghiệm thực', 'D. Cần điều kiện biên để xác định nghiệm'], correctKey: 'D' },
           { question: `Để tìm điểm cực trị hoặc tối ưu hóa trong bài toán "${aiQuizTopic}", ta dùng:`, options: ['A. Đạo hàm bậc nhất f\'(x) = 0', 'B. Tính tích phân cận từ 0 đến vô cực', 'C. Vẽ đồ thị hàm số mũ', 'D. Giải phương trình vi phân bậc hai'], correctKey: 'A' },
           { question: `Phát biểu nào sau đây là ĐÚNG về lý thuyết "${aiQuizTopic}":`, options: ['A. Là ánh xạ liên tục trên tập số thực', 'B. Là tập hợp rỗng', 'C. Luôn có giá trị âm', 'D. Là hàm số tuần hoàn với chu kỳ tuần hoàn pi'], correctKey: 'A' },
         ];
-      }
       setAiQuizQuestions(questions);
       setNewAssignmentTitle(`Bài trắc nghiệm AI: Chuyên đề ${aiQuizTopic}`);
       setNewAssignmentContent(`Học sinh hãy hoàn thành bài trắc nghiệm 3 câu hỏi do AI tạo tự động về chuyên đề: ${aiQuizTopic}. Bài nộp sẽ được hệ thống chấm điểm tự động ngay lập tức.`);
@@ -2051,13 +2038,7 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                             setSelectedStudent(std);
                             setGeneratedComment('');
                             setSelectedSubject('Math');
-                            loadDetailedGradesForSubject(std, 'Math');
-                            setGradesInput({
-                              Math: std.grades.Math || 0,
-                              Literature: std.grades.Literature || 0,
-                              Physics: std.grades.Physics || 0,
-                              English: std.grades.English || 0
-                            });
+                            setDetailedGradesInput(getDetailedGradesForSubject(std, 'Math'));
                           }}
                           className="btn btn-secondary btn-sm"
                           style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}
@@ -2097,7 +2078,11 @@ export default function TeacherDashboard({ activeTab: globalActiveTab, setActive
                 <select
                   className="form-control"
                   value={selectedSubject}
-                  onChange={e => setSelectedSubject(e.target.value)}
+                  onChange={e => {
+                    const subject = e.target.value;
+                    setSelectedSubject(subject);
+                    setDetailedGradesInput(getDetailedGradesForSubject(selectedStudent, subject));
+                  }}
                   style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', height: '42px' }}
                 >
                   <option value="Math">Toán học</option>

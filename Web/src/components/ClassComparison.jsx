@@ -1,6 +1,11 @@
 import { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
-import { BarChart2, Award, ArrowUpRight, TrendingUp, Info } from 'lucide-react';
+import { BarChart2, ArrowUpRight, TrendingUp } from 'lucide-react';
+
+const stableTrendOffset = (className) => {
+  const seed = [...className].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return (seed % 50) / 100;
+};
 
 export default function ClassComparison() {
   const { students } = useContext(AppContext);
@@ -58,7 +63,7 @@ export default function ClassComparison() {
         overallAvg,
         subjectAverages,
         // Mock semester 1 vs semester 2 trend
-        sem1: overallAvg - 0.3 + (Math.random() * 0.5),
+        sem1: overallAvg - 0.3 + stableTrendOffset(className),
         sem2: overallAvg
       };
     });
@@ -74,16 +79,6 @@ export default function ClassComparison() {
     });
 
   }, [students, selectedSubject]);
-
-  // Max score for scaling the bar chart
-  const maxScore = useMemo(() => {
-    let max = 0;
-    comparisonData.forEach(d => {
-      const val = selectedSubject === 'All' ? d.overallAvg : (d.subjectAverages[selectedSubject] || 0);
-      if (val > max) max = val;
-    });
-    return max || 10;
-  }, [comparisonData, selectedSubject]);
 
   return (
     <div className="glass-panel animate-fade" style={{ padding: '24px' }}>

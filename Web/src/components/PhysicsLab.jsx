@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
-  Zap, Play, Pause, RotateCcw, History, Info, Eye, ArrowDown
+  Zap, Play, RotateCcw, History, Eye, ArrowDown
 } from 'lucide-react';
 
 export default function PhysicsLab() {
@@ -118,6 +118,7 @@ export default function PhysicsLab() {
   const [pendG, setPendG] = useState(9.8); // m/s2
   const [pendIsActive, setPendIsActive] = useState(true);
   const [pendTime, setPendTime] = useState(0);
+  const pendTimeRef = useRef(0);
 
   const omegaPend = Math.sqrt(pendG / pendL);
   const pendPeriod = 2 * Math.PI * Math.sqrt(pendL / pendG);
@@ -129,9 +130,11 @@ export default function PhysicsLab() {
   useEffect(() => {
     let frameId;
     if (pendIsActive && activeSubTab === 'pendulum') {
-      const startTime = performance.now() - (pendTime * 1000);
+      const startTime = performance.now() - (pendTimeRef.current * 1000);
       const animate = (time) => {
-        setPendTime((time - startTime) / 1000);
+        const nextTime = (time - startTime) / 1000;
+        pendTimeRef.current = nextTime;
+        setPendTime(nextTime);
         frameId = requestAnimationFrame(animate);
       };
       frameId = requestAnimationFrame(animate);

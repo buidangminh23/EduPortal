@@ -1,11 +1,10 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import {
   Vote,
   Plus,
   Users,
   Trophy,
-  Clock,
   CheckCircle,
   XCircle,
   Lock,
@@ -16,38 +15,6 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
-
-const initialVotes = [
-  {
-    id: 'V01',
-    title: 'Bầu Lớp Trưởng Lớp 12A1',
-    class: '12A1',
-    position: 'Lớp Trưởng',
-    status: 'open',
-    deadline: '2026-06-15',
-    candidates: [
-      { id: 'C01', name: 'Nguyễn Hoàng Nam', votes: 8 },
-      { id: 'C02', name: 'Lê Mai Chi', votes: 12 },
-      { id: 'C03', name: 'Phan Minh Triết', votes: 3 },
-    ],
-    totalVoters: 35,
-    votedStudentIds: ['HS002', 'HS003'],
-  },
-  {
-    id: 'V02',
-    title: 'Bầu Bí Thư Chi Đoàn 12A1',
-    class: '12A1',
-    position: 'Bí Thư Chi Đoàn',
-    status: 'closed',
-    deadline: '2026-06-01',
-    candidates: [
-      { id: 'C04', name: 'Lê Mai Chi', votes: 22 },
-      { id: 'C05', name: 'Trần Thị Hương', votes: 8 },
-    ],
-    totalVoters: 35,
-    votedStudentIds: [],
-  },
-];
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

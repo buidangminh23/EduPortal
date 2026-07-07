@@ -3,7 +3,6 @@ import {
   LayoutGrid,
   Shuffle,
   Printer,
-  ChevronDown,
   User,
   BookOpen,
   ArrowLeftRight,
@@ -327,7 +326,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const setSeatsByClass = setSeatingCharts;
   const [swapCount, setSwapCount] = useState(0);
 
-  const seats = seatsByClass[selectedClass] ?? [];
+  const seats = useMemo(() => seatsByClass[selectedClass] ?? [], [seatsByClass, selectedClass]);
 
   const swapSeats = useCallback((prev, index) => {
     setSeatsByClass(map => {
@@ -391,7 +390,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
       return { ...map, [cls]: newSeats };
     });
     setSelectedSeat(null);
-  }, [selectedClass]);
+  }, [selectedClass, setSeatsByClass]);
 
   /* Class change */
   const handleClassChange = useCallback((cls) => {

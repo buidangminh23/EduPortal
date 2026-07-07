@@ -1,39 +1,8 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Hash, Send, Trash2, Users, ChevronRight, GraduationCap } from 'lucide-react';
+import { Hash, Send, Trash2, Users, GraduationCap } from 'lucide-react';
 
 /* ─── Mock Data ─────────────────────────────────────────────────────────── */
-const mockRooms = [
-  { id: 'R-12A1',      name: '12A1 — Chung',      class: '12A1', subject: null,       unread: 3 },
-  { id: 'R-12A1-math', name: '12A1 — Toán học',   class: '12A1', subject: 'Toán học', unread: 0 },
-  { id: 'R-12A1-lit',  name: '12A1 — Ngữ văn',    class: '12A1', subject: 'Ngữ văn',  unread: 1 },
-  { id: 'R-12A2',      name: '12A2 — Chung',       class: '12A2', subject: null,       unread: 0 },
-];
-
-const SYSTEM_USER = '__system__';
-
-const initMessages = {
-  'R-12A1': [
-    { id: 'SYS-01', senderId: SYSTEM_USER, senderName: '', role: 'system', text: 'Thầy Triết đã tạo phòng chat', time: '07:00', date: '2026-06-07' },
-    { id: 'M01', senderId: 'T01', senderName: 'Nguyễn Minh Triết', role: 'teacher', text: 'Chào các em! Thầy nhắc nhở: tuần này có kiểm tra 1 tiết Toán vào thứ Năm nhé.', time: '08:30', date: '2026-06-08' },
-    { id: 'M02', senderId: 'HS001', senderName: 'Nguyễn Hoàng Nam', role: 'student', text: 'Thầy ơi, đề kiểm tra có bao nhiêu câu trắc nghiệm ạ?', time: '08:35', date: '2026-06-08' },
-    { id: 'M03', senderId: 'T01', senderName: 'Nguyễn Minh Triết', role: 'teacher', text: '40 câu trắc nghiệm + 2 câu tự luận em nhé. Thầy sẽ đăng đề cương ôn tập lên hệ thống chiều nay.', time: '08:40', date: '2026-06-08' },
-    { id: 'M04', senderId: 'HS002', senderName: 'Lê Mai Chi', role: 'student', text: 'Em cảm ơn thầy! Có ai muốn lập nhóm học buổi chiều không?', time: '09:15', date: '2026-06-08' },
-    { id: 'M05', senderId: 'HS003', senderName: 'Phan Minh Triết', role: 'student', text: 'Em muốn! 3 giờ chiều ở thư viện nhé mọi người 📚', time: '09:18', date: '2026-06-08' },
-  ],
-  'R-12A1-math': [
-    { id: 'SYS-02', senderId: SYSTEM_USER, senderName: '', role: 'system', text: 'Thầy Triết đã tạo phòng chat Toán học', time: '07:00', date: '2026-06-07' },
-    { id: 'M10', senderId: 'T01', senderName: 'Nguyễn Minh Triết', role: 'teacher', text: 'Phòng học Toán 12A1. Các em có thể hỏi bài ở đây nhé!', time: '07:00', date: '2026-06-07' },
-  ],
-  'R-12A1-lit': [
-    { id: 'SYS-03', senderId: SYSTEM_USER, senderName: '', role: 'system', text: 'Cô Vân đã tạo phòng chat Ngữ văn', time: '13:00', date: '2026-06-07' },
-    { id: 'M20', senderId: 'T02', senderName: 'Trần Thị Hồng Vân', role: 'teacher', text: 'Cô đã đăng đề cương ôn tập Ngữ văn lên kho học liệu rồi các em nhé!', time: '14:00', date: '2026-06-08' },
-  ],
-  'R-12A2': [
-    { id: 'SYS-04', senderId: SYSTEM_USER, senderName: '', role: 'system', text: 'Phòng chat 12A2 đã được tạo', time: '07:00', date: '2026-06-07' },
-  ],
-};
-
 const QUICK_EMOJIS = ['😊', '👍', '🙏', '🔥', '📚', '✅'];
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
@@ -97,7 +66,7 @@ export default function ClassChatRoom() {
     if (!text.trim()) return;
     const now = new Date();
     const newMsg = {
-      id: `MSG-${Date.now()}`,
+      id: `MSG-${now.getTime()}`,
       senderId: meId,
       senderName: meName,
       role: meRole,
@@ -451,7 +420,6 @@ export default function ClassChatRoom() {
               className="form-control"
               value={text}
               onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder={`Nhắn tin vào #${activeRoomInfo?.name || ''}...`}
               style={{ flex: 1, borderRadius: 30, padding: '10px 18px', fontSize: '0.9rem' }}
             />

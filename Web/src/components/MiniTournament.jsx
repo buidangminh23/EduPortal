@@ -2,66 +2,8 @@ import { useState, useContext, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Trophy, Users, Calendar, Plus, Play, Sparkles, Medal, Award, CheckCircle } from 'lucide-react';
 
-const mockTournaments = [
-  {
-    id: 'T01',
-    title: 'Đại Chiến Toán Học — Tháng 6/2026',
-    subject: 'Toán học',
-    status: 'ongoing', // upcoming | ongoing | completed
-    startDate: '2026-06-08',
-    endDate: '2026-06-15',
-    participants: [
-      { id: 'HS001', name: 'Nguyễn Hoàng Nam', score: 85 },
-      { id: 'HS002', name: 'Lê Mai Chi', score: 98 },
-      { id: 'HS003', name: 'Phan Minh Triết', score: 62 },
-      { id: 'P4', name: 'Vũ Thành Long', score: 79 },
-      { id: 'P5', name: 'Đỗ Minh Châu', score: 91 },
-      { id: 'P6', name: 'Hoàng Lan Anh', score: 74 },
-      { id: 'P7', name: 'Trần Bảo Khoa', score: 83 },
-      { id: 'P8', name: 'Nguyễn Thị Cẩm Ly', score: 76 },
-    ],
-    bracket: [
-      { 
-        round: 1, 
-        name: 'Tứ Kết',
-        matches: [
-          { id: 'M1', p1: 'Lê Mai Chi', p2: 'Vũ Thành Long', winner: 'Lê Mai Chi', score: '98-79' },
-          { id: 'M2', p1: 'Đỗ Minh Châu', p2: 'Nguyễn Thị Cẩm Ly', winner: 'Đỗ Minh Châu', score: '91-76' },
-          { id: 'M3', p1: 'Nguyễn Hoàng Nam', p2: 'Trần Bảo Khoa', winner: 'Nguyễn Hoàng Nam', score: '85-83' },
-          { id: 'M4', p1: 'Hoàng Lan Anh', p2: 'Phan Minh Triết', winner: 'Hoàng Lan Anh', score: '74-62' },
-        ]
-      },
-      { 
-        round: 2, 
-        name: 'Bán Kết',
-        matches: [
-          { id: 'M5', p1: 'Lê Mai Chi', p2: 'Đỗ Minh Châu', winner: 'Lê Mai Chi', score: '98-91' },
-          { id: 'M6', p1: 'Nguyễn Hoàng Nam', p2: 'Hoàng Lan Anh', winner: null, score: null },
-        ]
-      },
-      { 
-        round: 3, 
-        name: 'Chung Kết',
-        matches: [
-          { id: 'M7', p1: 'Lê Mai Chi', p2: '???', winner: null, score: null },
-        ]
-      },
-    ]
-  },
-  {
-    id: 'T02',
-    title: 'Quiz Vật Lý Nhanh Tay Lẹ Mắt',
-    subject: 'Vật lý',
-    status: 'upcoming',
-    startDate: '2026-06-20',
-    endDate: '2026-06-27',
-    participants: [],
-    bracket: []
-  }
-];
-
 export default function MiniTournament() {
-  const { currentRole, userSession, tournaments, setTournaments } = useContext(AppContext);
+  const { currentRole, tournaments, setTournaments } = useContext(AppContext);
   const [activeTourneyId, setActiveTourneyId] = useState('T01');
   const [showCreateModal, setShowCreateModal] = useState(false);
   

@@ -1,7 +1,7 @@
-import { useState, useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
-  Beaker, Flame, Zap, Droplets, History, Info, Play, RotateCcw
+  Beaker, Flame, Zap, Droplets, History
 } from 'lucide-react';
 
 const BUBBLES_DATA = [
@@ -378,8 +378,6 @@ export default function ChemistryLab() {
     playSound('pour');
 
     const sol = phSolutions.find(s => s.name === selectedPhSolution);
-    const ind = phIndicators.find(i => i.name === selectedPhIndicator);
-
     setTimeout(() => {
       setPhActive(false);
       
@@ -537,35 +535,32 @@ export default function ChemistryLab() {
 
   // Simulation loop for electrolysis bubbles
   useEffect(() => {
-    let interval;
-    if (powerOn && elecSolution) {
-      playSound('fizz');
-      interval = setInterval(() => {
-        // Generate random bubble coordinates
-        const newAnode = Array.from({ length: 5 }, () => ({
-          x: 40 + Math.random() * 20,
-          y: 70 + Math.random() * 50,
-          r: 1.5 + Math.random() * 2,
-          speed: 1 + Math.random() * 1.5
-        }));
-        const newCathode = Array.from({ length: 5 }, () => ({
-          x: 100 + Math.random() * 20,
-          y: 70 + Math.random() * 50,
-          r: 1.5 + Math.random() * 2,
-          speed: 1 + Math.random() * 1.5
-        }));
-        setAnodeBubbles(newAnode);
-        setCathodeBubbles(newCathode);
+    if (!powerOn || !elecSolution) return undefined;
 
-        if (elecSolution === 'CuSO4') {
-          setCuDepositThickness(prev => Math.min(6, prev + 0.1));
-          setFadePercentage(prev => Math.min(100, prev + 2));
-        }
-      }, 300);
-    } else {
-      setAnodeBubbles([]);
-      setCathodeBubbles([]);
-    }
+    playSound('fizz');
+    let interval;
+    interval = setInterval(() => {
+      // Generate random bubble coordinates
+      const newAnode = Array.from({ length: 5 }, () => ({
+        x: 40 + Math.random() * 20,
+        y: 70 + Math.random() * 50,
+        r: 1.5 + Math.random() * 2,
+        speed: 1 + Math.random() * 1.5
+      }));
+      const newCathode = Array.from({ length: 5 }, () => ({
+        x: 100 + Math.random() * 20,
+        y: 70 + Math.random() * 50,
+        r: 1.5 + Math.random() * 2,
+        speed: 1 + Math.random() * 1.5
+      }));
+      setAnodeBubbles(newAnode);
+      setCathodeBubbles(newCathode);
+
+      if (elecSolution === 'CuSO4') {
+        setCuDepositThickness(prev => Math.min(6, prev + 0.1));
+        setFadePercentage(prev => Math.min(100, prev + 2));
+      }
+    }, 300);
 
     return () => clearInterval(interval);
   }, [powerOn, elecSolution]);
@@ -574,6 +569,10 @@ export default function ChemistryLab() {
     if (!elecSolution) return;
     const isNextOn = !powerOn;
     setPowerOn(isNextOn);
+    if (!isNextOn) {
+      setAnodeBubbles([]);
+      setCathodeBubbles([]);
+    }
 
     if (isNextOn) {
       let anodeHalf = '';

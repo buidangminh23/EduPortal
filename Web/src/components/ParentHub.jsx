@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect, useMemo } from 'react';
+import { useContext, useState, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   FileText, 
@@ -16,7 +16,7 @@ import VietQRPayment from './VietQRPayment';
 import ParentOverview from './dash/ParentOverview';
 
 
-export default function ParentHub({ activeTab, setActiveTab }) {
+export default function ParentHub({ setActiveTab }) {
   const { 
     selectedStudentId, 
     students, 

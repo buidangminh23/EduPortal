@@ -1,9 +1,9 @@
-import { useContext, useState, useMemo } from 'react';
+import { useContext, useState, useMemo, useCallback } from 'react';
 import { AppContext } from '../context/AppContext';
-import { AlertTriangle, CheckCircle, Info, ChevronRight, User, Filter, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ChevronRight, Filter, Sparkles } from 'lucide-react';
 
 export default function AIRiskAnalysis() {
-  const { students, attendanceLogs, currentRole } = useContext(AppContext);
+  const { students, attendanceLogs } = useContext(AppContext);
   const [selectedClass, setSelectedClass] = useState('All');
   const [selectedRisk, setSelectedRisk] = useState('All');
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -15,7 +15,7 @@ export default function AIRiskAnalysis() {
   }, [students]);
 
   // Risk calculation logic
-  const calculateStudentRisk = (student) => {
+  const calculateStudentRisk = useCallback((student) => {
     // Average grades
     const grades = Object.values(student.grades || {});
     const avg = grades.length ? grades.reduce((a, b) => a + b, 0) / grades.length : 0;
@@ -69,7 +69,7 @@ export default function AIRiskAnalysis() {
       unpaid,
       recommendations
     };
-  };
+  }, [attendanceLogs]);
 
   const analyzedStudents = useMemo(() => {
     if (!students) return [];
@@ -80,7 +80,7 @@ export default function AIRiskAnalysis() {
         risk
       };
     });
-  }, [students, attendanceLogs]);
+  }, [students, calculateStudentRisk]);
 
   // Filter students
   const filteredStudents = useMemo(() => {

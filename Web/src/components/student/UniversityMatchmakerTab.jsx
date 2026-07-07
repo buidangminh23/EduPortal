@@ -1,16 +1,13 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { 
   Sparkles, 
   GraduationCap, 
   Search, 
-  Filter, 
   CheckCircle, 
   MapPin, 
   TrendingUp, 
-  BookOpen, 
   Award, 
-  Info,
   DollarSign,
   ArrowRight
 } from 'lucide-react';
@@ -99,6 +96,15 @@ const UNIVERSITY_DB = [
   { id: 'UNI_VIN2', name: 'Đại học VinUniversity', code: 'VinUni', city: 'Hà Nội', major: 'Quản trị kinh doanh', group: 'D01', cutoff: 23.0, fee: 'Tư thục/Quốc tế (>300tr/năm)', type: 'intl', desc: 'Đào tạo tư duy kinh doanh toàn cầu, thực tập sớm tại các tập đoàn đa quốc gia.', riasecMatches: ['E', 'C'] }
 ];
 
+const readSavedFavorites = (studentId) => {
+  if (!studentId) return [];
+  try {
+    return JSON.parse(localStorage.getItem(`matchmaker_favs_${studentId}`) || '[]');
+  } catch {
+    return [];
+  }
+};
+
 export default function UniversityMatchmakerTab({ student }) {
   const { careerTestScores } = useContext(AppContext);
   
@@ -113,7 +119,7 @@ export default function UniversityMatchmakerTab({ student }) {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedRoadmapUni, setSelectedRoadmapUni] = useState(null);
   const [roadmapChecklist, setRoadmapChecklist] = useState([]);
-  const [savedFavorites, setSavedFavorites] = useState([]);
+  const [favoriteCache, setFavoriteCache] = useState({});
 
   // Calculate predicted GPA and suggested score
   const studentGrades = Object.values(student?.grades || {});
@@ -131,13 +137,7 @@ export default function UniversityMatchmakerTab({ student }) {
     if (entries[1]) topRiasecTraits.push(entries[1][0]);
   }
 
-  // Load saved choices from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(`matchmaker_favs_${student?.id}`);
-    if (saved) {
-      setSavedFavorites(JSON.parse(saved));
-    }
-  }, [student?.id]);
+  const savedFavorites = favoriteCache[student?.id] ?? readSavedFavorites(student?.id);
 
   // Autofill with predicted exam score
   const handleAutofillScore = () => {
@@ -215,27 +215,13 @@ export default function UniversityMatchmakerTab({ student }) {
     // Add probability calculations & RIASEC match index
     const processed = filtered.map(uni => {
       const diff = targetScore - uni.cutoff;
-      let probLabel = '';
-      let probColor = '';
-      let probPercent = 0;
-      
-      if (diff >= 1.5) {
-        probLabel = 'Rất cao';
-        probColor = 'var(--accent-secondary)';
-        probPercent = 95;
-      } else if (diff >= 0) {
-        probLabel = 'An toàn';
-        probColor = '#0f766e';
-        probPercent = 78;
-      } else if (diff >= -1.2) {
-        probLabel = 'Cần cố gắng';
-        probColor = '#d97706';
-        probPercent = 55;
-      } else {
-        probLabel = 'Thử thách lớn';
-        probColor = '#dc2626';
-        probPercent = 25;
-      }
+      const probability = diff >= 1.5
+        ? { probLabel: 'Rất cao', probColor: 'var(--accent-secondary)', probPercent: 95 }
+        : diff >= 0
+        ? { probLabel: 'An toàn', probColor: '#0f766e', probPercent: 78 }
+        : diff >= -1.2
+        ? { probLabel: 'Cần cố gắng', probColor: '#d97706', probPercent: 55 }
+        : { probLabel: 'Thử thách lớn', probColor: '#dc2626', probPercent: 25 };
 
       // Check if matches top student RIASEC profile
       let riasecMatchCount = 0;
@@ -246,9 +232,7 @@ export default function UniversityMatchmakerTab({ student }) {
 
       return {
         ...uni,
-        probLabel,
-        probColor,
-        probPercent,
+        ...probability,
         riasecMatchPercent,
         diff
       };
@@ -299,8 +283,10 @@ export default function UniversityMatchmakerTab({ student }) {
     } else {
       updated = [...savedFavorites, uni];
     }
-    setSavedFavorites(updated);
-    localStorage.setItem(`matchmaker_favs_${student?.id}`, JSON.stringify(updated));
+    if (student?.id) {
+      setFavoriteCache(prev => ({ ...prev, [student.id]: updated }));
+      localStorage.setItem(`matchmaker_favs_${student.id}`, JSON.stringify(updated));
+    }
   };
 
   return (

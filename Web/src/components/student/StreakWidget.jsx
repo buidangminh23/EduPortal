@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Flame, CheckCircle2, Calendar } from 'lucide-react';
 
 /* ─── MOCK DATA ───────────────────────────────────────────────────────────── */
@@ -10,11 +10,13 @@ function buildMockHeatmap() {
     date.setDate(today.getDate() - (27 - i));
     // Studied in the last 12 days (streak = 12) plus some random days before
     const daysAgo = 27 - i;
-    let studied = false;
-    if (daysAgo < 12) studied = true;           // current 12-day streak
-    else if (daysAgo < 15) studied = false;     // 3-day gap
-    else if (daysAgo < 20) studied = Math.random() > 0.35; // sporadic
-    else studied = Math.random() > 0.6;
+    const studied = daysAgo < 12
+      ? true           // current 12-day streak
+      : daysAgo < 15
+      ? false          // 3-day gap
+      : daysAgo < 20
+      ? Math.random() > 0.35 // sporadic
+      : Math.random() > 0.6;
     return {
       date: date.toISOString().slice(0, 10),
       studied,
@@ -47,17 +49,14 @@ function getStreakBadge(streak) {
 export default function StreakWidget() {
   const [streak,       setStreak]       = useState(INITIAL_STREAK);
   const [heatmap,      setHeatmap]      = useState(INITIAL_HEATMAP);
-  const [checkedToday, setCheckedToday] = useState(false);
+  const [checkedToday, setCheckedToday] = useState(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return Boolean(INITIAL_HEATMAP.find(d => d.date === today)?.studied);
+  });
   const [fireAnim,     setFireAnim]     = useState(false);
   const [showToast,    setShowToast]    = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
-
-  // Check if today is already marked
-  useEffect(() => {
-    const todayEntry = heatmap.find(d => d.date === today);
-    if (todayEntry?.studied) setCheckedToday(true);
-  }, []);  // eslint-disable-line
 
   const handleCheckIn = () => {
     if (checkedToday) return;

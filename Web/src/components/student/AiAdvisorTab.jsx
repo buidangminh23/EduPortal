@@ -1,6 +1,6 @@
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { Brain, Sparkles, Trophy, ArrowRight, ChevronRight, RotateCcw, Compass, BookOpen, GraduationCap } from 'lucide-react';
+import { Brain, Sparkles, Trophy, ArrowRight, ChevronRight, RotateCcw, Compass, GraduationCap } from 'lucide-react';
 
 const QUESTIONS = [
   { id: 1, type: 'R', text: 'Tôi thích thiết kế bản vẽ kỹ thuật, sửa chữa các thiết bị điện tử hoặc đồ đạc trong gia đình.' },
@@ -64,27 +64,19 @@ export default function AiAdvisorTab() {
   const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
 
   const [testStarted, setTestStarted] = useState(false);
-  const [testCompleted, setTestCompleted] = useState(false);
+  const [completedStudentId, setCompletedStudentId] = useState(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState(Array(QUESTIONS.length).fill(0));
 
   // Check if student already has scores
   const savedScore = careerTestScores?.find(score => score.studentId === student?.id);
-
-  useEffect(() => {
-    if (savedScore) {
-      setTestCompleted(true);
-    } else {
-      setTestCompleted(false);
-      setTestStarted(false);
-    }
-  }, [savedScore, student]);
+  const testCompleted = completedStudentId === student?.id || (Boolean(savedScore) && !testStarted);
 
   const handleStart = () => {
     setAnswers(Array(QUESTIONS.length).fill(0));
     setCurrentIdx(0);
     setTestStarted(true);
-    setTestCompleted(false);
+    setCompletedStudentId(null);
   };
 
   const handleSelectScore = (score) => {
@@ -120,7 +112,7 @@ export default function AiAdvisorTab() {
 
     if (student) {
       saveCareerTest(student.id, results);
-      setTestCompleted(true);
+      setCompletedStudentId(student.id);
       setTestStarted(false);
     }
   };

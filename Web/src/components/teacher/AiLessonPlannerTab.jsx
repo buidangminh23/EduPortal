@@ -2,16 +2,10 @@ import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { 
   Sparkles, 
-  BookOpen, 
-  FileText, 
   Send, 
   Printer, 
-  CheckCircle2, 
-  HelpCircle,
   Brain,
   Sliders,
-  ChevronRight,
-  Plus
 } from 'lucide-react';
 
 export default function AiLessonPlannerTab() {
@@ -29,7 +23,6 @@ export default function AiLessonPlannerTab() {
   const [diffEasy, setDiffEasy] = useState(40);
   const [diffMedium, setDiffMedium] = useState(30);
   const [diffHard, setDiffHard] = useState(20);
-  const [diffExpert, setDiffExpert] = useState(10);
 
   // Generation status states
   const [isGenerating, setIsGenerating] = useState(false);
