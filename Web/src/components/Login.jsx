@@ -46,7 +46,10 @@ export default function Login({ onBack }) {
         displayName: role === 'admin' ? 'Hiệu trưởng BGH' :
                      role === 'teacher' ? 'Thầy Nguyễn Minh Triết' :
                      role === 'student' ? 'Nguyễn Hoàng Nam' : 'PH. Nguyễn Văn Hùng',
-        class: role === 'student' || role === 'parent' ? '12A1' : null
+        class: role === 'student' || role === 'parent' ? '12A1' : null,
+        studentId: role === 'student' || role === 'parent' ? 'HS001' : null,
+        parentName: role === 'parent' ? 'Nguyễn Văn Hùng' : null,
+        parentId: role === 'parent' ? 'parent_HS001' : null
       };
       localStorage.setItem('userSession', JSON.stringify(session));
       setCurrentRole(role);

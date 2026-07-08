@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MOCK_EXAM_HISTORY } from '../data/mockExamsData';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -1066,6 +1066,50 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : initialTournaments;
   });
 
+  const sessionLinkedStudent = useMemo(() => {
+    if (!userSession || !students?.length) return null;
+
+    if (userSession.studentId) {
+      const directMatch = students.find(student => student.id === userSession.studentId);
+      if (directMatch) return directMatch;
+    }
+
+    if (currentRole === 'student') {
+      return students.find(student => student.name === userSession.displayName) || null;
+    }
+
+    if (currentRole === 'parent') {
+      const parentName = userSession.parentName || userSession.displayName?.replace(/^PH\.\s+/i, '').trim();
+      return students.find(student => student.parentName === parentName) || null;
+    }
+
+    return null;
+  }, [currentRole, students, userSession]);
+
+  const sessionLinkedStudentId = sessionLinkedStudent?.id || '';
+  const parentLinkedStudent = currentRole === 'parent' ? sessionLinkedStudent : null;
+  const parentLinkedStudentId = parentLinkedStudent?.id || '';
+  const effectiveSelectedStudentId = currentRole === 'parent' ? parentLinkedStudentId : selectedStudentId;
+
+  const selectStudentSafely = useCallback((nextIdOrUpdater) => {
+    setSelectedStudentId(prevId => {
+      if (currentRole === 'parent') return parentLinkedStudentId;
+      const nextId = typeof nextIdOrUpdater === 'function' ? nextIdOrUpdater(prevId) : nextIdOrUpdater;
+      return nextId || prevId;
+    });
+  }, [currentRole, parentLinkedStudentId]);
+
+  const isNotificationVisibleToCurrentUser = useCallback((notification) => {
+    if (!notification) return false;
+    if (notification.targetRole === 'all') return true;
+    if (notification.targetRole !== currentRole) return false;
+    if (currentRole !== 'parent') return true;
+    if (!parentLinkedStudentId) return false;
+    return !notification.targetId
+      || notification.targetId === parentLinkedStudentId
+      || notification.targetId === `parent_${parentLinkedStudentId}`;
+  }, [currentRole, parentLinkedStudentId]);
+
   // Sync state changes with localStorage
   useEffect(() => { localStorage.setItem('dutySchedule', JSON.stringify(dutySchedule)); }, [dutySchedule]);
   useEffect(() => { localStorage.setItem('seatingCharts', JSON.stringify(seatingCharts)); }, [seatingCharts]);
@@ -1087,27 +1131,16 @@ export const AppProvider = ({ children }) => {
     }
   }, [userSession]);
 
-  // Sync selectedStudentId with logged-in user profile automatically
+  // Sync selectedStudentId with logged-in user profile automatically.
   useEffect(() => {
-    if (currentRole === 'student' && userSession && students) {
-      const student = students.find(s => s.name === userSession.displayName);
-      if (student && selectedStudentId !== student.id) {
-        const timer = setTimeout(() => {
-          setSelectedStudentId(student.id);
-        }, 0);
-        return () => clearTimeout(timer);
-      }
-    } else if (currentRole === 'parent' && userSession && students) {
-      const parentNameClean = userSession.displayName.replace(/^PH\.\s+/, '');
-      const student = students.find(s => s.parentName === parentNameClean);
-      if (student && selectedStudentId !== student.id) {
-        const timer = setTimeout(() => {
-          setSelectedStudentId(student.id);
-        }, 0);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [currentRole, userSession, students, selectedStudentId]);
+    if (currentRole !== 'student' && currentRole !== 'parent') return undefined;
+    if (selectedStudentId === sessionLinkedStudentId) return undefined;
+
+    const timer = setTimeout(() => {
+      setSelectedStudentId(sessionLinkedStudentId);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [currentRole, selectedStudentId, sessionLinkedStudentId]);
 
   useEffect(() => {
     localStorage.setItem('teachers', JSON.stringify(teachers));
@@ -2059,10 +2092,14 @@ export const AppProvider = ({ children }) => {
 
   // ── Notification Actions ─────────────────────────────────────────────────
   const markNotificationRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => prev.map(n => (
+      n.id === id && isNotificationVisibleToCurrentUser(n) ? { ...n, read: true } : n
+    )));
   };
   const markAllNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => prev.map(n => (
+      isNotificationVisibleToCurrentUser(n) ? { ...n, read: true } : n
+    )));
   };
   const addNotification = (notif) => {
     const id = 'N' + Date.now();
@@ -2618,12 +2655,70 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const isParentView = currentRole === 'parent';
+  const parentUserId = parentLinkedStudentId ? `parent_${parentLinkedStudentId}` : '';
+  const scopedStudents = isParentView
+    ? students.filter(student => student.id === parentLinkedStudentId)
+    : students;
+  const scopeStudentRows = (rows) => {
+    if (!isParentView) return rows;
+    if (!parentLinkedStudentId) return [];
+    return (rows || []).filter(row => row.studentId === parentLinkedStudentId);
+  };
+  const scopedParentQAs = isParentView
+    ? (parentQAs || []).filter(qa => (
+        parentLinkedStudent
+        && (qa.parentName === parentLinkedStudent.parentName || qa.studentName === parentLinkedStudent.name)
+      ))
+    : parentQAs;
+  const scopedTeacherEvaluations = isParentView
+    ? (teacherEvaluations || []).filter(evaluation => (
+        evaluation.raterRole === 'parent' && evaluation.raterName === parentLinkedStudent?.parentName
+      ))
+    : teacherEvaluations;
+  const scopedNotifications = isParentView
+    ? (notifications || []).filter(isNotificationVisibleToCurrentUser)
+    : notifications;
+  const scopedDirectMessages = isParentView
+    ? (directMessages || []).filter(message => (
+        parentUserId && (message.fromId === parentUserId || message.toId === parentUserId)
+      ))
+    : directMessages;
+  const scopedMeetingBookings = isParentView
+    ? scopeStudentRows(meetingBookings)
+    : meetingBookings;
+  const scopedStudentWallets = isParentView
+    ? (parentLinkedStudentId ? { [parentLinkedStudentId]: studentWallets?.[parentLinkedStudentId] } : {})
+    : studentWallets;
+  const scopedStudentCompetencies = isParentView
+    ? (parentLinkedStudentId && studentCompetencies?.[parentLinkedStudentId]
+        ? { [parentLinkedStudentId]: studentCompetencies[parentLinkedStudentId] }
+        : {})
+    : studentCompetencies;
+  const searchableAssignments = isParentView
+    ? (assignments || []).filter(assignment => (
+        assignment.classTarget === parentLinkedStudent?.class
+        || assignment.studentId === parentLinkedStudentId
+        || assignment.targetStudentId === parentLinkedStudentId
+      ))
+    : assignments;
+  const scopedDeadlines = isParentView
+    ? (deadlines || []).filter(deadline => (
+        deadline.classTarget === parentLinkedStudent?.class
+        || deadline.studentId === parentLinkedStudentId
+        || deadline.targetStudentId === parentLinkedStudentId
+      ))
+    : deadlines;
+  const searchableBulletins = (bulletins || []).filter(bulletin => (
+    bulletin.targetRoles?.includes('all') || bulletin.targetRoles?.includes(currentRole)
+  ));
+
   // ── Global Search ────────────────────────────────────────────────────────
   const globalSearch = (query) => {
     if (!query || query.trim().length < 2) return [];
     const q = query.toLowerCase().trim();
     const results = [];
-    students.forEach(s => {
+    scopedStudents.forEach(s => {
       if (s.name.toLowerCase().includes(q) || s.class.toLowerCase().includes(q))
         results.push({ type: 'student', id: s.id, title: s.name, subtitle: `Lớp ${s.class}`, tab: 'students' });
     });
@@ -2631,11 +2726,11 @@ export const AppProvider = ({ children }) => {
       if (t.name.toLowerCase().includes(q) || t.subject.toLowerCase().includes(q))
         results.push({ type: 'teacher', id: t.id, title: t.name, subtitle: t.subject, tab: 'teachers' });
     });
-    bulletins.forEach(b => {
+    searchableBulletins.forEach(b => {
       if (b.title.toLowerCase().includes(q) || b.content.toLowerCase().includes(q))
         results.push({ type: 'bulletin', id: b.id, title: b.title, subtitle: b.authorName, tab: 'bulletin' });
     });
-    assignments.forEach(a => {
+    searchableAssignments.forEach(a => {
       if (a.title.toLowerCase().includes(q) || a.subject.toLowerCase().includes(q))
         results.push({ type: 'assignment', id: a.id, title: a.title, subtitle: a.subject, tab: 'dashboard' });
     });
@@ -2655,50 +2750,54 @@ export const AppProvider = ({ children }) => {
       setTeacherSubTab,
       parentSubTab,
       setParentSubTab,
-      selectedStudentId,
-      setSelectedStudentId,
-      mockExamHistory,
+      selectedStudentId: effectiveSelectedStudentId,
+      setSelectedStudentId: selectStudentSafely,
+      mockExamHistory: scopeStudentRows(mockExamHistory),
       saveMockExamResult,
       customExams,
       addCustomExam,
       teachers,
-      students,
+      students: scopedStudents,
       announcements,
       journalEntries,
-      parentQAs,
+      parentQAs: scopedParentQAs,
       tutorChat,
       videoLessons: initialVideoLessons,
-      leaveRequests,
+      leaveRequests: scopeStudentRows(leaveRequests),
       teacherLeaveRequests,
       submitTeacherLeaveRequest,
       approveTeacherLeaveRequest,
       lessonPlans,
-      conductLogs,
-      teacherEvaluations,
-      assignments,
-      deadlines,
+      conductLogs: scopeStudentRows(conductLogs),
+      teacherEvaluations: scopedTeacherEvaluations,
+      assignments: searchableAssignments,
+      deadlines: scopedDeadlines,
       addDeadline,
       toggleDeadlineDone,
       deleteDeadline,
-      submissions,
-      attendanceLogs,
+      submissions: scopeStudentRows(submissions),
+      attendanceLogs: scopeStudentRows(attendanceLogs),
       clubs,
-      clubApplications,
+      clubApplications: scopeStudentRows(clubApplications),
       learningResources,
-      flashcards,
-      careerTestScores,
+      flashcards: scopeStudentRows(flashcards),
+      careerTestScores: scopeStudentRows(careerTestScores),
       cafeteriaMenu,
-      cafeteriaRegistrations,
-      cafeteriaFeedback,
-      studentWallets,
-      studentCompetencies,
-      wellnessLogs,
-      wellnessAppointments,
+      cafeteriaRegistrations: scopeStudentRows(cafeteriaRegistrations),
+      cafeteriaFeedback: scopeStudentRows(cafeteriaFeedback),
+      studentWallets: scopedStudentWallets,
+      studentCompetencies: scopedStudentCompetencies,
+      wellnessLogs: scopeStudentRows(wellnessLogs),
+      wellnessAppointments: scopeStudentRows(wellnessAppointments),
       studyRooms,
-      peerTutors,
-      tutorRequests,
+      peerTutors: scopeStudentRows(peerTutors),
+      tutorRequests: isParentView
+        ? (parentLinkedStudentId
+            ? (tutorRequests || []).filter(request => request.studentId === parentLinkedStudentId || request.tutorId === parentLinkedStudentId)
+            : [])
+        : tutorRequests,
       libraryBooks,
-      bookReservations,
+      bookReservations: scopeStudentRows(bookReservations),
       eBooks: initialEbooks,
       logout,
       addStudent,
@@ -2748,15 +2847,15 @@ export const AppProvider = ({ children }) => {
       approveBookReservation,
       collectBook,
       returnBook,
-      labSimulations, runPhysicsRLC, runChemistryReaction, addLabSimulation,
-      essaySubmissions, submitEssayForAiGrading, approveOrEditEssayGrade,
-      busRoutes, busScanLogs, simulateBusMove, parentRegisterBusRoute,
-      studentPortfolios, updatePortfolioAchievements, signPortfolioBgh, togglePortfolioPublic,
+      labSimulations: scopeStudentRows(labSimulations), runPhysicsRLC, runChemistryReaction, addLabSimulation,
+      essaySubmissions: scopeStudentRows(essaySubmissions), submitEssayForAiGrading, approveOrEditEssayGrade,
+      busRoutes, busScanLogs: scopeStudentRows(busScanLogs), simulateBusMove, parentRegisterBusRoute,
+      studentPortfolios: scopeStudentRows(studentPortfolios), updatePortfolioAchievements, signPortfolioBgh, togglePortfolioPublic,
       timetableSlots, teacherAvailability, generateSmartTimetable, swapTimetableSlots,
-      notifications, markNotificationRead, markAllNotificationsRead, addNotification,
-      directMessages, sendDirectMessage, markMessageRead,
+      notifications: scopedNotifications, markNotificationRead, markAllNotificationsRead, addNotification,
+      directMessages: scopedDirectMessages, sendDirectMessage, markMessageRead,
       bulletins, addBulletin, confirmBulletinRead,
-      meetingBookings, requestMeeting, confirmMeeting, cancelMeeting,
+      meetingBookings: scopedMeetingBookings, requestMeeting, confirmMeeting, cancelMeeting,
       communityExams, addToRepository, voteExam,
       schoolAssets, bookAsset, approveAssetBooking,
       teacherAttendance, checkInTeacher,

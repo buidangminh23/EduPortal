@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useMemo, useRef } from 'react';
+import { useState, useContext, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   LayoutGrid,
   Shuffle,
@@ -248,10 +248,14 @@ function SeatCard({
   isSearchMatch,
   isLocked,
   readOnly,
+  privateView,
 }) {
   const { student } = seat;
   const isEmpty = !student;
   const canDrag = !isEmpty && !readOnly && !isLocked;
+  const isMasked = privateView && !isHighlighted && !!student;
+  const displayName = isMasked ? 'Bạn cùng lớp' : student?.name;
+  const displayId = isMasked ? `Ghế ${seat.index + 1}` : student?.id;
 
   let borderColor = 'rgba(255,255,255,0.1)';
   let bg = 'rgba(255,255,255,0.04)';
@@ -294,7 +298,7 @@ function SeatCard({
       onPointerUp={!readOnly ? onPointerUp : undefined}
       onPointerCancel={!readOnly ? onPointerCancel : undefined}
       onClick={readOnly ? undefined : () => onClick(seat.index)}
-      aria-label={student ? `Ghế ${seat.index + 1}: ${student.name}` : `Ghế ${seat.index + 1}: Trống`}
+      aria-label={student ? `Ghế ${seat.index + 1}: ${displayName}` : `Ghế ${seat.index + 1}: Trống`}
       style={{
         width: '100%',
         aspectRatio: '3/2',
@@ -389,11 +393,11 @@ function SeatCard({
               overflow: 'hidden',
             }}
           >
-            {student.name}
+            {displayName}
           </span>
           {/* ID */}
           <span style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 1 }}>
-            {student.id}
+            {displayId}
           </span>
         </>
       )}
@@ -429,6 +433,19 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const draggedSeatRef = useRef(null);
   const pointerDragRef = useRef(null);
 
+  useEffect(() => {
+    if (!isReadOnly || !effectiveFixedClass || selectedClass === effectiveFixedClass) return undefined;
+    const timer = setTimeout(() => {
+      setSelectedClass(effectiveFixedClass);
+      setSelectedSeat(null);
+      setSearchTerm('');
+      setHistory([]);
+      setFuture([]);
+      setLastAction('');
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [effectiveFixedClass, isReadOnly, selectedClass]);
+
   // Ensure all classes in CLASS_LIST are initialized in seatingCharts
   const activeCharts = useMemo(() => {
     const charts = { ...seatingCharts };
@@ -442,11 +459,11 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
         changed = true;
       }
     });
-    if (changed) {
+    if (changed && canEditSeatingChart) {
       setTimeout(() => setSeatingCharts(charts), 0);
     }
     return charts;
-  }, [seatingCharts, contextStudents, setSeatingCharts]);
+  }, [canEditSeatingChart, seatingCharts, contextStudents, setSeatingCharts]);
 
   const seatsByClass = activeCharts;
   const setSeatsByClass = setSeatingCharts;
@@ -770,6 +787,9 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   /* Stats */
   const totalStudents = useMemo(() => seats.filter(s => s.student).length, [seats]);
   const emptySeats = TOTAL_SEATS - totalStudents;
+  const visibleClassList = useMemo(() => (
+    isReadOnly && effectiveFixedClass ? [effectiveFixedClass] : CLASS_LIST
+  ), [effectiveFixedClass, isReadOnly]);
 
   const printStyles = `
     @media print {
@@ -783,6 +803,17 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
       .seating-side-panel { order: -1; }
     }
   `;
+
+  if (currentRole === 'parent' && !activeStudent) {
+    return (
+      <div className="glass-panel animate-fade" style={{ padding: 28, borderRadius: 20, textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 8px', color: 'var(--text-primary)' }}>Chưa liên kết học sinh</h2>
+        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+          Tài khoản phụ huynh này chưa được gắn với hồ sơ học sinh nên không thể xem sơ đồ chỗ ngồi.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -818,7 +849,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Class selector */}
             <div style={{ display: 'flex', gap: 6 }}>
-              {CLASS_LIST.map(cls => (
+              {visibleClassList.map(cls => (
                 <button
                   key={cls}
                   onClick={() => handleClassChange(cls)}
@@ -1080,6 +1111,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
                 isSearchMatch={searchMatches.has(seat.index)}
                 isLocked={!!seat.locked}
                 readOnly={isReadOnly}
+                privateView={currentRole === 'parent'}
                 onClick={handleSeatClick}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}

@@ -407,6 +407,27 @@ h1 {
   color: var(--text-primary);
 }
 
+.parent-student-lock {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--accent-soft) 72%, white);
+  color: var(--accent-ink);
+}
+
+.parent-student-lock strong {
+  color: var(--text-primary);
+}
+
+.parent-student-lock small {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: white;
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
 .global-search-trigger {
   display: inline-flex;
   align-items: center;

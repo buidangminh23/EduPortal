@@ -8,7 +8,6 @@ export default function Navbar({ setActiveTab }) {
   const {
     currentRole,
     selectedStudentId,
-    setSelectedStudentId,
     students,
     userSession,
     assignments,
@@ -52,7 +51,7 @@ export default function Navbar({ setActiveTab }) {
     return 'EduPortal';
   };
 
-  const activeStudent = students.find(s => s.id === selectedStudentId) || students[0];
+  const activeStudent = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const unread = notifications
     ? notifications.filter(n => !n.read && (n.targetRole === 'all' || n.targetRole === currentRole)).length
     : 0;
@@ -103,19 +102,12 @@ export default function Navbar({ setActiveTab }) {
         {/* Global Search */}
         <GlobalSearch onNavigate={setActiveTab} />
 
-        {/* If Parent role, show dropdown to choose which Student profile to view */}
+        {/* Parent accounts are locked to their linked child profile. */}
         {currentRole === 'parent' && (
-          <div className="parent-student-switcher">
-            <span>Xem hồ sơ:</span>
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="form-control"
-            >
-              {students.map(s => (
-                <option key={s.id} value={s.id}>{s.name} ({s.class})</option>
-              ))}
-            </select>
+          <div className="parent-student-switcher parent-student-lock" title="Tài khoản phụ huynh chỉ xem được hồ sơ con mình">
+            <span>Con đang theo dõi:</span>
+            <strong>{activeStudent?.name || 'Chưa liên kết'}</strong>
+            {activeStudent?.class && <small>{activeStudent.class}</small>}
           </div>
         )}
 
