@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import LandingPage from './components/LandingPage';
+import AppCommandDock from './components/AppCommandDock';
 import { ShieldCheck, Mail, Phone, Trophy } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
@@ -209,7 +210,7 @@ function App() {
   };
 
   return (
-    <div className="app-container" data-role={currentRole}>
+    <div className="app-container" data-role={currentRole} data-active-tab={activeTab}>
       {/* Navigation Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
@@ -219,16 +220,34 @@ function App() {
         
         {/* Main Content Viewport */}
         <main className="content-pane">
-          <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Đang tải nội dung…</div>}>
+          <Suspense fallback={<AppLoadingState />}>
             {renderTabContent()}
           </Suspense>
         </main>
       </div>
 
+      <AppCommandDock activeTab={activeTab} setActiveTab={setActiveTab} />
+
       {/* Floating AI Chat Widget — chỉ hiện với học sinh */}
       <Suspense fallback={null}>
         <FloatingChatWidget />
       </Suspense>
+    </div>
+  );
+}
+
+function AppLoadingState() {
+  return (
+    <div className="app-loading-state">
+      <div className="loading-mark">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div>
+        <strong>Đang mở không gian làm việc</strong>
+        <p>Chuẩn bị dữ liệu và giao diện phù hợp với vai trò hiện tại.</p>
+      </div>
     </div>
   );
 }

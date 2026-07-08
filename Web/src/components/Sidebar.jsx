@@ -95,6 +95,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     currentRole,
     selectedStudentId,
     students,
+    teachers,
     logout,
     userSession,
     studentSubTab,
@@ -276,6 +277,14 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     return 'EduPortal';
   };
 
+  const getRoleSnapshot = () => {
+    if (currentRole === 'admin') return `${students.length} HS · ${(teachers || []).length} GV`;
+    if (currentRole === 'teacher') return `${classStudents.length} HS lớp 12A1 · ${pendingQAsCount} Q&A chờ`;
+    if (currentRole === 'student') return `${upcomingDeadlines.length} deadline · ${myAssignments.length} bài tập`;
+    if (currentRole === 'parent') return `${activeStudent?.name || 'Học sinh'} · ${myAssignments.length} bài tập`;
+    return 'Không gian làm việc';
+  };
+
   return (
     <aside className="sidebar" style={{ overflowY: 'auto' }}>
       <div style={{ flex: 1 }}>
@@ -283,6 +292,15 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         <div className="logo-container">
           <GraduationCap className="logo-icon" size={32} color="var(--accent)" />
           <span className="logo-text">EduPortal</span>
+        </div>
+
+        <div className="sidebar-mission-card">
+          <div className="mission-top">
+            <span className="mission-dot" />
+            <span>Workspace</span>
+          </div>
+          <strong>{getProfileSub()}</strong>
+          <p>{getRoleSnapshot()}</p>
         </div>
 
         <nav className="nav-links">

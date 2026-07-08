@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback, useMemo } from 'react';
+import { useState, useContext, useCallback, useMemo, useRef } from 'react';
 import {
   LayoutGrid,
   Shuffle,
@@ -8,6 +8,18 @@ import {
   ArrowLeftRight,
   Info,
   Star,
+  Save,
+  Search,
+  Undo2,
+  Redo2,
+  Lock,
+  Unlock,
+  RotateCcw,
+  SortAsc,
+  CheckCircle,
+  XCircle,
+  MousePointer2,
+  Trophy,
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -154,6 +166,7 @@ function buildSeats(students) {
   const seats = Array.from({ length: TOTAL_SEATS }, (_, i) => ({
     index: i,
     student: students[i] ?? null,
+    locked: false,
   }));
   return seats;
 }
@@ -167,12 +180,78 @@ function shuffle(arr) {
   return a;
 }
 
+function getSeatIndexFromPoint(x, y) {
+  const seatEl = document.elementFromPoint(x, y)?.closest?.('[data-seat-index]');
+  if (!seatEl) return null;
+  const seatIndex = Number(seatEl.dataset.seatIndex);
+  return Number.isInteger(seatIndex) ? seatIndex : null;
+}
+
+function cloneSeats(seats) {
+  return seats.map((seat, index) => ({
+    ...seat,
+    index,
+    locked: !!seat.locked,
+    student: seat.student ? { ...seat.student } : null,
+  }));
+}
+
+function areSeatsEqual(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((seat, index) => {
+    const next = b[index];
+    return (
+      seat.student?.id === next.student?.id
+      && !!seat.locked === !!next.locked
+    );
+  });
+}
+
+function getStudentAverage(student) {
+  const scores = student?.grades
+    ? Object.values(student.grades).filter(score => Number.isFinite(score))
+    : [];
+  if (!scores.length) return null;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+function normalizeText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function toSeatStudent(student) {
+  if (!student) return null;
+  return { id: student.id, name: student.name };
+}
+
 /* ─────────────────────────────────────────────
    Seat Card
 ───────────────────────────────────────────── */
-function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOver, onDrop, isDraggedOver, isHighlighted, readOnly }) {
+function SeatCard({
+  seat,
+  isSelected,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  isDraggedOver,
+  isDragging,
+  isHighlighted,
+  isSearchMatch,
+  isLocked,
+  readOnly,
+}) {
   const { student } = seat;
   const isEmpty = !student;
+  const canDrag = !isEmpty && !readOnly && !isLocked;
 
   let borderColor = 'rgba(255,255,255,0.1)';
   let bg = 'rgba(255,255,255,0.04)';
@@ -186,10 +265,17 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
     borderColor = 'var(--accent-primary, #6366f1)';
     bg = 'rgba(99,102,241,0.15)';
     glowStyle = { boxShadow: '0 0 0 3px rgba(99,102,241,0.3)' };
+  } else if (isSearchMatch) {
+    borderColor = '#0ea5e9';
+    bg = 'rgba(14,165,233,0.12)';
+    glowStyle = { boxShadow: '0 0 0 3px rgba(14,165,233,0.18)' };
   } else if (isDraggedOver) {
     borderColor = 'var(--accent-secondary, #10b981)';
     bg = 'rgba(16,185,129,0.15)';
     glowStyle = { boxShadow: '0 0 0 4px rgba(16,185,129,0.35)', transform: 'scale(1.02)' };
+  } else if (isLocked) {
+    borderColor = 'rgba(100,116,139,0.35)';
+    bg = 'rgba(100,116,139,0.08)';
   } else if (isEmpty) {
     borderColor = 'rgba(255,255,255,0.08)';
     bg = 'transparent';
@@ -197,19 +283,25 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
 
   return (
     <div
-      draggable={!isEmpty && !readOnly}
+      data-seat-index={seat.index}
+      draggable={canDrag}
       onDragStart={readOnly ? undefined : (e) => onDragStart(e, seat.index)}
       onDragEnd={readOnly ? undefined : onDragEnd}
       onDragOver={readOnly ? undefined : (e) => onDragOver(e, seat.index)}
       onDrop={readOnly ? undefined : (e) => onDrop(e, seat.index)}
+      onPointerDown={canDrag ? (e) => onPointerDown(e, seat.index) : undefined}
+      onPointerMove={!readOnly ? onPointerMove : undefined}
+      onPointerUp={!readOnly ? onPointerUp : undefined}
+      onPointerCancel={!readOnly ? onPointerCancel : undefined}
       onClick={readOnly ? undefined : () => onClick(seat.index)}
+      aria-label={student ? `Ghế ${seat.index + 1}: ${student.name}` : `Ghế ${seat.index + 1}: Trống`}
       style={{
         width: '100%',
         aspectRatio: '3/2',
         borderRadius: 12,
         border: `2px ${isEmpty ? 'dashed' : 'solid'} ${borderColor}`,
         background: bg,
-        cursor: readOnly ? 'default' : (isEmpty ? 'default' : 'grab'),
+        cursor: readOnly ? 'default' : (isLocked ? 'not-allowed' : (isDragging ? 'grabbing' : (isEmpty ? 'pointer' : 'grab'))),
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -219,6 +311,9 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
         position: 'relative',
         overflow: 'hidden',
         userSelect: 'none',
+        touchAction: readOnly ? 'auto' : 'none',
+        opacity: isDragging ? 0.55 : 1,
+        willChange: isDragging || isDraggedOver ? 'transform' : 'auto',
         ...glowStyle,
       }}
     >
@@ -235,6 +330,26 @@ function SeatCard({ seat, isSelected, onClick, onDragStart, onDragEnd, onDragOve
       >
         {seat.index + 1}
       </span>
+
+      {isLocked && (
+        <span
+          title="Ghế đang khóa"
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 6,
+            width: 18,
+            height: 18,
+            borderRadius: 6,
+            background: 'rgba(100,116,139,0.14)',
+            color: '#64748b',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+        >
+          <Lock size={10} />
+        </span>
+      )}
 
       {isEmpty ? (
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>Trống</span>
@@ -293,7 +408,8 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const { students: contextStudents, seatingCharts, setSeatingCharts, currentRole, selectedStudentId } = useContext(AppContext);
 
   // Determine effective readOnly and highlight from context
-  const isReadOnly = readOnly || currentRole === 'student' || currentRole === 'parent';
+  const canEditSeatingChart = currentRole === 'admin' || currentRole === 'teacher';
+  const isReadOnly = readOnly || !canEditSeatingChart;
   const activeStudent = contextStudents?.find(s => s.id === selectedStudentId);
   const effectiveFixedClass = fixedClass || (isReadOnly && activeStudent ? activeStudent.class : null);
   const effectiveHighlightId = highlightStudentId || (isReadOnly ? selectedStudentId : null);
@@ -302,6 +418,16 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const [selectedSeat, setSelectedSeat] = useState(null); // index | null
   const [draggedSeat, setDraggedSeat] = useState(null); // index | null
   const [dragOverSeat, setDragOverSeat] = useState(null); // index | null
+  const [pointerDrag, setPointerDrag] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+  const [dirtyClasses, setDirtyClasses] = useState({});
+  const [savedAtByClass, setSavedAtByClass] = useState({});
+  const [lastAction, setLastAction] = useState('');
+  const suppressNextClickRef = useRef(false);
+  const draggedSeatRef = useRef(null);
+  const pointerDragRef = useRef(null);
 
   // Ensure all classes in CLASS_LIST are initialized in seatingCharts
   const activeCharts = useMemo(() => {
@@ -327,75 +453,318 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const [swapCount, setSwapCount] = useState(0);
 
   const seats = useMemo(() => seatsByClass[selectedClass] ?? [], [seatsByClass, selectedClass]);
+  const classRoster = useMemo(() => {
+    if (contextStudents && contextStudents.length > 0) {
+      return contextStudents.filter(s => s.class === selectedClass || s.className === selectedClass);
+    }
+    return MOCK_STUDENTS_BY_CLASS[selectedClass] ?? [];
+  }, [contextStudents, selectedClass]);
+
+  const studentProfilesById = useMemo(() => {
+    const profiles = new Map();
+    classRoster.forEach(student => profiles.set(student.id, student));
+    return profiles;
+  }, [classRoster]);
+
+  const normalizedSearch = normalizeText(searchTerm.trim());
+  const searchMatches = useMemo(() => {
+    if (!normalizedSearch) return new Set();
+    return new Set(
+      seats
+        .filter(seat => {
+          const student = seat.student;
+          if (!student) return false;
+          return normalizeText(`${student.name} ${student.id}`).includes(normalizedSearch);
+        })
+        .map(seat => seat.index)
+    );
+  }, [normalizedSearch, seats]);
+
+  const searchResults = useMemo(() => (
+    normalizedSearch
+      ? seats.filter(seat => searchMatches.has(seat.index)).slice(0, 8)
+      : []
+  ), [normalizedSearch, searchMatches, seats]);
+
+  const selectedSeatData = selectedSeat !== null ? seats[selectedSeat] : null;
+  const selectedStudentProfile = selectedSeatData?.student
+    ? studentProfilesById.get(selectedSeatData.student.id)
+    : null;
+  const selectedStudentAverage = getStudentAverage(selectedStudentProfile);
+  const lockedSeats = useMemo(() => seats.filter(seat => seat.locked).length, [seats]);
+  const classAverage = useMemo(() => {
+    const scores = seats
+      .map(seat => studentProfilesById.get(seat.student?.id))
+      .map(getStudentAverage)
+      .filter(score => score !== null);
+    if (!scores.length) return null;
+    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+  }, [seats, studentProfilesById]);
+  const isDirty = !!dirtyClasses[selectedClass];
+  const savedAt = savedAtByClass[selectedClass];
+
+  const commitSeats = useCallback((nextSeats, actionLabel) => {
+    const normalizedNextSeats = cloneSeats(nextSeats);
+    if (areSeatsEqual(seats, normalizedNextSeats)) return false;
+
+    setHistory(prev => [...prev.slice(-14), { seats: cloneSeats(seats), label: actionLabel }]);
+    setFuture([]);
+    setSeatsByClass(map => ({ ...map, [selectedClass]: normalizedNextSeats }));
+    setDirtyClasses(prev => ({ ...prev, [selectedClass]: true }));
+    setLastAction(actionLabel);
+    setSwapCount(c => c + 1);
+    return true;
+  }, [seats, selectedClass, setSeatsByClass]);
 
   const swapSeats = useCallback((prev, index) => {
-    setSeatsByClass(map => {
-      const cls = selectedClass;
-      const newSeats = [...map[cls]];
-      const tmp = newSeats[prev].student;
-      newSeats[prev] = { ...newSeats[prev], student: newSeats[index].student };
-      newSeats[index] = { ...newSeats[index], student: tmp };
-      return { ...map, [cls]: newSeats };
-    });
-    setSwapCount(c => c + 1);
-  }, [selectedClass, setSeatsByClass]);
+    const sourceSeat = seats[prev];
+    const targetSeat = seats[index];
+    if (!sourceSeat || !targetSeat || sourceSeat.locked || targetSeat.locked) return false;
+
+    const newSeats = cloneSeats(seats);
+    const tmp = newSeats[prev].student;
+    newSeats[prev] = { ...newSeats[prev], student: newSeats[index].student };
+    newSeats[index] = { ...newSeats[index], student: tmp };
+    return commitSeats(newSeats, 'Đổi chỗ học sinh');
+  }, [commitSeats, seats]);
 
   /* Handle seat click: first click selects, second click swaps */
   const handleSeatClick = useCallback((index) => {
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
+
     setSelectedSeat(prev => {
       if (prev === null) return index;
       if (prev === index) return null; // deselect same
-      // Swap
+      if (seats[prev]?.locked || seats[index]?.locked) return index;
       swapSeats(prev, index);
       return null;
     });
-  }, [swapSeats]);
+  }, [seats, swapSeats]);
 
   const handleDragStart = useCallback((e, index) => {
+    if (seats[index]?.locked) {
+      e.preventDefault();
+      return;
+    }
     setDraggedSeat(index);
+    draggedSeatRef.current = index;
+    setSelectedSeat(null);
     e.dataTransfer.setData('text/plain', index);
     e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  }, [seats]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedSeat(null);
     setDragOverSeat(null);
+    setPointerDrag(null);
+    draggedSeatRef.current = null;
+    pointerDragRef.current = null;
   }, []);
 
   const handleDragOver = useCallback((e, index) => {
     e.preventDefault();
+    if (seats[index]?.locked) {
+      e.dataTransfer.dropEffect = 'none';
+      setDragOverSeat(null);
+      return;
+    }
+    e.dataTransfer.dropEffect = 'move';
     setDragOverSeat(index);
-  }, []);
+  }, [seats]);
 
   const handleDrop = useCallback((e, targetIndex) => {
     e.preventDefault();
-    const sourceIndex = draggedSeat;
+    const transferredIndex = Number(e.dataTransfer.getData('text/plain'));
+    const sourceIndex = draggedSeatRef.current ?? draggedSeat ?? (Number.isInteger(transferredIndex) ? transferredIndex : null);
     if (sourceIndex !== null && sourceIndex !== targetIndex) {
       swapSeats(sourceIndex, targetIndex);
     }
     setDraggedSeat(null);
     setDragOverSeat(null);
+    setPointerDrag(null);
+    draggedSeatRef.current = null;
+    pointerDragRef.current = null;
   }, [draggedSeat, swapSeats]);
 
-  /* Shuffle all students in current class */
-  const handleShuffle = useCallback(() => {
-    setSeatsByClass(map => {
-      const cls = selectedClass;
-      const students = map[cls].map(s => s.student).filter(Boolean);
-      const shuffled = shuffle(students);
-      const newSeats = map[cls].map((seat, i) => ({
-        ...seat,
-        student: shuffled[i] ?? null,
-      }));
-      return { ...map, [cls]: newSeats };
-    });
+  const handlePointerDragStart = useCallback((e, index) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (seats[index]?.locked) return;
+
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     setSelectedSeat(null);
-  }, [selectedClass, setSeatsByClass]);
+    const nextDrag = {
+      sourceIndex: index,
+      targetIndex: index,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      hasMoved: false,
+    };
+    pointerDragRef.current = nextDrag;
+    setPointerDrag(nextDrag);
+  }, [seats]);
+
+  const handlePointerDragMove = useCallback((e) => {
+    setPointerDrag(prev => {
+      const activeDrag = pointerDragRef.current ?? prev;
+      if (!activeDrag || activeDrag.pointerId !== e.pointerId) return prev;
+
+      const distance = Math.hypot(e.clientX - activeDrag.startX, e.clientY - activeDrag.startY);
+      const hasMoved = activeDrag.hasMoved || distance > 6;
+      if (hasMoved && e.cancelable) e.preventDefault();
+
+      const nextDrag = {
+        ...activeDrag,
+        targetIndex: (() => {
+          const targetIndex = getSeatIndexFromPoint(e.clientX, e.clientY);
+          return targetIndex !== null && !seats[targetIndex]?.locked ? targetIndex : null;
+        })(),
+        hasMoved,
+      };
+      pointerDragRef.current = nextDrag;
+      return nextDrag;
+    });
+  }, [seats]);
+
+  const finishPointerDrag = useCallback((e) => {
+    const activeDrag = pointerDragRef.current;
+    if (!activeDrag || activeDrag.pointerId !== e.pointerId) return;
+
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+
+    if (activeDrag.hasMoved) {
+      suppressNextClickRef.current = true;
+      if (activeDrag.targetIndex !== null && activeDrag.targetIndex !== activeDrag.sourceIndex) {
+        swapSeats(activeDrag.sourceIndex, activeDrag.targetIndex);
+      }
+      setTimeout(() => {
+        suppressNextClickRef.current = false;
+      }, 0);
+    }
+
+    pointerDragRef.current = null;
+    setPointerDrag(null);
+  }, [swapSeats]);
+
+  const arrangeUnlockedSeats = useCallback((orderedStudents, actionLabel) => {
+    const lockedStudentIds = new Set(
+      seats
+        .filter(seat => seat.locked && seat.student)
+        .map(seat => seat.student.id)
+    );
+    const movableStudents = orderedStudents.filter(student => !lockedStudentIds.has(student.id));
+    let cursor = 0;
+    const nextSeats = seats.map(seat => (
+      seat.locked
+        ? { ...seat }
+        : { ...seat, student: movableStudents[cursor++] ?? null }
+    ));
+
+    commitSeats(nextSeats, actionLabel);
+    setSelectedSeat(null);
+  }, [commitSeats, seats]);
+
+  const handleShuffle = useCallback(() => {
+    const students = seats.map(s => s.student).filter(Boolean);
+    arrangeUnlockedSeats(shuffle(students), 'Xếp ngẫu nhiên');
+  }, [arrangeUnlockedSeats, seats]);
+
+  const handleArrangeByName = useCallback(() => {
+    const students = seats
+      .map(s => s.student)
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    arrangeUnlockedSeats(students, 'Xếp theo tên A-Z');
+  }, [arrangeUnlockedSeats, seats]);
+
+  const handleArrangeById = useCallback(() => {
+    const students = seats
+      .map(s => s.student)
+      .filter(Boolean)
+      .sort((a, b) => a.id.localeCompare(b.id, 'vi'));
+    arrangeUnlockedSeats(students, 'Xếp theo mã học sinh');
+  }, [arrangeUnlockedSeats, seats]);
+
+  const handleArrangeByScore = useCallback(() => {
+    const students = seats
+      .map(s => s.student)
+      .filter(Boolean)
+      .sort((a, b) => {
+        const scoreA = getStudentAverage(studentProfilesById.get(a.id)) ?? -1;
+        const scoreB = getStudentAverage(studentProfilesById.get(b.id)) ?? -1;
+        return scoreB - scoreA || a.name.localeCompare(b.name, 'vi');
+      });
+    arrangeUnlockedSeats(students, 'Xếp theo điểm trung bình');
+  }, [arrangeUnlockedSeats, seats, studentProfilesById]);
+
+  const handleSyncRoster = useCallback(() => {
+    arrangeUnlockedSeats(classRoster.map(toSeatStudent).filter(Boolean), 'Đồng bộ danh sách lớp');
+  }, [arrangeUnlockedSeats, classRoster]);
+
+  const toggleSeatLock = useCallback((index) => {
+    const seat = seats[index];
+    if (!seat) return;
+
+    const nextSeats = seats.map((item, seatIndex) => (
+      seatIndex === index ? { ...item, locked: !item.locked } : item
+    ));
+    commitSeats(nextSeats, seat.locked ? 'Mở khóa ghế' : 'Khóa ghế');
+  }, [commitSeats, seats]);
+
+  const handleUndo = useCallback(() => {
+    if (!history.length) return;
+    const previous = history[history.length - 1];
+
+    setHistory(prev => prev.slice(0, -1));
+    setFuture(prev => [{ seats: cloneSeats(seats), label: lastAction || 'Trạng thái hiện tại' }, ...prev]);
+    setSeatsByClass(map => ({ ...map, [selectedClass]: cloneSeats(previous.seats) }));
+    setDirtyClasses(prev => ({ ...prev, [selectedClass]: true }));
+    setLastAction(`Hoàn tác: ${previous.label}`);
+    setSelectedSeat(null);
+  }, [history, lastAction, seats, selectedClass, setSeatsByClass]);
+
+  const handleRedo = useCallback(() => {
+    if (!future.length) return;
+    const next = future[0];
+
+    setFuture(prev => prev.slice(1));
+    setHistory(prev => [...prev.slice(-14), { seats: cloneSeats(seats), label: next.label }]);
+    setSeatsByClass(map => ({ ...map, [selectedClass]: cloneSeats(next.seats) }));
+    setDirtyClasses(prev => ({ ...prev, [selectedClass]: true }));
+    setLastAction(`Làm lại: ${next.label}`);
+    setSelectedSeat(null);
+  }, [future, seats, selectedClass, setSeatsByClass]);
+
+  const handleSave = useCallback(() => {
+    setDirtyClasses(prev => ({ ...prev, [selectedClass]: false }));
+    setSavedAtByClass(prev => ({
+      ...prev,
+      [selectedClass]: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    }));
+    setLastAction('Đã lưu sơ đồ');
+  }, [selectedClass]);
+
+  const handleSearchKeyDown = useCallback((e) => {
+    if (e.key !== 'Enter' || searchResults.length === 0) return;
+    setSelectedSeat(searchResults[0].index);
+  }, [searchResults]);
 
   /* Class change */
   const handleClassChange = useCallback((cls) => {
     setSelectedClass(cls);
     setSelectedSeat(null);
+    setDraggedSeat(null);
+    setDragOverSeat(null);
+    setPointerDrag(null);
+    draggedSeatRef.current = null;
+    pointerDragRef.current = null;
+    setSearchTerm('');
+    setHistory([]);
+    setFuture([]);
+    setLastAction('');
   }, []);
 
   /* Stats */
@@ -408,6 +777,10 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
       #seating-print-area, #seating-print-area * { visibility: visible !important; }
       #seating-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 20px; }
       .no-print { display: none !important; }
+    }
+    @media (max-width: 980px) {
+      .seating-workspace { grid-template-columns: 1fr !important; }
+      .seating-side-panel { order: -1; }
     }
   `;
 
@@ -435,7 +808,9 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
               </h1>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
                 {totalStudents} học sinh · {emptySeats} ghế trống
-                {swapCount > 0 && ` · ${swapCount} lần hoán đổi`}
+                {lockedSeats > 0 && ` · ${lockedSeats} ghế khóa`}
+                {swapCount > 0 && ` · ${swapCount} lượt chỉnh`}
+                {!isReadOnly && (isDirty ? ' · Chưa lưu' : savedAt ? ` · Đã lưu ${savedAt}` : '')}
               </p>
             </div>
           </div>
@@ -456,26 +831,6 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
               ))}
             </div>
 
-            {!isReadOnly && (
-              <button className="btn btn-secondary" onClick={handleShuffle} title="Xếp ngẫu nhiên">
-                <Shuffle size={15} />
-                Xếp ngẫu nhiên
-              </button>
-            )}
-
-            {!isReadOnly && (
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  alert(`Đã lưu sơ đồ chỗ ngồi của lớp ${selectedClass} vào cấu hình hệ thống thành công!`);
-                }}
-                style={{ background: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontWeight: 700 }}
-                title="Lưu sơ đồ hiện tại"
-              >
-                Lưu sơ đồ
-              </button>
-            )}
-
             <button
               className="btn btn-secondary"
               onClick={() => window.print()}
@@ -486,6 +841,138 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
             </button>
           </div>
         </div>
+
+        {!isReadOnly && (
+          <div
+            className="no-print"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '12px 14px',
+              marginBottom: 16,
+              border: '1px solid rgba(148,163,184,0.22)',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.58)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                flex: '1 1 260px',
+                maxWidth: 360,
+              }}
+            >
+              <Search
+                size={15}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-secondary)',
+                }}
+              />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Tìm tên hoặc mã học sinh..."
+                style={{
+                  width: '100%',
+                  height: 38,
+                  border: '1.5px solid rgba(148,163,184,0.35)',
+                  borderRadius: 10,
+                  padding: '0 38px 0 36px',
+                  outline: 'none',
+                  color: 'var(--text-primary)',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  title="Xóa tìm kiếm"
+                  style={{
+                    position: 'absolute',
+                    right: 9,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 22,
+                    height: 22,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'grid',
+                    placeItems: 'center',
+                    padding: 0,
+                  }}
+                >
+                  <XCircle size={15} />
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                className="icon-btn"
+                onClick={handleUndo}
+                disabled={!history.length}
+                title="Hoàn tác"
+                style={{ opacity: history.length ? 1 : 0.45, cursor: history.length ? 'pointer' : 'not-allowed' }}
+              >
+                <Undo2 size={16} />
+              </button>
+              <button
+                className="icon-btn"
+                onClick={handleRedo}
+                disabled={!future.length}
+                title="Làm lại"
+                style={{ opacity: future.length ? 1 : 0.45, cursor: future.length ? 'pointer' : 'not-allowed' }}
+              >
+                <Redo2 size={16} />
+              </button>
+
+              <span style={{ width: 1, height: 28, background: 'rgba(148,163,184,0.28)' }} />
+
+              <button className="btn btn-secondary" onClick={handleShuffle} title="Xếp ngẫu nhiên">
+                <Shuffle size={15} />
+                Ngẫu nhiên
+              </button>
+              <button className="btn btn-secondary" onClick={handleArrangeByName} title="Xếp theo tên">
+                <SortAsc size={15} />
+                A-Z
+              </button>
+              <button className="btn btn-secondary" onClick={handleArrangeById} title="Xếp theo mã học sinh">
+                <BookOpen size={15} />
+                Mã HS
+              </button>
+              <button className="btn btn-secondary" onClick={handleArrangeByScore} title="Ưu tiên học sinh điểm cao phía trước">
+                <Trophy size={15} />
+                Theo điểm
+              </button>
+              <button className="btn btn-secondary" onClick={handleSyncRoster} title="Đồng bộ danh sách lớp">
+                <RotateCcw size={15} />
+                Đồng bộ
+              </button>
+              <button
+                className={isDirty ? 'btn btn-primary' : 'btn btn-secondary'}
+                onClick={handleSave}
+                style={{ fontWeight: 800 }}
+                title="Lưu trạng thái sơ đồ"
+              >
+                <Save size={15} />
+                {isDirty ? 'Lưu sơ đồ' : 'Đã lưu'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Instruction Banner ── */}
         {selectedSeat !== null && (
@@ -512,6 +999,15 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
           </div>
         )}
 
+        <div
+          className="seating-workspace"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isReadOnly ? '1fr' : 'minmax(0, 1fr) minmax(280px, 320px)',
+            gap: 18,
+            alignItems: 'start',
+          }}
+        >
         {/* ── Printable Area ── */}
         <div id="seating-print-area">
 
@@ -581,16 +1077,225 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
                 seat={seat}
                 isSelected={selectedSeat === seat.index}
                 isHighlighted={!!(effectiveHighlightId && seat.student && seat.student.id === effectiveHighlightId)}
+                isSearchMatch={searchMatches.has(seat.index)}
+                isLocked={!!seat.locked}
                 readOnly={isReadOnly}
                 onClick={handleSeatClick}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                isDraggedOver={dragOverSeat === seat.index && draggedSeat !== seat.index}
+                onPointerDown={handlePointerDragStart}
+                onPointerMove={handlePointerDragMove}
+                onPointerUp={finishPointerDrag}
+                onPointerCancel={finishPointerDrag}
+                isDragging={draggedSeat === seat.index || pointerDrag?.sourceIndex === seat.index}
+                isDraggedOver={
+                  (dragOverSeat === seat.index && draggedSeat !== seat.index)
+                  || (pointerDrag?.targetIndex === seat.index && pointerDrag.sourceIndex !== seat.index)
+                }
               />
             ))}
           </div>
+        </div>
+
+        {!isReadOnly && (
+          <aside
+            className="seating-side-panel no-print"
+            style={{
+              border: '1px solid rgba(148,163,184,0.22)',
+              borderRadius: 14,
+              padding: 16,
+              background: 'rgba(255,255,255,0.64)',
+              position: 'sticky',
+              top: 88,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Bảng điều khiển</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  {lastAction || 'Sẵn sàng chỉnh sơ đồ'}
+                </div>
+              </div>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 9px',
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: isDirty ? '#b45309' : '#047857',
+                  background: isDirty ? '#fef3c7' : '#dcfce7',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isDirty ? <XCircle size={12} /> : <CheckCircle size={12} />}
+                {isDirty ? 'Chưa lưu' : 'Đã lưu'}
+              </span>
+            </div>
+
+            <div style={{ height: 1, background: 'rgba(148,163,184,0.22)', margin: '0 0 14px' }} />
+
+            <section style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8 }}>Ghế đang chọn</div>
+              {selectedSeatData ? (
+                <div
+                  style={{
+                    border: '1px solid rgba(148,163,184,0.18)',
+                    borderRadius: 12,
+                    padding: 12,
+                    background: '#fff',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <div
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 12,
+                        background: selectedSeatData.locked ? '#f1f5f9' : 'var(--accent-soft)',
+                        color: selectedSeatData.locked ? '#64748b' : 'var(--accent-ink)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontWeight: 900,
+                      }}
+                    >
+                      {selectedSeat + 1}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>
+                        {selectedSeatData.student?.name || 'Ghế trống'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {selectedSeatData.student?.id || 'Có thể nhận học sinh khi đồng bộ'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedSeatData.student && (
+                    <div style={{ display: 'grid', gap: 8, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                      {selectedStudentProfile?.avatarUrl && (
+                        <img
+                          src={selectedStudentProfile.avatarUrl}
+                          alt={selectedSeatData.student.name}
+                          style={{
+                            width: '100%',
+                            maxHeight: 112,
+                            objectFit: 'cover',
+                            borderRadius: 10,
+                            border: '1px solid rgba(148,163,184,0.18)',
+                          }}
+                        />
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                        <span>Điểm TB</span>
+                        <strong style={{ color: selectedStudentAverage !== null && selectedStudentAverage >= 8 ? '#059669' : 'var(--text-primary)' }}>
+                          {selectedStudentAverage !== null ? selectedStudentAverage.toFixed(1) : 'Chưa có'}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                        <span>Phụ huynh</span>
+                        <strong style={{ color: 'var(--text-primary)', textAlign: 'right' }}>
+                          {selectedStudentProfile?.parentName || 'Chưa có'}
+                        </strong>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => toggleSeatLock(selectedSeat)}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    {selectedSeatData.locked ? <Unlock size={15} /> : <Lock size={15} />}
+                    {selectedSeatData.locked ? 'Mở khóa ghế' : 'Khóa ghế này'}
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    border: '1px dashed rgba(148,163,184,0.35)',
+                    borderRadius: 12,
+                    padding: 16,
+                    color: 'var(--text-secondary)',
+                    fontSize: 12,
+                    display: 'flex',
+                    gap: 9,
+                    alignItems: 'center',
+                    background: 'rgba(248,250,252,0.8)',
+                  }}
+                >
+                  <MousePointer2 size={16} />
+                  Chọn một ghế để xem chi tiết và khóa vị trí.
+                </div>
+              )}
+            </section>
+
+            {normalizedSearch && (
+              <section style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                  Kết quả tìm kiếm ({searchMatches.size})
+                </div>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {searchResults.length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>Không tìm thấy học sinh phù hợp.</div>
+                  ) : (
+                    searchResults.map(result => (
+                      <button
+                        key={result.index}
+                        type="button"
+                        onClick={() => setSelectedSeat(result.index)}
+                        style={{
+                          border: '1px solid rgba(14,165,233,0.22)',
+                          background: selectedSeat === result.index ? 'rgba(14,165,233,0.14)' : '#fff',
+                          borderRadius: 10,
+                          padding: '8px 10px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 800 }}>{result.student.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Ghế {result.index + 1}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </section>
+            )}
+
+            <section>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8 }}>Tổng quan nhanh</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  { label: 'Điểm TB lớp', value: classAverage !== null ? classAverage.toFixed(1) : '-' },
+                  { label: 'Ghế khóa', value: lockedSeats },
+                  { label: 'Undo', value: history.length },
+                  { label: 'Redo', value: future.length },
+                ].map(item => (
+                  <div
+                    key={item.label}
+                    style={{
+                      background: '#fff',
+                      border: '1px solid rgba(148,163,184,0.18)',
+                      borderRadius: 10,
+                      padding: '9px 10px',
+                    }}
+                  >
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{item.value}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </aside>
+        )}
         </div>
 
         {/* ── Legend ── */}
@@ -617,6 +1322,18 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
             <div style={{ width: 28, height: 18, borderRadius: 5, border: '2px dashed rgba(255,255,255,0.08)', background: 'transparent' }} />
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Ghế trống</span>
           </div>
+          {!isReadOnly && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ width: 28, height: 18, borderRadius: 5, border: '2px solid #0ea5e9', background: 'rgba(14,165,233,0.12)' }} />
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Khớp tìm kiếm</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ width: 28, height: 18, borderRadius: 5, border: '2px solid rgba(100,116,139,0.35)', background: 'rgba(100,116,139,0.08)' }} />
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Đã khóa</span>
+              </div>
+            </>
+          )}
           {isReadOnly ? (
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, color: '#f59e0b', fontSize: 12 }}>
               <Star size={12} />
@@ -625,7 +1342,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
           ) : (
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)', fontSize: 12 }}>
               <Info size={12} />
-              Nhấp ghế để chọn · Nhấp ghế thứ hai để hoán đổi
+              Kéo thả để đổi chỗ · Nhấp 2 ghế để hoán đổi
             </div>
           )}
         </div>
@@ -639,6 +1356,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
             { label: 'Tổng ghế', value: TOTAL_SEATS, color: '#6366f1' },
             { label: 'Có học sinh', value: totalStudents, color: '#10b981' },
             { label: 'Ghế trống', value: emptySeats, color: '#f59e0b' },
+            { label: 'Ghế khóa', value: lockedSeats, color: '#64748b' },
             { label: 'Số cột', value: COLS, color: '#8b5cf6' },
             { label: 'Số hàng', value: ROWS, color: '#ec4899' },
           ].map(item => (

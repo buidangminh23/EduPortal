@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Search, X, Users, GraduationCap, FileText, Bell, BookOpen, ChevronRight } from 'lucide-react';
+import { Search, X, Users, GraduationCap, FileText, Bell, BookOpen, ChevronRight, Compass } from 'lucide-react';
 
 const TYPE_ICON = {
   student:    Users,
@@ -8,6 +8,7 @@ const TYPE_ICON = {
   assignment: FileText,
   bulletin:   Bell,
   resource:   BookOpen,
+  command:    Compass,
 };
 
 const TYPE_COLOR = {
@@ -16,6 +17,7 @@ const TYPE_COLOR = {
   assignment: '#f59e0b',
   bulletin:   '#8b5cf6',
   resource:   '#0891b2',
+  command:    '#14c4a0',
 };
 
 const TYPE_LABEL = {
@@ -24,10 +26,34 @@ const TYPE_LABEL = {
   assignment: 'Bài tập',
   bulletin:   'Thông báo',
   resource:   'Học liệu',
+  command:    'Điều hướng nhanh',
+};
+
+const COMMANDS_BY_ROLE = {
+  admin: [
+    { id: 'cmd-admin-dashboard', title: 'Mở tổng quan BGH', subtitle: 'Điều hành nhà trường', tab: 'dashboard' },
+    { id: 'cmd-admin-students', title: 'Quản lý học sinh', subtitle: 'Hồ sơ và phân lớp', tab: 'students' },
+    { id: 'cmd-admin-risk', title: 'Phân tích nguy cơ AI', subtitle: 'Theo dõi học sinh cần hỗ trợ', tab: 'ai_risk' },
+  ],
+  teacher: [
+    { id: 'cmd-teacher-dashboard', title: 'Mở tổng quan lớp học', subtitle: 'Điểm, bài tập và lịch dạy', tab: 'dashboard' },
+    { id: 'cmd-teacher-seating', title: 'Mở sơ đồ chỗ ngồi', subtitle: 'Kéo thả, khóa ghế, xếp nhanh', tab: 'seating_chart' },
+    { id: 'cmd-teacher-meet', title: 'Vào phòng EduMeet', subtitle: 'Dạy học trực tuyến', tab: 'meet' },
+  ],
+  student: [
+    { id: 'cmd-student-dashboard', title: 'Mở bảng học tập', subtitle: 'Deadline, bài tập và điểm số', tab: 'dashboard' },
+    { id: 'cmd-student-tutor', title: 'Mở AI Tutor', subtitle: 'Hỏi bài và ôn tập nhanh', tab: 'tutor' },
+    { id: 'cmd-student-exam', title: 'Mở kho đề thi', subtitle: 'Luyện đề và tài liệu', tab: 'exam_repository' },
+  ],
+  parent: [
+    { id: 'cmd-parent-dashboard', title: 'Mở bảng điểm của con', subtitle: 'Theo dõi học tập', tab: 'dashboard' },
+    { id: 'cmd-parent-chat', title: 'Nhắn tin giáo viên', subtitle: 'Trao đổi với chủ nhiệm', tab: 'chat' },
+    { id: 'cmd-parent-meeting', title: 'Đặt lịch gặp mặt', subtitle: 'Chọn khung giờ phù hợp', tab: 'meeting_booking' },
+  ],
 };
 
 export default function GlobalSearch({ onNavigate }) {
-  const { globalSearch } = useContext(AppContext);
+  const { globalSearch, currentRole } = useContext(AppContext);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -65,8 +91,12 @@ export default function GlobalSearch({ onNavigate }) {
   const handleQueryChange = (val) => {
     setQuery(val);
     if (globalSearch) {
-      const r = globalSearch(val);
-      setResults(r);
+      const normalized = val.toLowerCase().trim();
+      const commandResults = (COMMANDS_BY_ROLE[currentRole] ?? [])
+        .filter(cmd => `${cmd.title} ${cmd.subtitle}`.toLowerCase().includes(normalized))
+        .map(cmd => ({ ...cmd, type: 'command' }));
+      const r = [...commandResults, ...globalSearch(val)];
+      setResults(r.slice(0, 24));
     } else {
       setResults([]);
     }
@@ -93,15 +123,7 @@ export default function GlobalSearch({ onNavigate }) {
       <button
         onClick={handleOpenSearch}
         title="Tìm kiếm (Ctrl+K)"
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)',
-          borderRadius: 10, padding: '6px 14px', cursor: 'pointer',
-          color: 'var(--text-secondary)', fontSize: '0.82rem',
-          transition: 'all 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.06)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+        className="global-search-trigger"
       >
         <Search size={14} />
         <span>Tìm kiếm...</span>
@@ -166,7 +188,7 @@ export default function GlobalSearch({ onNavigate }) {
           ) : (
             <>
               {/* Group by type */}
-              {['student','teacher','assignment','bulletin','resource'].map(type => {
+              {['command','student','teacher','assignment','bulletin','resource'].map(type => {
                 const group = results.filter(r => r.type === type);
                 if (!group.length) return null;
                 const Icon = TYPE_ICON[type] || FileText;
