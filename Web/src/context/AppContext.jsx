@@ -2151,6 +2151,11 @@ export const AppProvider = ({ children }) => {
       ? { ...e, upvotes: voteType === 'up' ? e.upvotes + 1 : e.upvotes, downvotes: voteType === 'down' ? e.downvotes + 1 : e.downvotes }
       : e));
   };
+  const markCommunityExamUsed = (id) => {
+    setCommunityExams(prev => prev.map(e => e.id === id
+      ? { ...e, usedCount: (e.usedCount || 0) + 1 }
+      : e));
+  };
 
   // ── School Asset Actions ─────────────────────────────────────────────────
   const bookAsset = (assetId, booking) => {
@@ -2856,7 +2861,7 @@ export const AppProvider = ({ children }) => {
       directMessages: scopedDirectMessages, sendDirectMessage, markMessageRead,
       bulletins, addBulletin, confirmBulletinRead,
       meetingBookings: scopedMeetingBookings, requestMeeting, confirmMeeting, cancelMeeting,
-      communityExams, addToRepository, voteExam,
+      communityExams, addToRepository, voteExam, markCommunityExamUsed,
       schoolAssets, bookAsset, approveAssetBooking,
       teacherAttendance, checkInTeacher,
       dutySchedule, setDutySchedule,
