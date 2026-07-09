@@ -476,18 +476,23 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: 24px;
+  z-index: 12000;
   animation: fadeIn 0.2s ease-out;
+  overflow-y: auto;
 }
 
 .modal-content {
   width: 100%;
   max-width: 500px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: #18181b;
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);

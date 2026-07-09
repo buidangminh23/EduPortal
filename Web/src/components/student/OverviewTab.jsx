@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../../context/AppContext';
 import StreakWidget from './StreakWidget';
 import {
@@ -290,7 +291,7 @@ export default function OverviewTab({ student, setActiveTab }) {
           </SectionCard>
         </div>
       </div>
-      {showNoteModal && (
+      {showNoteModal && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 460 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
@@ -317,7 +318,7 @@ export default function OverviewTab({ student, setActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }
