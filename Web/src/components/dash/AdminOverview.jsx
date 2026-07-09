@@ -1,4 +1,6 @@
+import { useContext } from 'react';
 import { Users, GraduationCap, CheckCircle, Star, BarChart3, Bell, Clock, Calendar, Wallet, Edit3, AlertTriangle, LayoutGrid } from 'lucide-react';
+import { AppContext } from '../../context/AppContext';
 import { Stat, SectionCard, Bar } from './DashUI';
 
 const SCHOOL_STATS = [
@@ -22,10 +24,10 @@ const ACTIVITY = [
 ];
 
 const QUICK = [
-  { label: 'Quản lý HS', icon: GraduationCap, color: 'blue' },
-  { label: 'Quản lý GV', icon: Users, color: 'mint' },
-  { label: 'Thời khóa biểu', icon: Calendar, color: 'violet' },
-  { label: 'Thu học phí', icon: Wallet, color: 'orange' },
+  { label: 'Quản lý HS', icon: GraduationCap, color: 'blue', action: 'students' },
+  { label: 'Quản lý GV', icon: Users, color: 'mint', action: 'teachers' },
+  { label: 'Thời khóa biểu', icon: Calendar, color: 'violet', action: 'timetable' },
+  { label: 'Thu học phí', icon: Wallet, color: 'orange', action: 'finance' },
 ];
 
 const ATTENDANCE = [['Khối 10', 95.6, 'blue'], ['Khối 11', 96.9, 'violet'], ['Khối 12', 98.0, 'mint']];
@@ -36,7 +38,53 @@ const NEWS = [
   { title: 'Nghỉ lễ & lịch học bù', tagColor: 'violet', time: '3 ngày trước' },
 ];
 
-export default function AdminOverview() {
+export default function AdminOverview({
+  onOpenStudents,
+  onOpenTeachers,
+  onOpenTimetable,
+  onOpenJournal,
+  onOpenFinance,
+  onOpenAnnouncements,
+  onOpenMockExams,
+}) {
+  const { students, teachers, attendanceLogs, bulletins } = useContext(AppContext);
+
+  const downloadCsv = (filename, rows) => {
+    const escapeCsv = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = rows.map(row => row.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportReport = () => {
+    const totalFees = (students || []).reduce((sum, student) => (
+      sum + (student.feeStatus || []).reduce((feeSum, fee) => feeSum + (fee.paid ? fee.amount : 0), 0)
+    ), 0);
+    const rows = [
+      ['Chi so', 'Gia tri'],
+      ['Tong hoc sinh', students?.length || 0],
+      ['Tong giao vien', teachers?.length || 0],
+      ['Luot diem danh', attendanceLogs?.length || 0],
+      ['Thong bao da phat hanh', bulletins?.length || 0],
+      ['Tong hoc phi da thu', totalFees],
+    ];
+    downloadCsv(`bao-cao-eduportal-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  };
+
+  const handleQuickAction = (action) => {
+    if (action === 'students') onOpenStudents && onOpenStudents();
+    if (action === 'teachers') onOpenTeachers && onOpenTeachers();
+    if (action === 'timetable') onOpenTimetable && onOpenTimetable();
+    if (action === 'finance') onOpenFinance && onOpenFinance();
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -45,8 +93,8 @@ export default function AdminOverview() {
           <p className="page-sub">Trường THPT Nguyễn Du · Năm học 2025–2026 · Học kỳ II</p>
         </div>
         <div className="flex gap-12">
-          <button className="btn btn-ghost"><BarChart3 size={17} /> Xuất báo cáo</button>
-          <button className="btn btn-primary"><Bell size={17} /> Gửi thông báo</button>
+          <button className="btn btn-ghost" onClick={handleExportReport}><BarChart3 size={17} /> Xuất báo cáo</button>
+          <button className="btn btn-primary" onClick={onOpenAnnouncements}><Bell size={17} /> Gửi thông báo</button>
         </div>
       </div>
 
@@ -58,7 +106,7 @@ export default function AdminOverview() {
 
       <div className="ds-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
         <div className="col" style={{ gap: 20 }}>
-          <SectionCard title="Sĩ số & GPA theo khối" icon={BarChart3} delay="d2" action={<button className="btn btn-soft btn-sm">Năm học 2025–2026</button>}>
+          <SectionCard title="Sĩ số & GPA theo khối" icon={BarChart3} delay="d2" action={<button className="btn btn-soft btn-sm" onClick={onOpenMockExams}>Năm học 2025–2026</button>}>
             <div className="flex" style={{ gap: 20, alignItems: 'flex-end', height: 210, padding: '10px 0' }}>
               {GRADE_DIST.map((g, i) => (
                 <div key={i} className="col" style={{ flex: 1, alignItems: 'center', gap: 10, height: '100%', justifyContent: 'flex-end' }}>
@@ -77,7 +125,7 @@ export default function AdminOverview() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Hoạt động gần đây" icon={Clock} delay="d3" action={<button className="btn btn-soft btn-sm">Nhật ký</button>}>
+          <SectionCard title="Hoạt động gần đây" icon={Clock} delay="d3" action={<button className="btn btn-soft btn-sm" onClick={onOpenJournal}>Nhật ký</button>}>
             <div className="col" style={{ gap: 4 }}>
               {ACTIVITY.map((a, i) => {
                 const Icon = a.icon;
@@ -101,7 +149,7 @@ export default function AdminOverview() {
               {QUICK.map((q, i) => {
                 const Icon = q.icon;
                 return (
-                  <button key={i} className={`badge-tile bg-${q.color}`} style={{ cursor: 'pointer', border: 'none' }}>
+                  <button key={i} onClick={() => handleQuickAction(q.action)} className={`badge-tile bg-${q.color}`} style={{ cursor: 'pointer', border: 'none' }}>
                     <div className={`bt-ico t-${q.color}`} style={{ background: '#fff' }}><Icon size={24} /></div>
                     <span className={`t-${q.color}`} style={{ fontSize: '0.8rem', fontWeight: 700 }}>{q.label}</span>
                   </button>

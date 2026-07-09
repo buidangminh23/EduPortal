@@ -2,7 +2,7 @@ import { useState, useContext, useCallback } from 'react';
 import { AppContext } from '../../context/AppContext';
 import {
   RefreshCw, BookOpen, Clock, CheckCircle2, Circle, Calendar,
-  List, Sparkles, TrendingUp, Target, Zap, ChevronRight, ExternalLink
+  List, Sparkles, TrendingUp, Target, Zap, ChevronRight, ExternalLink, X
 } from 'lucide-react';
 
 /* ─── HELPERS ─────────────────────────────────────────────────────────────── */
@@ -82,6 +82,7 @@ export default function StudyPlanTab() {
   const [tasks,    setTasks]    = useState(() => generatePlan(studentCompetencies, studentId));
   const [viewMode, setViewMode] = useState('list');   // 'list' | 'calendar'
   const [spinning, setSpinning] = useState(false);
+  const [showTips, setShowTips] = useState(false);
 
   /* Recalculate stats */
   const totalHours     = tasks.reduce((s, t) => s + t.hours, 0);
@@ -394,11 +395,30 @@ export default function StudyPlanTab() {
           <strong style={{ color: 'var(--text-primary)' }}>Lời khuyên AI:</strong>{' '}
           Kế hoạch được cá nhân hóa dựa trên điểm yếu của bạn. Hãy đánh dấu hoàn thành sau mỗi buổi học để theo dõi tiến độ chính xác. 
           Ôn tuần 1 kỹ nhất — đây là nền tảng quan trọng nhất!
-          <button style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#4f46e5', fontWeight: 700, cursor: 'pointer', fontSize: '0.83rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          <button onClick={() => setShowTips(true)} style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#4f46e5', fontWeight: 700, cursor: 'pointer', fontSize: '0.83rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
             Xem thêm mẹo <ChevronRight size={13} />
           </button>
         </div>
       </div>
+      {showTips && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 520 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Mẹo học theo kế hoạch AI</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Dựa trên tiến độ {progressPct}% và {completedHours}/{totalHours} giờ đã hoàn thành.</p>
+              </div>
+              <button className="icon-btn" onClick={() => setShowTips(false)} aria-label="Đóng"><X size={18} /></button>
+            </div>
+            <div style={{ display: 'grid', gap: 10, fontSize: '0.9rem', lineHeight: 1.5 }}>
+              <div style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 10 }}>Ưu tiên hoàn thành các nhiệm vụ tuần 1 trước khi chuyển sang luyện đề.</div>
+              <div style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 10 }}>Mỗi phiên học nên chia 45 phút tập trung và 10 phút nghỉ để giữ nhịp ôn thi ổn định.</div>
+              <div style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 10 }}>Sau khi đánh dấu xong một chủ đề, làm lại ít nhất 5 câu trắc nghiệm cùng dạng để kiểm tra độ chắc.</div>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowTips(false)} style={{ width: '100%', marginTop: 16 }}>Đã hiểu</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

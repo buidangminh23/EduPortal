@@ -96,7 +96,7 @@ function App() {
     if (currentRole === 'admin') {
       switch (activeTab) {
         case 'dashboard':
-          return <PrincipalDashboard />;
+          return <PrincipalDashboard setActiveTab={setActiveTab} />;
         case 'students':
           return <AdminStudentManager />;
         case 'teachers':
@@ -122,7 +122,7 @@ function App() {
         case 'asset_manager':
           return <AssetManager />;
         default:
-          return <PrincipalDashboard />;
+          return <PrincipalDashboard setActiveTab={setActiveTab} />;
       }
     }
     

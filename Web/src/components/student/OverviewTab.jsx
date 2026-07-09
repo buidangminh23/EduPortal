@@ -1,9 +1,9 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import StreakWidget from './StreakWidget';
 import {
   Plus, Star, Trophy, CheckCircle, Heart, Calendar,
-  ChevronRight, BookOpen, BarChart3, ClipboardList, Clock, Bell, TrendingUp
+  ChevronRight, BookOpen, BarChart3, ClipboardList, Clock, Bell, TrendingUp, X
 } from 'lucide-react';
 
 const SUBJECT_KEYS = ['Math', 'Literature', 'Physics', 'English'];
@@ -93,8 +93,17 @@ function formatDue(dateStr) {
   return { label: `${wd}, ${d.getDate()}/${d.getMonth() + 1}`, urgent: false };
 }
 
+function loadStudentNotes(studentId) {
+  if (!studentId) return [];
+  const saved = localStorage.getItem(`student_notes_${studentId}`);
+  return saved ? JSON.parse(saved) : [];
+}
+
 export default function OverviewTab({ student, setActiveTab }) {
-  const { attendanceLogs, conductLogs, deadlines, bulletins } = useContext(AppContext);
+  const { attendanceLogs, conductLogs, deadlines, bulletins, setStudentSubTab } = useContext(AppContext);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteInput, setNoteInput] = useState('');
+  const [notes, setNotes] = useState(() => loadStudentNotes(student?.id));
 
   const grades = student?.grades || {};
   const gradeVals = SUBJECT_KEYS.map(k => grades[k]).filter(v => typeof v === 'number');
@@ -117,6 +126,31 @@ export default function OverviewTab({ student, setActiveTab }) {
     .filter(b => !b.targetRoles || b.targetRoles.includes('student') || b.targetRoles.includes('all'))
     .slice(0, 2);
   const firstName = (student?.name || 'bạn').trim().split(' ').pop();
+  const openStudentSubTab = (tab) => {
+    setStudentSubTab(tab);
+    setActiveTab && setActiveTab('dashboard');
+  };
+  const saveQuickNote = (e) => {
+    e.preventDefault();
+    if (!noteInput.trim()) return;
+    const nextNotes = [
+      {
+        id: `NOTE-${Date.now()}`,
+        text: noteInput.trim(),
+        createdAt: new Date().toISOString(),
+      },
+      ...notes,
+    ].slice(0, 10);
+    setNotes(nextNotes);
+    localStorage.setItem(`student_notes_${student.id}`, JSON.stringify(nextNotes));
+    setNoteInput('');
+    setShowNoteModal(false);
+  };
+  const deleteQuickNote = (noteId) => {
+    const nextNotes = notes.filter(note => note.id !== noteId);
+    setNotes(nextNotes);
+    localStorage.setItem(`student_notes_${student.id}`, JSON.stringify(nextNotes));
+  };
 
   return (
     <div>
@@ -127,7 +161,7 @@ export default function OverviewTab({ student, setActiveTab }) {
             Hôm nay bạn có <b style={{ color: 'var(--accent-ink)' }}>{myDeadlines.length} bài tập</b> đến hạn và <b style={{ color: 'var(--accent-ink)' }}>{PERIODS.length} tiết học</b>.
           </p>
         </div>
-        <button className="btn btn-primary"><Plus size={18} /> Ghi chú mới</button>
+        <button className="btn btn-primary" onClick={() => setShowNoteModal(true)}><Plus size={18} /> Ghi chú mới</button>
       </div>
 
       {/* Stats */}
@@ -161,7 +195,7 @@ export default function OverviewTab({ student, setActiveTab }) {
 
           {/* Subject grades */}
           <SectionCard title="Điểm các môn" icon={BarChart3} delay="d4"
-            action={<button className="btn btn-soft btn-sm" onClick={() => setActiveTab && setActiveTab('dashboard')}>Chi tiết</button>}>
+            action={<button className="btn btn-soft btn-sm" onClick={() => openStudentSubTab('competency_heatmap')}>Chi tiết</button>}>
             <div className="ds-grid cols-2" style={{ gap: 14 }}>
               {SUBJECT_KEYS.filter(k => typeof grades[k] === 'number').map((k) => {
                 const m = SUBJECT_META[k];
@@ -185,6 +219,21 @@ export default function OverviewTab({ student, setActiveTab }) {
         {/* Right */}
         <div className="col" style={{ gap: 20 }}>
           <StreakWidget />
+          {notes.length > 0 && (
+            <SectionCard title="Ghi chú học tập" icon={Plus} delay="d2">
+              <div className="col" style={{ gap: 8 }}>
+                {notes.slice(0, 3).map(note => (
+                  <div key={note.id} className="row" style={{ alignItems: 'flex-start', padding: 10, border: '1px solid var(--line)', borderRadius: 'var(--r-md)' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, lineHeight: 1.4 }}>{note.text}</div>
+                      <div className="muted" style={{ fontSize: '0.72rem', marginTop: 4 }}>{new Date(note.createdAt).toLocaleDateString('vi-VN')}</div>
+                    </div>
+                    <button className="icon-btn" onClick={() => deleteQuickNote(note.id)} aria-label="Xóa ghi chú"><X size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
           {/* Assignments */}
           <SectionCard title="Bài tập sắp đến hạn" icon={ClipboardList} delay="d3">
             <div className="col" style={{ gap: 8 }}>
@@ -205,7 +254,7 @@ export default function OverviewTab({ student, setActiveTab }) {
                 );
               })}
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => setActiveTab && setActiveTab('dashboard')}>Xem tất cả bài tập</button>
+            <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => openStudentSubTab('assignments')}>Xem tất cả bài tập</button>
           </SectionCard>
 
           {/* Badges */}
@@ -241,6 +290,34 @@ export default function OverviewTab({ student, setActiveTab }) {
           </SectionCard>
         </div>
       </div>
+      {showNoteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 460 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Ghi chú học tập mới</h3>
+              <button className="icon-btn" onClick={() => setShowNoteModal(false)} aria-label="Đóng"><X size={18} /></button>
+            </div>
+            <form onSubmit={saveQuickNote}>
+              <div className="form-group">
+                <label className="form-label">Nội dung ghi chú</label>
+                <textarea
+                  className="form-control"
+                  value={noteInput}
+                  onChange={e => setNoteInput(e.target.value)}
+                  placeholder="Ví dụ: Ôn lại giao thoa sóng trước tiết Vật lý..."
+                  rows={4}
+                  required
+                  style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1', resize: 'vertical' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowNoteModal(false)} style={{ flex: 1 }}>Hủy</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Lưu ghi chú</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

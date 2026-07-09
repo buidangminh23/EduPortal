@@ -1,4 +1,5 @@
-import { MessageSquare, BarChart3, BookOpen, ArrowUp, ArrowDown, CheckCircle, Check, Clock, Wallet, Bus, User, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, BarChart3, BookOpen, ArrowUp, ArrowDown, CheckCircle, Check, Clock, Wallet, Bus, User, Phone, X } from 'lucide-react';
 import { SectionCard, Pill, Bar, Avatar } from './DashUI';
 
 const CHILD = { name: 'Nguyễn Minh An', classroom: '10A2', studentId: 'HS24-1042', avatar: 'https://i.pravatar.cc/120?img=12', gpa: 8.6, conduct: 'Tốt', rank: 3, attendance: 98 };
@@ -26,9 +27,38 @@ const WEEK = [
 ];
 const ATT_MAP = { present: ['mint', 'Có mặt'], late: ['amber', 'Đi muộn'], absent: ['coral', 'Vắng'] };
 
-export default function ParentOverview({ childName, childClass }) {
-  const c = { ...CHILD, ...(childName ? { name: childName } : {}), ...(childClass ? { classroom: childClass } : {}) };
+export default function ParentOverview({ childName, childClass, student, onSubTabChange, onMainTabChange }) {
+  const [showTranscript, setShowTranscript] = useState(false);
+  const subjectKeyMap = {
+    'Toán': 'Math',
+    'Ngữ văn': 'Literature',
+    'Vật lý': 'Physics',
+    'Tiếng Anh': 'English',
+  };
+  const gradeValues = student?.grades ? Object.values(student.grades).filter(v => typeof v === 'number') : [];
+  const calculatedGpa = gradeValues.length
+    ? Number((gradeValues.reduce((sum, score) => sum + score, 0) / gradeValues.length).toFixed(1))
+    : CHILD.gpa;
+  const c = {
+    ...CHILD,
+    ...(childName ? { name: childName } : {}),
+    ...(childClass ? { classroom: childClass } : {}),
+    ...(student ? {
+      name: student.name,
+      classroom: student.class,
+      studentId: student.id,
+      avatar: student.avatarUrl || CHILD.avatar,
+      gpa: calculatedGpa,
+    } : {}),
+  };
   const firstName = c.name.trim().split(' ').pop();
+  const subjects = SUBJECTS.map(subject => {
+    const gradeKey = subjectKeyMap[subject.name];
+    return gradeKey && student?.grades?.[gradeKey]
+      ? { ...subject, grade: student.grades[gradeKey] }
+      : subject;
+  });
+  const unpaidCount = student?.feeStatus?.filter(fee => !fee.paid).length || 0;
 
   return (
     <div>
@@ -37,7 +67,7 @@ export default function ParentOverview({ childName, childClass }) {
           <h2 className="page-title">Theo dõi bé {firstName} 🧡</h2>
           <p className="page-sub">Tổng quan tình hình học tập của con tại trường.</p>
         </div>
-        <button className="btn btn-primary"><MessageSquare size={17} /> Nhắn giáo viên chủ nhiệm</button>
+        <button className="btn btn-primary" onClick={() => onSubTabChange && onSubTabChange('qa')}><MessageSquare size={17} /> Nhắn giáo viên chủ nhiệm</button>
       </div>
 
       <div className="card animate d1" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', background: 'linear-gradient(120deg, var(--accent-soft), var(--surface))' }}>
@@ -59,9 +89,9 @@ export default function ParentOverview({ childName, childClass }) {
 
       <div className="ds-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
         <div className="col" style={{ gap: 20 }}>
-          <SectionCard title="Điểm các môn của con" icon={BarChart3} delay="d2" action={<button className="btn btn-soft btn-sm">Xem học bạ</button>}>
+          <SectionCard title="Điểm các môn của con" icon={BarChart3} delay="d2" action={<button className="btn btn-soft btn-sm" onClick={() => setShowTranscript(true)}>Xem học bạ</button>}>
             <div className="ds-grid cols-2" style={{ gap: 14 }}>
-              {SUBJECTS.map((sub, i) => (
+              {subjects.map((sub, i) => (
                 <div key={i} className="flex items-center gap-12">
                   <div className={`chip-ico bg-${sub.color} t-${sub.color}`} style={{ width: 38, height: 38 }}><BookOpen size={17} /></div>
                   <div style={{ flex: 1 }}>
@@ -113,7 +143,9 @@ export default function ParentOverview({ childName, childClass }) {
                 </div>
               ))}
             </div>
-            <button className="btn btn-primary btn-sm" style={{ width: '100%', marginTop: 12 }}>Thanh toán khoản còn lại</button>
+            <button className="btn btn-primary btn-sm" onClick={() => onSubTabChange && onSubTabChange(unpaidCount > 0 ? 'fees' : 'wallet')} style={{ width: '100%', marginTop: 12 }}>
+              {unpaidCount > 0 ? `Thanh toán ${unpaidCount} khoản còn lại` : 'Xem ví điện tử'}
+            </button>
           </SectionCard>
 
           <SectionCard title="Xe đưa đón" icon={Bus} delay="d3">
@@ -130,8 +162,11 @@ export default function ParentOverview({ childName, childClass }) {
                 <div style={{ fontWeight: 700, fontSize: '0.84rem' }}>Tài xế: Chú Bình</div>
                 <div className="muted" style={{ fontSize: '0.76rem' }}>Biển số 29B-123.45</div>
               </div>
-              <button className="icon-btn" aria-label="Gọi điện cho tài xế"><Phone size={17} /></button>
+              <a className="icon-btn" href="tel:0909123456" aria-label="Gọi điện cho tài xế" title="Gọi điện cho tài xế"><Phone size={17} /></a>
             </div>
+            <button className="btn btn-soft btn-sm" onClick={() => onMainTabChange && onMainTabChange('bus_tracker')} style={{ width: '100%', marginTop: 12 }}>
+              Xem vị trí xe
+            </button>
           </SectionCard>
 
           <SectionCard title="Tin từ giáo viên" icon={MessageSquare} delay="d4">
@@ -148,6 +183,43 @@ export default function ParentOverview({ childName, childClass }) {
           </SectionCard>
         </div>
       </div>
+      {showTranscript && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 560 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Học bạ nhanh của {c.name}</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Lớp {c.classroom} · Mã học sinh {c.studentId}</p>
+              </div>
+              <button onClick={() => setShowTranscript(false)} className="icon-btn" aria-label="Đóng học bạ"><X size={18} /></button>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="premium-table">
+                <thead>
+                  <tr>
+                    <th>Môn học</th>
+                    <th>HK I</th>
+                    <th>HK II</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjects.map(subject => {
+                    const gradeKey = subjectKeyMap[subject.name];
+                    return (
+                      <tr key={subject.name}>
+                        <td style={{ fontWeight: 700 }}>{subject.name}</td>
+                        <td>{gradeKey && student?.gradesSem1?.[gradeKey] ? student.gradesSem1[gradeKey].toFixed(1) : '-'}</td>
+                        <td>{gradeKey && student?.grades?.[gradeKey] ? student.grades[gradeKey].toFixed(1) : subject.grade.toFixed(1)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <button className="btn btn-primary" onClick={() => setShowTranscript(false)} style={{ width: '100%', marginTop: 16 }}>Đã xem</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

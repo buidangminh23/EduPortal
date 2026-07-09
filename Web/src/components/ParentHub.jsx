@@ -188,7 +188,15 @@ export default function ParentHub({ setActiveTab }) {
 
 
       {/* Content panes based on sub-tabs */}
-      {activeSubTab === 'grades' && <ParentOverview childName={student?.name} childClass={student?.class} />}
+      {activeSubTab === 'grades' && (
+        <ParentOverview
+          childName={student?.name}
+          childClass={student?.class}
+          student={student}
+          onSubTabChange={handleSubTabChange}
+          onMainTabChange={setActiveTab}
+        />
+      )}
 
       {activeSubTab === 'fees' && (
         <div className="glass-panel">

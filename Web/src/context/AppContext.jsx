@@ -2174,7 +2174,7 @@ export const AppProvider = ({ children }) => {
     setTeacherAttendance(prev => [...prev, { id, teacherId, teacherName, date, checkInTime: time, status, pin }]);
   };
 
-  // ── Payment Mock Action ──────────────────────────────────────────────────
+  // ── Payment Simulation Action ────────────────────────────────────────────
   const processPayment = (studentId, feeId) => {
     setStudents(prev => prev.map(s => s.id === studentId
       ? { ...s, feeStatus: s.feeStatus.map(f => f.id === feeId ? { ...f, paid: true } : f) } : s));

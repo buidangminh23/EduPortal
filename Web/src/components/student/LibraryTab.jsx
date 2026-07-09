@@ -34,6 +34,28 @@ export default function LibraryTab({ student }) {
     setActiveQuizStep(1);
   };
 
+  const handleResourceDownload = (res) => {
+    const content = [
+      `EduPortal - Hoc lieu so`,
+      `Tieu de: ${res.title}`,
+      `Mon hoc: ${res.subject}`,
+      `Giao vien: ${res.teacherName}`,
+      `Ngay dang: ${res.dateUploaded}`,
+      '',
+      'Noi dung demo:',
+      `Tai lieu nay duoc tao tu kho hoc lieu EduPortal de hoc sinh ${student.name} on tap va ghi chu them tren lop.`,
+    ].join('\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${res.title.toLowerCase().replace(/[^a-z0-9]+/gi, '-') || 'hoc-lieu'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
 
@@ -52,7 +74,7 @@ export default function LibraryTab({ student }) {
                 <h5 style={{ margin: 0, fontWeight: 700 }}>{res.title}</h5>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Đăng bởi: {res.teacherName} • Ngày {res.dateUploaded.split('-').reverse().join('/')}</span>
               </div>
-              <button onClick={() => alert('Bắt đầu tải tài liệu về máy...')} className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>
+              <button onClick={() => handleResourceDownload(res)} className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>
                 Tải về
               </button>
             </div>

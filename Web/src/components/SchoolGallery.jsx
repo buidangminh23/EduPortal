@@ -66,11 +66,19 @@ const albumPhotos = {
 const tags = ['Tất cả', 'Sự kiện', 'Học thuật', 'Thể thao', 'Văn nghệ', 'CLB'];
 
 export default function SchoolGallery() {
-  const { schoolAlbums } = useContext(AppContext);
+  const { schoolAlbums, setSchoolAlbums } = useContext(AppContext);
   const [selectedTag, setSelectedTag] = useState('Tất cả');
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(null);
   const [likes, setLikes] = useState({});
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadForm, setUploadForm] = useState({
+    albumTitle: '',
+    photoTitle: '',
+    description: '',
+    tag: 'Sự kiện',
+    emoji: '📷',
+  });
 
   const albums = schoolAlbums || mockAlbums;
 
@@ -78,7 +86,7 @@ export default function SchoolGallery() {
     return selectedTag === 'Tất cả' || al.tag === selectedTag;
   });
 
-  const currentPhotos = selectedAlbum ? (albumPhotos[selectedAlbum.id] || []) : [];
+  const currentPhotos = selectedAlbum ? (selectedAlbum.photos || albumPhotos[selectedAlbum.id] || []) : [];
 
   const handleLike = (photoId, e) => {
     e.stopPropagation();
@@ -102,8 +110,36 @@ export default function SchoolGallery() {
     }
   };
 
-  const handleUploadMock = () => {
-    alert('Mock Action: Đăng tải ảnh lên album thành công! Ảnh sẽ được phê duyệt bởi Ban quản trị.');
+  const handleUploadSubmit = (e) => {
+    e.preventDefault();
+    if (!uploadForm.albumTitle.trim() || !uploadForm.photoTitle.trim()) return;
+    const albumId = `AL${Date.now()}`;
+    const photo = {
+      id: `P${Date.now()}`,
+      title: uploadForm.photoTitle.trim(),
+      emoji: uploadForm.emoji || '📷',
+      desc: uploadForm.description.trim() || 'Ảnh mới được đăng lên album sự kiện của trường.',
+    };
+    const newAlbum = {
+      id: albumId,
+      title: uploadForm.albumTitle.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      tag: uploadForm.tag,
+      emoji: uploadForm.emoji || '📷',
+      photoCount: 1,
+      color: '#4f46e5',
+      photos: [photo],
+    };
+    setSchoolAlbums(prev => [newAlbum, ...(prev || [])]);
+    setSelectedTag('Tất cả');
+    setUploadForm({
+      albumTitle: '',
+      photoTitle: '',
+      description: '',
+      tag: 'Sự kiện',
+      emoji: '📷',
+    });
+    setShowUploadModal(false);
   };
 
   return (
@@ -122,7 +158,7 @@ export default function SchoolGallery() {
               </p>
             </div>
             
-            <button className="btn btn-primary" onClick={handleUploadMock} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button className="btn btn-primary" onClick={() => setShowUploadModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Plus size={16} />
               <span>Đăng ảnh mới</span>
             </button>
@@ -359,6 +395,80 @@ export default function SchoolGallery() {
             </div>
           )}
         </>
+      )}
+      {showUploadModal && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 520 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Đăng ảnh sự kiện mới</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Tạo album nhanh và thêm ảnh đầu tiên.</p>
+              </div>
+              <button className="icon-btn" onClick={() => setShowUploadModal(false)} aria-label="Đóng"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUploadSubmit}>
+              <div className="form-group">
+                <label className="form-label">Tên album</label>
+                <input
+                  className="form-control"
+                  value={uploadForm.albumTitle}
+                  onChange={e => setUploadForm(prev => ({ ...prev, albumTitle: e.target.value }))}
+                  placeholder="Ví dụ: Hội thao tháng 7"
+                  required
+                  style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1' }}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Chủ đề</label>
+                  <select
+                    className="form-control"
+                    value={uploadForm.tag}
+                    onChange={e => setUploadForm(prev => ({ ...prev, tag: e.target.value }))}
+                    style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1' }}
+                  >
+                    {tags.filter(tag => tag !== 'Tất cả').map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Biểu tượng</label>
+                  <input
+                    className="form-control"
+                    value={uploadForm.emoji}
+                    onChange={e => setUploadForm(prev => ({ ...prev, emoji: e.target.value.slice(0, 2) }))}
+                    style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tên ảnh</label>
+                <input
+                  className="form-control"
+                  value={uploadForm.photoTitle}
+                  onChange={e => setUploadForm(prev => ({ ...prev, photoTitle: e.target.value }))}
+                  placeholder="Ví dụ: Khoảnh khắc trao giải"
+                  required
+                  style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1' }}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mô tả</label>
+                <textarea
+                  className="form-control"
+                  value={uploadForm.description}
+                  onChange={e => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Mô tả ngắn về khoảnh khắc này..."
+                  rows={3}
+                  style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1', resize: 'vertical' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowUploadModal(false)} style={{ flex: 1 }}>Hủy</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Đăng ảnh</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

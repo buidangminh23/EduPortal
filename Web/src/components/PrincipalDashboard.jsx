@@ -23,7 +23,7 @@ import {
 import AdminOverview from './dash/AdminOverview';
 
 
-export default function PrincipalDashboard() {
+export default function PrincipalDashboard({ setActiveTab }) {
   const { 
     students, 
     teachers,
@@ -242,7 +242,17 @@ export default function PrincipalDashboard() {
       </div>
 
       {/* Overview Subtab content */}
-      {subTab === 'overview' && <AdminOverview />}
+      {subTab === 'overview' && (
+        <AdminOverview
+          onOpenStudents={() => setActiveTab && setActiveTab('students')}
+          onOpenTeachers={() => setActiveTab && setActiveTab('teachers')}
+          onOpenTimetable={() => setActiveTab && setActiveTab('timetable_generator')}
+          onOpenJournal={() => setActiveTab && setActiveTab('journal')}
+          onOpenFinance={() => setSubTab('finance')}
+          onOpenAnnouncements={() => setSubTab('qa_notices')}
+          onOpenMockExams={() => setSubTab('mock_exams')}
+        />
+      )}
 
       {/* Finance manager view */}
       {subTab === 'finance' && (
