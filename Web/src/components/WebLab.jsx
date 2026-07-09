@@ -52,7 +52,7 @@ export default function WebLab() {
         🧪 Phòng Thí Nghiệm Học Vụ Ảo
       </h2>
       <p style={{ margin: '8px 0 36px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-        Không gian thực hành mô phỏng kỹ thuật số trực quan tương tác 2D các môn Khoa học Tự nhiên.
+        Không gian thực hành mô phỏng kỹ thuật số có công thức, điều khiển tham số, quan sát trực quan và nhật ký kết quả cho từng học sinh.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 750, margin: '0 auto' }}>
@@ -93,7 +93,7 @@ export default function WebLab() {
           </div>
           <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b', fontWeight: 700 }}>Vật Lý Học Ảo</h3>
           <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-            Khảo sát dao động mạch xoay chiều RLC, ném xiên parabol, chu kỳ con lắc đơn, sự tạo ảnh quang học thấu kính hội tụ và gia tốc rơi tự do.
+            8 thí nghiệm: RLC, ném xiên, con lắc, thấu kính, rơi tự do, định luật Ôm, giao thoa sóng và cảm ứng điện từ Faraday-Lenz.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export default function WebLab() {
           </div>
           <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b', fontWeight: 700 }}>Hóa Học Ảo</h3>
           <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-            Tiến hành trộn chất tạo kết tủa/sủi bọt trao đổi ion, dãy hoạt động kim loại, thay đổi màu chỉ thị pH, phản ứng cháy oxi hóa và quá trình điện phân.
+            8 thí nghiệm: trao đổi ion, dãy kim loại, chỉ thị pH, phản ứng cháy, điện phân, chuẩn độ, cân bằng hóa học và tốc độ phản ứng.
           </p>
         </div>
       </div>

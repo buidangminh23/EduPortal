@@ -230,6 +230,87 @@ export default function PhysicsLab() {
     };
   }, []);
 
+  // ==========================================
+  // 6. STATE & HANDLERS: OHM LAW CIRCUIT
+  // ==========================================
+  const [ohmMode, setOhmMode] = useState('series');
+  const [ohmV, setOhmV] = useState(12);
+  const [ohmR1, setOhmR1] = useState(40);
+  const [ohmR2, setOhmR2] = useState(80);
+
+  const ohmReq = ohmMode === 'series'
+    ? ohmR1 + ohmR2
+    : 1 / ((1 / ohmR1) + (1 / ohmR2));
+  const ohmCurrent = ohmReq > 0 ? ohmV / ohmReq : 0;
+  const ohmPower = ohmV * ohmCurrent;
+  const ohmR1Current = ohmMode === 'series' ? ohmCurrent : ohmV / ohmR1;
+  const ohmR2Current = ohmMode === 'series' ? ohmCurrent : ohmV / ohmR2;
+
+  const handleSaveOhm = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'physics',
+      subType: 'ohm',
+      params: { mode: ohmMode, U: ohmV, R1: ohmR1, R2: ohmR2 },
+      result: {
+        summary: `Định luật Ôm: U=${ohmV}V, R₁=${ohmR1}Ω, R₂=${ohmR2}Ω, mắc ${ohmMode === 'series' ? 'nối tiếp' : 'song song'}.`,
+        phenomenon: `Rtd=${ohmReq.toFixed(1)}Ω, I=${ohmCurrent.toFixed(3)}A, P=${ohmPower.toFixed(2)}W. Dòng qua R₁=${ohmR1Current.toFixed(3)}A, R₂=${ohmR2Current.toFixed(3)}A.`
+      }
+    });
+  };
+
+  // ==========================================
+  // 7. STATE & HANDLERS: WAVE INTERFERENCE
+  // ==========================================
+  const [waveLambda, setWaveLambda] = useState(2.4); // cm
+  const [waveSourceGap, setWaveSourceGap] = useState(8); // cm
+  const [waveScreenDistance, setWaveScreenDistance] = useState(120); // cm
+  const [wavePhase, setWavePhase] = useState(0); // degrees
+
+  const fringeSpacing = waveSourceGap > 0 ? (waveLambda * waveScreenDistance) / waveSourceGap : 0;
+  const centralShift = (wavePhase / 360) * fringeSpacing;
+  const maxOrder = Math.max(1, Math.floor(35 / Math.max(fringeSpacing, 0.1)));
+
+  const handleSaveWave = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'physics',
+      subType: 'waves',
+      params: { lambda: waveLambda, d: waveSourceGap, D: waveScreenDistance, phase: wavePhase },
+      result: {
+        summary: `Giao thoa sóng: λ=${waveLambda.toFixed(1)}cm, d=${waveSourceGap}cm, D=${waveScreenDistance}cm, Δφ=${wavePhase}°.`,
+        phenomenon: `Khoảng vân i=${fringeSpacing.toFixed(1)}cm. Vân trung tâm lệch ${centralShift.toFixed(1)}cm khi hai nguồn lệch pha. Quan sát được khoảng ${maxOrder * 2 + 1} vân sáng chính.`
+      }
+    });
+  };
+
+  // ==========================================
+  // 8. STATE & HANDLERS: ELECTROMAGNETIC INDUCTION
+  // ==========================================
+  const [indTurns, setIndTurns] = useState(120);
+  const [indArea, setIndArea] = useState(25); // cm2
+  const [indDeltaB, setIndDeltaB] = useState(0.45); // Tesla
+  const [indDeltaT, setIndDeltaT] = useState(0.18); // seconds
+  const [indAngle, setIndAngle] = useState(0);
+
+  const indAreaM2 = indArea / 10000;
+  const indCos = Math.cos((indAngle * Math.PI) / 180);
+  const inducedEmf = indDeltaT > 0 ? indTurns * indAreaM2 * (indDeltaB / indDeltaT) * Math.abs(indCos) : 0;
+  const inductionLevel = inducedEmf > 0.7 ? 'mạnh' : inducedEmf > 0.25 ? 'vừa' : 'yếu';
+
+  const handleSaveInduction = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'physics',
+      subType: 'induction',
+      params: { N: indTurns, S: indArea, deltaB: indDeltaB, deltaT: indDeltaT, angle: indAngle },
+      result: {
+        summary: `Cảm ứng điện từ: N=${indTurns} vòng, S=${indArea}cm², ΔB=${indDeltaB}T, Δt=${indDeltaT}s, góc=${indAngle}°.`,
+        phenomenon: `Suất điện động cảm ứng |e|=${inducedEmf.toFixed(2)}V, mức cảm ứng ${inductionLevel}. Đổi chiều chuyển động nam châm sẽ đảo chiều dòng cảm ứng.`
+      }
+    });
+  };
+
   const mySimulations = labSimulations?.filter(sim => sim.studentId === student?.id && sim.type === 'physics') || [];
 
   return (
@@ -242,7 +323,10 @@ export default function PhysicsLab() {
             { id: 'projectile', label: 'Ném xiên', icon: <Play size={15} /> },
             { id: 'pendulum', label: 'Con lắc đơn', icon: <RotateCcw size={15} /> },
             { id: 'lens', label: 'Thấu kính hội tụ', icon: <Eye size={15} /> },
-            { id: 'freefall', label: 'Rơi tự do', icon: <ArrowDown size={15} /> }
+            { id: 'freefall', label: 'Rơi tự do', icon: <ArrowDown size={15} /> },
+            { id: 'ohm', label: 'Định luật Ôm', icon: <Zap size={15} /> },
+            { id: 'waves', label: 'Giao thoa sóng', icon: <RotateCcw size={15} /> },
+            { id: 'induction', label: 'Cảm ứng điện từ', icon: <Zap size={15} /> }
           ].map(tab => (
             <button
               key={tab.id}
@@ -718,6 +802,282 @@ export default function PhysicsLab() {
             </div>
           </div>
         )}
+
+        {/* 6. OHM LAW EXPERIMENT */}
+        {activeSubTab === 'ohm' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Zap size={18} /> Mạch điện một chiều: Định luật Ôm, công suất và cách mắc điện trở
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[
+                    ['series', 'Nối tiếp'],
+                    ['parallel', 'Song song']
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      onClick={() => setOhmMode(id)}
+                      className={`btn ${ohmMode === id ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, height: 36 }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Hiệu điện thế U</span>
+                    <strong>{ohmV} V</strong>
+                  </label>
+                  <input type="range" min="1" max="24" value={ohmV} onChange={e => setOhmV(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Điện trở R₁</span>
+                    <strong>{ohmR1} Ω</strong>
+                  </label>
+                  <input type="range" min="5" max="200" value={ohmR1} onChange={e => setOhmR1(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Điện trở R₂</span>
+                    <strong>{ohmR2} Ω</strong>
+                  </label>
+                  <input type="range" min="5" max="200" value={ohmR2} onChange={e => setOhmR2(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center', background: 'rgba(99,102,241,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>R tương đương</span>
+                    <div style={{ fontWeight: 800, color: 'var(--accent-primary)' }}>{ohmReq.toFixed(1)} Ω</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Dòng mạch chính</span>
+                    <div style={{ fontWeight: 800 }}>{ohmCurrent.toFixed(3)} A</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Công suất</span>
+                    <div style={{ fontWeight: 800 }}>{ohmPower.toFixed(2)} W</div>
+                  </div>
+                </div>
+
+                <button onClick={handleSaveOhm} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận mạch điện</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 16, color: '#e2e8f0' }}>
+                <svg width="100%" height="170" viewBox="0 0 260 160">
+                  <rect x="16" y="40" width="32" height="80" rx="5" fill="#334155" stroke="#94a3b8" />
+                  <line x1="32" y1="52" x2="32" y2="72" stroke="#f8fafc" strokeWidth="3" />
+                  <line x1="24" y1="62" x2="40" y2="62" stroke="#f8fafc" strokeWidth="3" />
+                  <line x1="32" y1="90" x2="32" y2="110" stroke="#f8fafc" strokeWidth="3" />
+                  <text x="18" y="136" fill="#94a3b8" fontSize="9">{ohmV}V</text>
+
+                  {ohmMode === 'series' ? (
+                    <>
+                      <path d="M 48 60 H 112 M 148 60 H 210 V 120 H 32 V 120" fill="none" stroke="#64748b" strokeWidth="3" />
+                      <rect x="112" y="49" width="36" height="22" rx="5" fill="#f59e0b" />
+                      <text x="118" y="64" fill="#111827" fontSize="10" fontWeight="700">R₁</text>
+                      <rect x="160" y="109" width="36" height="22" rx="5" fill="#38bdf8" />
+                      <text x="166" y="124" fill="#082f49" fontSize="10" fontWeight="700">R₂</text>
+                    </>
+                  ) : (
+                    <>
+                      <path d="M 48 60 H 85 V 32 H 162 V 60 H 210 V 120 H 32 V 120" fill="none" stroke="#64748b" strokeWidth="3" />
+                      <path d="M 85 60 V 88 H 162 V 60" fill="none" stroke="#64748b" strokeWidth="3" />
+                      <rect x="104" y="21" width="38" height="22" rx="5" fill="#f59e0b" />
+                      <text x="110" y="36" fill="#111827" fontSize="10" fontWeight="700">R₁</text>
+                      <rect x="104" y="77" width="38" height="22" rx="5" fill="#38bdf8" />
+                      <text x="110" y="92" fill="#082f49" fontSize="10" fontWeight="700">R₂</text>
+                    </>
+                  )}
+
+                  <circle cx="220" cy="90" r={Math.min(22, 8 + ohmPower / 5)} fill="rgba(250,204,21,0.22)" />
+                  <circle cx="220" cy="90" r="11" fill="#facc15" opacity={Math.min(1, 0.25 + ohmPower / 20)} />
+                  <text x="204" y="128" fill="#facc15" fontSize="9">Bóng đèn</text>
+                </svg>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  <strong>Dòng qua R₁:</strong> {ohmR1Current.toFixed(3)}A · <strong>Dòng qua R₂:</strong> {ohmR2Current.toFixed(3)}A.
+                  {ohmMode === 'series'
+                    ? ' Nối tiếp có cùng dòng điện qua mọi phần tử, điện trở tương đương tăng.'
+                    : ' Song song có cùng hiệu điện thế trên mỗi nhánh, điện trở tương đương giảm.'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 7. WAVE INTERFERENCE EXPERIMENT */}
+        {activeSubTab === 'waves' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RotateCcw size={18} /> Giao thoa hai nguồn kết hợp và khoảng vân
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Bước sóng λ</span>
+                    <strong>{waveLambda.toFixed(1)} cm</strong>
+                  </label>
+                  <input type="range" min="0.8" max="6" step="0.1" value={waveLambda} onChange={e => setWaveLambda(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Khoảng cách hai nguồn d</span>
+                    <strong>{waveSourceGap} cm</strong>
+                  </label>
+                  <input type="range" min="3" max="18" value={waveSourceGap} onChange={e => setWaveSourceGap(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Khoảng cách màn D</span>
+                    <strong>{waveScreenDistance} cm</strong>
+                  </label>
+                  <input type="range" min="60" max="220" value={waveScreenDistance} onChange={e => setWaveScreenDistance(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Độ lệch pha Δφ</span>
+                    <strong>{wavePhase}°</strong>
+                  </label>
+                  <input type="range" min="-180" max="180" value={wavePhase} onChange={e => setWavePhase(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ background: 'rgba(14,165,233,0.05)', padding: 12, borderRadius: 12, fontSize: '0.8rem', display: 'grid', gap: 5 }}>
+                  <div>• Khoảng vân: <strong style={{ color: 'var(--accent-primary)' }}>i = {fringeSpacing.toFixed(1)} cm</strong></div>
+                  <div>• Vân trung tâm lệch: <strong>{centralShift.toFixed(1)} cm</strong></div>
+                  <div>• Điều kiện cực đại: <strong>Δd = kλ</strong>; cực tiểu: <strong>Δd = (k + 1/2)λ</strong></div>
+                </div>
+
+                <button onClick={handleSaveWave} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận giao thoa</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 14, color: '#e2e8f0' }}>
+                <svg width="100%" height="190" viewBox="0 0 260 180">
+                  <rect x="210" y="16" width="16" height="146" rx="4" fill="#1e293b" stroke="#475569" />
+                  {Array.from({ length: maxOrder * 2 + 1 }, (_, i) => i - maxOrder).map(order => {
+                    const y = 89 + order * Math.min(22, Math.max(5, fringeSpacing * 1.2)) + centralShift * 0.6;
+                    const bright = Math.abs(order) === 0 ? 1 : Math.max(0.35, 1 - Math.abs(order) * 0.13);
+                    if (y < 22 || y > 156) return null;
+                    return <rect key={order} x="211" y={y - 2} width="14" height="4" rx="2" fill="#38bdf8" opacity={bright} />;
+                  })}
+                  <circle cx="48" cy={90 - waveSourceGap * 2} r="5" fill="#f59e0b" />
+                  <circle cx="48" cy={90 + waveSourceGap * 2} r="5" fill="#f59e0b" />
+                  <text x="30" y={84 - waveSourceGap * 2} fill="#f59e0b" fontSize="9">S₁</text>
+                  <text x="30" y={104 + waveSourceGap * 2} fill="#f59e0b" fontSize="9">S₂</text>
+                  {Array.from({ length: 7 }, (_, i) => i + 1).map(r => (
+                    <g key={r}>
+                      <circle cx="48" cy={90 - waveSourceGap * 2} r={r * waveLambda * 3.1} fill="none" stroke="#38bdf8" strokeWidth="0.7" opacity={0.18} />
+                      <circle cx="48" cy={90 + waveSourceGap * 2} r={r * waveLambda * 3.1} fill="none" stroke="#22c55e" strokeWidth="0.7" opacity={0.18} />
+                    </g>
+                  ))}
+                  <path d="M 55 90 C 100 62, 150 50, 210 88" fill="none" stroke="#38bdf8" strokeDasharray="4" strokeWidth="1" opacity="0.7" />
+                  <path d="M 55 90 C 100 118, 150 128, 210 92" fill="none" stroke="#22c55e" strokeDasharray="4" strokeWidth="1" opacity="0.7" />
+                  <text x="190" y="174" fill="#94a3b8" fontSize="9">Màn quan sát</text>
+                </svg>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  Khi tăng λ hoặc D, khoảng vân rộng ra. Khi tăng d, các vân sít lại. Lệch pha làm toàn bộ hệ vân dịch chuyển.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 8. ELECTROMAGNETIC INDUCTION EXPERIMENT */}
+        {activeSubTab === 'induction' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Zap size={18} /> Cảm ứng điện từ: Faraday - Lenz
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Số vòng dây N</span>
+                    <strong>{indTurns} vòng</strong>
+                  </label>
+                  <input type="range" min="20" max="500" value={indTurns} onChange={e => setIndTurns(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Diện tích cuộn dây S</span>
+                    <strong>{indArea} cm²</strong>
+                  </label>
+                  <input type="range" min="5" max="100" value={indArea} onChange={e => setIndArea(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Độ biến thiên từ trường ΔB</span>
+                    <strong>{indDeltaB.toFixed(2)} T</strong>
+                  </label>
+                  <input type="range" min="0.05" max="1.5" step="0.05" value={indDeltaB} onChange={e => setIndDeltaB(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Thời gian biến thiên Δt</span>
+                    <strong>{indDeltaT.toFixed(2)} s</strong>
+                  </label>
+                  <input type="range" min="0.05" max="1.2" step="0.01" value={indDeltaT} onChange={e => setIndDeltaT(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Góc giữa pháp tuyến và B</span>
+                    <strong>{indAngle}°</strong>
+                  </label>
+                  <input type="range" min="0" max="90" value={indAngle} onChange={e => setIndAngle(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ background: 'rgba(16,185,129,0.06)', padding: 12, borderRadius: 12, fontSize: '0.8rem' }}>
+                  <div>• Công thức: <strong>|e| = N · S · |ΔB/Δt| · |cos α|</strong></div>
+                  <div>• Suất điện động cảm ứng: <strong style={{ color: '#059669' }}>{inducedEmf.toFixed(2)} V</strong></div>
+                  <div>• Nhận xét: cảm ứng <strong>{inductionLevel}</strong>, tăng khi đưa nam châm nhanh hơn hoặc tăng số vòng dây.</div>
+                </div>
+
+                <button onClick={handleSaveInduction} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận cảm ứng điện từ</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 16, color: '#e2e8f0' }}>
+                <svg width="100%" height="185" viewBox="0 0 260 180">
+                  <defs>
+                    <linearGradient id="magnetGradient" x1="0" x2="1">
+                      <stop offset="0%" stopColor="#ef4444" />
+                      <stop offset="50%" stopColor="#ef4444" />
+                      <stop offset="50%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#38bdf8" />
+                    </linearGradient>
+                  </defs>
+                  <rect x={32 + Math.min(60, inducedEmf * 24)} y="70" width="70" height="28" rx="6" fill="url(#magnetGradient)" stroke="#f8fafc" />
+                  <text x={46 + Math.min(60, inducedEmf * 24)} y="88" fill="#fff" fontSize="10" fontWeight="800">N</text>
+                  <text x={86 + Math.min(60, inducedEmf * 24)} y="88" fill="#082f49" fontSize="10" fontWeight="800">S</text>
+
+                  <ellipse cx="165" cy="84" rx="36" ry="58" fill="none" stroke="#f59e0b" strokeWidth="3" />
+                  <ellipse cx="165" cy="84" rx="28" ry="50" fill="none" stroke="#f59e0b" strokeWidth="2" opacity="0.6" />
+                  <ellipse cx="165" cy="84" rx="20" ry="42" fill="none" stroke="#f59e0b" strokeWidth="1.5" opacity="0.4" />
+                  <text x="145" y="156" fill="#f59e0b" fontSize="9">Cuộn {indTurns} vòng</text>
+
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <line key={i} x1={88 + i * 12} y1="56" x2={125 + i * 9} y2="56" stroke="#38bdf8" strokeWidth="1.5" opacity={Math.min(1, 0.22 + inducedEmf / 2)} />
+                  ))}
+                  <path d="M 128 32 H 220 V 136 H 128" fill="none" stroke="#64748b" strokeWidth="2" />
+                  <circle cx="220" cy="84" r="18" fill="#111827" stroke="#94a3b8" />
+                  <path d={`M 220 84 L ${220 + Math.min(14, inducedEmf * 8)} ${84 - Math.min(10, inducedEmf * 5)}`} stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
+                  <text x="204" y="112" fill="#94a3b8" fontSize="8">Galvanometer</text>
+                </svg>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  Theo định luật Lenz, dòng cảm ứng sinh ra từ trường chống lại sự biến thiên từ thông ban đầu. Đưa nam châm ra xa sẽ làm kim lệch chiều ngược lại.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* RIGHT PANEL HISTORY SIMULATIONS */}
@@ -749,7 +1109,11 @@ export default function PhysicsLab() {
                       {sim.subType === 'rlc' ? 'Mạch RLC' :
                        sim.subType === 'projectile' ? 'Ném xiên' :
                        sim.subType === 'pendulum' ? 'Con lắc đơn' :
-                       sim.subType === 'lens' ? 'Thấu kính' : 'Rơi tự do'}
+                       sim.subType === 'lens' ? 'Thấu kính' :
+                       sim.subType === 'freefall' ? 'Rơi tự do' :
+                       sim.subType === 'ohm' ? 'Định luật Ôm' :
+                       sim.subType === 'waves' ? 'Giao thoa sóng' :
+                       sim.subType === 'induction' ? 'Cảm ứng điện từ' : 'Thí nghiệm vật lý'}
                     </span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{sim.date}</span>
                   </div>

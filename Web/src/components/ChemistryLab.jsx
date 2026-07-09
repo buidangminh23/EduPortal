@@ -617,6 +617,102 @@ export default function ChemistryLab() {
     setFadePercentage(0);
   };
 
+  // ==========================================
+  // 6. STATE & HANDLERS: ACID-BASE TITRATION
+  // ==========================================
+  const [titrAcidM, setTitrAcidM] = useState(0.10);
+  const [titrAcidV, setTitrAcidV] = useState(25);
+  const [titrBaseM, setTitrBaseM] = useState(0.10);
+  const [titrBaseV, setTitrBaseV] = useState(18);
+
+  const acidMol = titrAcidM * titrAcidV / 1000;
+  const baseMol = titrBaseM * titrBaseV / 1000;
+  const totalTitrVolume = (titrAcidV + titrBaseV) / 1000;
+  const equivalenceVolume = titrBaseM > 0 ? (acidMol / titrBaseM) * 1000 : 0;
+  const titrExcess = acidMol - baseMol;
+  let titrationPh = 7;
+  if (Math.abs(titrExcess) > 1e-7 && totalTitrVolume > 0) {
+    if (titrExcess > 0) {
+      titrationPh = -Math.log10(titrExcess / totalTitrVolume);
+    } else {
+      const pOH = -Math.log10(Math.abs(titrExcess) / totalTitrVolume);
+      titrationPh = 14 - pOH;
+    }
+  }
+  titrationPh = Math.min(14, Math.max(0, titrationPh));
+  const titrationStage = Math.abs(titrBaseV - equivalenceVolume) <= 0.4
+    ? 'Điểm tương đương'
+    : titrBaseV < equivalenceVolume ? 'Dư axit' : 'Dư bazơ';
+  const titrationColor = titrationPh < 4 ? '#ef4444' : titrationPh < 8.3 ? '#f8fafc' : '#ec4899';
+
+  const handleSaveTitration = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'chemistry',
+      subType: 'titration',
+      params: { acidM: titrAcidM, acidV: titrAcidV, baseM: titrBaseM, baseV: titrBaseV },
+      result: {
+        summary: `Chuẩn độ HCl bằng NaOH: Cₐ=${titrAcidM.toFixed(2)}M, Vₐ=${titrAcidV}mL, Cᵦ=${titrBaseM.toFixed(2)}M, Vᵦ=${titrBaseV}mL.`,
+        phenomenon: `V tương đương=${equivalenceVolume.toFixed(1)}mL, pH≈${titrationPh.toFixed(2)}. Trạng thái: ${titrationStage}; phenolphthalein ${titrationPh >= 8.3 ? 'chuyển hồng' : 'không màu'}.`
+      }
+    });
+  };
+
+  // ==========================================
+  // 7. STATE & HANDLERS: CHEMICAL EQUILIBRIUM
+  // ==========================================
+  const [eqTemperature, setEqTemperature] = useState(35);
+  const [eqPressure, setEqPressure] = useState(1.0);
+  const [eqVolume, setEqVolume] = useState(1.0);
+
+  const no2Ratio = Math.min(92, Math.max(12,
+    42 + (eqTemperature - 25) * 0.85 + (1.4 - eqPressure) * 18 + (eqVolume - 1) * 14
+  ));
+  const n2o4Ratio = 100 - no2Ratio;
+  const equilibriumShift = no2Ratio > 58
+    ? 'dịch phải tạo NO₂ màu nâu đỏ'
+    : no2Ratio < 34 ? 'dịch trái tạo N₂O₄ không màu' : 'gần cân bằng trung gian';
+
+  const handleSaveEquilibrium = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'chemistry',
+      subType: 'equilibrium',
+      params: { T: eqTemperature, P: eqPressure, V: eqVolume },
+      result: {
+        summary: `Cân bằng N₂O₄ ⇄ 2NO₂: T=${eqTemperature}°C, P=${eqPressure.toFixed(1)}atm, V=${eqVolume.toFixed(1)}L.`,
+        phenomenon: `Hệ ${equilibriumShift}. Ước tính NO₂=${no2Ratio.toFixed(0)}%, N₂O₄=${n2o4Ratio.toFixed(0)}%; màu khí ${no2Ratio > 58 ? 'nâu đậm' : no2Ratio < 34 ? 'rất nhạt' : 'nâu nhạt'}.`
+      }
+    });
+  };
+
+  // ==========================================
+  // 8. STATE & HANDLERS: REACTION RATE
+  // ==========================================
+  const [rateConcentration, setRateConcentration] = useState(1.0);
+  const [rateTemperature, setRateTemperature] = useState(30);
+  const [rateSurface, setRateSurface] = useState('strip');
+  const [rateCatalyst, setRateCatalyst] = useState(false);
+
+  const surfaceFactor = rateSurface === 'powder' ? 2.6 : rateSurface === 'chips' ? 1.55 : 1;
+  const catalystFactor = rateCatalyst ? 1.8 : 1;
+  const rateMultiplier = rateConcentration * Math.pow(2, (rateTemperature - 25) / 10) * surfaceFactor * catalystFactor;
+  const gasRate = Math.min(100, Math.round(rateMultiplier * 18));
+  const reactionTime = Math.max(6, 85 / Math.max(rateMultiplier, 0.2));
+
+  const handleSaveReactionRate = () => {
+    addLabSimulation({
+      studentId: student?.id || 'HS001',
+      type: 'chemistry',
+      subType: 'reaction_rate',
+      params: { concentration: rateConcentration, temperature: rateTemperature, surface: rateSurface, catalyst: rateCatalyst },
+      result: {
+        summary: `Tốc độ phản ứng Zn + 2HCl → ZnCl₂ + H₂: C=${rateConcentration.toFixed(1)}M, T=${rateTemperature}°C, dạng ${rateSurface}.`,
+        phenomenon: `Tốc độ tương đối x${rateMultiplier.toFixed(1)}, khí H₂ thoát ra khoảng ${gasRate}%, thời gian hoàn tất ước tính ${reactionTime.toFixed(0)}s. ${rateCatalyst ? 'Có xúc tác nên phản ứng nhanh hơn.' : 'Không dùng xúc tác.'}`
+      }
+    });
+  };
+
   // Get simulations matching this student and filter by chemistry
   const mySimulations = labSimulations?.filter(sim => sim.studentId === student?.id && sim.type === 'chemistry') || [];
 
@@ -630,7 +726,10 @@ export default function ChemistryLab() {
             { id: 'activity_series', label: 'Dãy kim loại', icon: <Zap size={15} /> },
             { id: 'ph_indicator', label: 'Chỉ thị pH', icon: <Droplets size={15} /> },
             { id: 'combustion', label: 'Đốt cháy', icon: <Flame size={15} /> },
-            { id: 'electrolysis', label: 'Điện phân', icon: <Zap size={15} /> }
+            { id: 'electrolysis', label: 'Điện phân', icon: <Zap size={15} /> },
+            { id: 'titration', label: 'Chuẩn độ', icon: <Droplets size={15} /> },
+            { id: 'equilibrium', label: 'Cân bằng', icon: <Beaker size={15} /> },
+            { id: 'reaction_rate', label: 'Tốc độ phản ứng', icon: <Flame size={15} /> }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1301,6 +1400,248 @@ export default function ChemistryLab() {
             </div>
           </div>
         )}
+
+        {/* 6. TITRATION EXPERIMENT */}
+        {activeSubTab === 'titration' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Droplets size={18} /> Chuẩn độ axit-bazơ HCl bằng NaOH
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Nồng độ HCl Cₐ</span>
+                    <strong>{titrAcidM.toFixed(2)} M</strong>
+                  </label>
+                  <input type="range" min="0.05" max="0.50" step="0.01" value={titrAcidM} onChange={e => setTitrAcidM(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Thể tích HCl Vₐ</span>
+                    <strong>{titrAcidV} mL</strong>
+                  </label>
+                  <input type="range" min="5" max="50" value={titrAcidV} onChange={e => setTitrAcidV(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Nồng độ NaOH Cᵦ</span>
+                    <strong>{titrBaseM.toFixed(2)} M</strong>
+                  </label>
+                  <input type="range" min="0.05" max="0.50" step="0.01" value={titrBaseM} onChange={e => setTitrBaseM(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>NaOH đã nhỏ Vᵦ</span>
+                    <strong>{titrBaseV} mL</strong>
+                  </label>
+                  <input type="range" min="0" max="70" value={titrBaseV} onChange={e => setTitrBaseV(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center', background: 'rgba(16,185,129,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>V tương đương</span>
+                    <div style={{ fontWeight: 800 }}>{equivalenceVolume.toFixed(1)} mL</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>pH hiện tại</span>
+                    <div style={{ fontWeight: 800, color: titrationPh < 7 ? '#ef4444' : titrationPh > 7 ? '#ec4899' : '#10b981' }}>{titrationPh.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>Trạng thái</span>
+                    <div style={{ fontWeight: 800 }}>{titrationStage}</div>
+                  </div>
+                </div>
+
+                <button onClick={handleSaveTitration} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận chuẩn độ</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 16, color: '#e2e8f0' }}>
+                <svg width="100%" height="205" viewBox="0 0 260 200">
+                  <rect x="54" y="12" width="24" height="104" rx="5" fill="#e2e8f0" opacity="0.18" stroke="#94a3b8" />
+                  <rect x="58" y={18 + Math.min(88, titrBaseV * 1.2)} width="16" height={92 - Math.min(88, titrBaseV * 1.2)} rx="4" fill="#38bdf8" opacity="0.65" />
+                  <line x1="66" y1="116" x2="66" y2="142" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4" />
+                  <circle cx="66" cy="145" r="3" fill="#38bdf8" />
+                  <path d="M 116 112 L 88 176 H 174 L 146 112 Z" fill="rgba(255,255,255,0.08)" stroke="#94a3b8" strokeWidth="2" />
+                  <path d="M 102 157 Q 130 145 160 157 L 171 176 H 91 Z" fill={titrationColor} opacity="0.78" />
+                  <text x="104" y="190" fill="#94a3b8" fontSize="9">Bình tam giác + phenolphthalein</text>
+                  <polyline
+                    points={Array.from({ length: 40 }, (_, i) => {
+                      const x = 28 + i * 5;
+                      const v = i * (70 / 39);
+                      const mA = titrAcidM * titrAcidV / 1000;
+                      const mB = titrBaseM * v / 1000;
+                      const vol = (titrAcidV + v) / 1000;
+                      let pH = 7;
+                      if (Math.abs(mA - mB) > 1e-7) {
+                        if (mA > mB) pH = -Math.log10((mA - mB) / vol);
+                        else pH = 14 + Math.log10((mB - mA) / vol);
+                      }
+                      const y = 98 - Math.min(14, Math.max(0, pH)) * 5.4;
+                      return `${x},${y}`;
+                    }).join(' ')}
+                    fill="none"
+                    stroke="#22c55e"
+                    strokeWidth="2"
+                  />
+                  <text x="28" y="24" fill="#22c55e" fontSize="8">Đường cong pH</text>
+                </svg>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  Gần điểm tương đương, pH đổi rất nhanh. Với chỉ thị phenolphthalein, màu hồng nhạt bền xuất hiện khi dung dịch hơi dư bazơ.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 7. EQUILIBRIUM EXPERIMENT */}
+        {activeSubTab === 'equilibrium' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Beaker size={18} /> Cân bằng hóa học: N₂O₄ ⇄ 2NO₂ và nguyên lý Le Chatelier
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Nhiệt độ</span>
+                    <strong>{eqTemperature} °C</strong>
+                  </label>
+                  <input type="range" min="0" max="90" value={eqTemperature} onChange={e => setEqTemperature(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Áp suất</span>
+                    <strong>{eqPressure.toFixed(1)} atm</strong>
+                  </label>
+                  <input type="range" min="0.5" max="3" step="0.1" value={eqPressure} onChange={e => setEqPressure(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Thể tích bình</span>
+                    <strong>{eqVolume.toFixed(1)} L</strong>
+                  </label>
+                  <input type="range" min="0.4" max="2.5" step="0.1" value={eqVolume} onChange={e => setEqVolume(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+
+                <div style={{ background: 'rgba(245,158,11,0.06)', padding: 12, borderRadius: 12, fontSize: '0.8rem', lineHeight: 1.5 }}>
+                  <div>• NO₂ màu nâu đỏ: <strong>{no2Ratio.toFixed(0)}%</strong></div>
+                  <div>• N₂O₄ gần như không màu: <strong>{n2o4Ratio.toFixed(0)}%</strong></div>
+                  <div>• Hệ đang <strong>{equilibriumShift}</strong>.</div>
+                </div>
+
+                <button onClick={handleSaveEquilibrium} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận cân bằng</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 18, color: '#e2e8f0' }}>
+                <div style={{ height: 170, display: 'grid', placeItems: 'center' }}>
+                  <div style={{
+                    width: `${Math.max(96, 150 * Math.sqrt(eqVolume / 2.5))}px`,
+                    height: `${Math.max(110, 150 * Math.sqrt(eqVolume / 2.5))}px`,
+                    border: '3px solid #94a3b8',
+                    borderRadius: '18px 18px 28px 28px',
+                    background: `rgba(194, 65, 12, ${0.12 + no2Ratio / 120})`,
+                    boxShadow: `0 0 ${Math.round(no2Ratio / 4)}px rgba(249,115,22,0.35)`,
+                    position: 'relative',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <div style={{ position: 'absolute', top: 10, left: 10, right: 10, fontSize: '0.72rem', color: '#fed7aa', fontWeight: 800, textAlign: 'center' }}>
+                      NO₂ {no2Ratio.toFixed(0)}%
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.18)' }}>
+                      <div style={{ width: `${no2Ratio}%`, height: '100%', borderRadius: 999, background: '#fb923c' }} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  Tăng nhiệt độ làm cân bằng dịch phải do chiều tạo NO₂ là thu nhiệt. Tăng áp suất làm cân bằng dịch trái vì phía N₂O₄ có ít mol khí hơn.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 8. REACTION RATE EXPERIMENT */}
+        {activeSubTab === 'reaction_rate' && (
+          <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
+            <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Flame size={18} /> Tốc độ phản ứng: Zn + HCl tạo khí H₂
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Nồng độ HCl</span>
+                    <strong>{rateConcentration.toFixed(1)} M</strong>
+                  </label>
+                  <input type="range" min="0.2" max="3" step="0.1" value={rateConcentration} onChange={e => setRateConcentration(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Nhiệt độ dung dịch</span>
+                    <strong>{rateTemperature} °C</strong>
+                  </label>
+                  <input type="range" min="10" max="80" value={rateTemperature} onChange={e => setRateTemperature(Number(e.target.value))} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>Dạng kẽm:</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 6 }}>
+                    {[
+                      ['strip', 'Thanh'],
+                      ['chips', 'Vụn'],
+                      ['powder', 'Bột']
+                    ].map(([id, label]) => (
+                      <button key={id} onClick={() => setRateSurface(id)} className={`btn ${rateSurface === id ? 'btn-primary' : 'btn-secondary'}`} style={{ height: 34 }}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 700 }}>
+                  <input type="checkbox" checked={rateCatalyst} onChange={e => setRateCatalyst(e.target.checked)} />
+                  Thêm xúc tác CuSO₄ loãng
+                </label>
+
+                <div style={{ background: 'rgba(239,68,68,0.06)', padding: 12, borderRadius: 12, fontSize: '0.8rem', display: 'grid', gap: 5 }}>
+                  <div>• Tốc độ tương đối: <strong style={{ color: '#dc2626' }}>x{rateMultiplier.toFixed(1)}</strong></div>
+                  <div>• Khí H₂ thoát ra: <strong>{gasRate}%</strong></div>
+                  <div>• Thời gian phản ứng ước tính: <strong>{reactionTime.toFixed(0)} giây</strong></div>
+                </div>
+
+                <button onClick={handleSaveReactionRate} className="btn btn-primary" style={{ width: '100%', height: 38 }}>Ghi nhận tốc độ phản ứng</button>
+              </div>
+
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: 18, color: '#e2e8f0' }}>
+                <svg width="100%" height="190" viewBox="0 0 260 180">
+                  <path d="M 70 32 H 190 L 174 150 H 86 Z" fill="rgba(255,255,255,0.08)" stroke="#94a3b8" strokeWidth="2" />
+                  <path d="M 86 112 Q 130 96 174 112 L 168 150 H 92 Z" fill="rgba(96,165,250,0.35)" />
+                  <rect x="116" y="118" width={rateSurface === 'strip' ? 42 : rateSurface === 'chips' ? 30 : 20} height="10" rx="3" fill="#94a3b8" />
+                  {rateSurface !== 'strip' && Array.from({ length: rateSurface === 'powder' ? 10 : 5 }, (_, i) => (
+                    <circle key={i} cx={106 + (i % 5) * 10} cy={124 + Math.floor(i / 5) * 8} r={rateSurface === 'powder' ? 2 : 3} fill="#cbd5e1" />
+                  ))}
+                  {Array.from({ length: Math.min(26, Math.ceil(gasRate / 4)) }, (_, i) => (
+                    <circle
+                      key={i}
+                      cx={92 + (i * 17) % 76}
+                      cy={108 - ((i * 11) % 70)}
+                      r={2 + (i % 3)}
+                      fill="#e0f2fe"
+                      opacity={0.28 + Math.min(0.6, gasRate / 120)}
+                    />
+                  ))}
+                  <text x="92" y="166" fill="#94a3b8" fontSize="9">Khí H₂ tăng khi C, T và diện tích tiếp xúc tăng</text>
+                  <rect x="203" y={150 - gasRate * 1.05} width="16" height={gasRate * 1.05} fill="#22c55e" rx="4" />
+                  <rect x="203" y="45" width="16" height="105" fill="none" stroke="#64748b" rx="4" />
+                  <text x="196" y="36" fill="#22c55e" fontSize="8">Rate</text>
+                </svg>
+                <div style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                  Thí nghiệm minh họa ba yếu tố chính: nồng độ axit, nhiệt độ và diện tích bề mặt chất rắn. Xúc tác làm giảm năng lượng hoạt hóa nên bọt khí xuất hiện dày hơn.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* RIGHT HISTORY SIDEBAR */}
@@ -1332,7 +1673,11 @@ export default function ChemistryLab() {
                       {sim.subType === 'ion_exchange' ? 'Trao đổi ion' :
                        sim.subType === 'activity_series' ? 'Dãy kim loại' :
                        sim.subType === 'ph_indicator' ? 'Chỉ thị pH' :
-                       sim.subType === 'combustion' ? 'Phản ứng cháy' : 'Điện phân'}
+                       sim.subType === 'combustion' ? 'Phản ứng cháy' :
+                       sim.subType === 'electrolysis' ? 'Điện phân' :
+                       sim.subType === 'titration' ? 'Chuẩn độ' :
+                       sim.subType === 'equilibrium' ? 'Cân bằng hóa học' :
+                       sim.subType === 'reaction_rate' ? 'Tốc độ phản ứng' : 'Thí nghiệm hóa học'}
                     </span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{sim.date}</span>
                   </div>
