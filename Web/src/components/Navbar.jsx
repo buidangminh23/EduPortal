@@ -143,8 +143,16 @@ export default function Navbar({ setActiveTab }) {
               }}
               title="Tài khoản cá nhân"
             >
-              <UserCheck size={14} />
-              <span>{userSession.username}</span>
+              {userSession.avatarUrl ? (
+                <img 
+                  src={userSession.avatarUrl} 
+                  alt={userSession.displayName || userSession.username}
+                  style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <UserCheck size={14} />
+              )}
+              <span>{userSession.displayName || userSession.username}</span>
             </button>
             {showUserDropdown && (
               <div 

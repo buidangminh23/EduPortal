@@ -1,6 +1,6 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Shield, GraduationCap, User, Users, Key, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Shield, GraduationCap, User, Users, Key, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 
 const ROLES = [
   { id: 'student', label: 'Học sinh', sub: 'Lớp & điểm số', icon: User, color: 'blue' },
@@ -21,6 +21,91 @@ export default function Login({ onBack }) {
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState(QUICK_CREDS.student.username);
   const [password, setPassword] = useState(QUICK_CREDS.student.password);
+
+  const [clientId, setClientId] = useState(() => localStorage.getItem('google_client_id') || '1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
+  const [showConfig, setShowConfig] = useState(false);
+  const [configClientId, setConfigClientId] = useState(clientId);
+  const googleBtnRef = useRef(null);
+
+  const saveClientId = (newId) => {
+    localStorage.setItem('google_client_id', newId);
+    setClientId(newId);
+    alert('Đã lưu cấu hình Google Client ID thành công! Trang web sẽ tải lại.');
+    window.location.reload();
+  };
+
+  const handleGoogleLogin = useCallback((response) => {
+    try {
+      const token = response.credential;
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      
+      if (payload && payload.email) {
+        const googleEmail = payload.email;
+        const googleName = payload.name;
+        const googlePicture = payload.picture;
+        const shortUsername = googleEmail.split('@')[0];
+
+        const session = {
+          username: shortUsername,
+          email: googleEmail,
+          role: role,
+          displayName: googleName,
+          avatarUrl: googlePicture,
+          class: role === 'student' || role === 'parent' ? '12A1' : null,
+          studentId: role === 'student' || role === 'parent' ? 'HS001' : null,
+          parentName: role === 'parent' ? googleName : null,
+          parentId: role === 'parent' ? 'parent_HS001' : null
+        };
+        
+        localStorage.setItem('userSession', JSON.stringify(session));
+        setCurrentRole(role);
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Google Sign-In Error:', err);
+      alert('Đã xảy ra lỗi khi đăng nhập bằng Google. Vui lòng thử lại!');
+    }
+  }, [role, setCurrentRole]);
+
+  useEffect(() => {
+    let script = document.getElementById('google-gsi-script');
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'google-gsi-script';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+
+    const initGoogle = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleLogin
+        });
+        
+        if (googleBtnRef.current) {
+          window.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: 'outline',
+            size: 'large',
+            width: 360,
+            text: 'signin_with'
+          });
+        }
+      }
+    };
+
+    script.addEventListener('load', initGoogle);
+    
+    if (window.google && window.google.accounts) {
+      initGoogle();
+    }
+
+    return () => {
+      script.removeEventListener('load', initGoogle);
+    };
+  }, [clientId, role, handleGoogleLogin]);
 
   const handleQuickLogin = (selectedRole) => {
     setRole(selectedRole);
@@ -176,9 +261,89 @@ export default function Login({ onBack }) {
             </button>
           </form>
 
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.18)' }} />
+            <span style={{ fontSize: '0.8rem', color: 'var(--muted-c, #64748b)' }}>hoặc đăng nhập bằng</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.18)' }} />
+          </div>
+
+          {/* Google Sign-in Button Container */}
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: 18 }}>
+            <div ref={googleBtnRef} style={{ width: '100%' }} />
+          </div>
+
           <div style={{ marginTop: 18, fontSize: '0.78rem', color: 'var(--muted-c)', display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'center' }}>
             <Key size={11} />
             <span>Demo: <code>{username}</code> / <code>{password}</code></span>
+          </div>
+
+          {/* Google Client ID config panel */}
+          <div style={{ marginTop: 16, borderTop: '1px dashed rgba(148,163,184,0.2)', paddingTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => setShowConfig(!showConfig)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                margin: '0 auto'
+              }}
+            >
+              <Settings size={12} />
+              {showConfig ? 'Ẩn cấu hình Google Client ID' : 'Cấu hình Google Client ID'}
+            </button>
+            
+            {showConfig && (
+              <div style={{ marginTop: 10, padding: 10, background: 'rgba(0,0,0,0.02)', borderRadius: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
+                  Google OAuth Client ID
+                </label>
+                <input
+                  type="text"
+                  value={configClientId}
+                  onChange={e => setConfigClientId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px',
+                    fontSize: 11.5,
+                    border: '1.5px solid rgba(148,163,184,0.3)',
+                    borderRadius: 6,
+                    outline: 'none',
+                    marginBottom: 8,
+                    background: '#fff'
+                  }}
+                  placeholder="Nhập Client ID của bạn..."
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => saveClientId(configClientId)}
+                    className="btn btn-primary"
+                    style={{ flex: 1, padding: '5px', fontSize: 11, height: 'auto', borderRadius: 6, border: 'none' }}
+                  >
+                    Lưu & Tải lại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfigClientId('1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
+                      saveClientId('1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
+                    }}
+                    className="btn btn-secondary"
+                    style={{ flex: 1, padding: '5px', fontSize: 11, height: 'auto', borderRadius: 6, border: '1px solid var(--line)' }}
+                  >
+                    Khôi phục mặc định
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
