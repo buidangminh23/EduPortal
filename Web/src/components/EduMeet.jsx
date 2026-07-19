@@ -14,7 +14,8 @@ import {
   RotateCcw,
   Eraser,
   Sparkles,
-  Disc
+  Disc,
+  PictureInPicture
 } from 'lucide-react';
 
 export default function EduMeet() {
@@ -72,6 +73,7 @@ export default function EduMeet() {
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const timerRef = useRef(null);
+  const [isPipActive, setIsPipActive] = useState(false);
 
   const formatDuration = (sec) => {
     const m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -317,6 +319,66 @@ export default function EduMeet() {
       startRecording();
     }
   };
+
+  const togglePictureInPicture = async () => {
+    try {
+      if (!document.pictureInPictureEnabled) {
+        alert("Trình duyệt của bạn không hỗ trợ tính năng Picture-in-Picture.");
+        return;
+      }
+
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setIsPipActive(false);
+        return;
+      }
+
+      let videoElement = null;
+      if (screenShare && screenVideoRef.current) {
+        videoElement = screenVideoRef.current;
+      } else if (camOn && localVideoRef.current) {
+        videoElement = localVideoRef.current;
+      }
+
+      if (videoElement) {
+        await videoElement.requestPictureInPicture();
+        setIsPipActive(true);
+      } else {
+        alert("Không tìm thấy luồng video hoạt động (hãy bật Camera hoặc Trình chiếu màn hình trước).");
+      }
+    } catch (err) {
+      console.error("Lỗi kích hoạt Picture-in-Picture:", err);
+    }
+  };
+
+  // Sync Picture-in-Picture state with browser events
+  useEffect(() => {
+    const handleLeavePip = () => setIsPipActive(false);
+    const handleEnterPip = () => setIsPipActive(true);
+
+    const localVideo = localVideoRef.current;
+    const screenVideo = screenVideoRef.current;
+
+    if (localVideo) {
+      localVideo.addEventListener('leavepictureinpicture', handleLeavePip);
+      localVideo.addEventListener('enterpictureinpicture', handleEnterPip);
+    }
+    if (screenVideo) {
+      screenVideo.addEventListener('leavepictureinpicture', handleLeavePip);
+      screenVideo.addEventListener('enterpictureinpicture', handleEnterPip);
+    }
+
+    return () => {
+      if (localVideo) {
+        localVideo.removeEventListener('leavepictureinpicture', handleLeavePip);
+        localVideo.removeEventListener('enterpictureinpicture', handleEnterPip);
+      }
+      if (screenVideo) {
+        screenVideo.removeEventListener('leavepictureinpicture', handleLeavePip);
+        screenVideo.removeEventListener('enterpictureinpicture', handleEnterPip);
+      }
+    };
+  }, [camOn, screenShare, stream, screenStream]);
 
   const handleJoinCall = () => {
     setInCall(true);
@@ -1025,6 +1087,14 @@ export default function EduMeet() {
                 title={isRecording ? "Dừng ghi âm" : "Ghi âm cuộc trò chuyện"}
               >
                 <Disc size={18} className={isRecording ? 'spin-slow' : ''} fill={isRecording ? '#ef4444' : 'none'} />
+              </button>
+
+              <button 
+                onClick={togglePictureInPicture} 
+                className={`control-btn ${isPipActive ? 'active' : ''}`}
+                title={isPipActive ? "Tắt Picture-in-Picture" : "Thu nhỏ video (Picture-in-Picture)"}
+              >
+                <PictureInPicture size={18} />
               </button>
 
               <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
