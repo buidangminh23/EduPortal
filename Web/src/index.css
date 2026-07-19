@@ -82,7 +82,7 @@ body {
 
 .content-pane {
   flex: 1;
-  padding: 28px 28px 96px;
+  padding: 96px 28px 28px;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -91,7 +91,7 @@ body {
 
 @media (max-width: 768px) {
   .content-pane {
-    padding: 18px 14px 110px;
+    padding: 110px 14px 18px;
   }
 }
 
@@ -460,7 +460,8 @@ h1 {
   position: fixed;
   left: calc(280px + 24px);
   right: 24px;
-  bottom: 18px;
+  top: 96px;
+  bottom: auto;
   z-index: 85;
   display: flex;
   align-items: center;
@@ -476,7 +477,7 @@ h1 {
 }
 
 [data-role="student"] .app-command-dock {
-  right: 112px;
+  right: 24px;
 }
 
 .dock-status,
@@ -537,7 +538,7 @@ h1 {
   }
   [data-role="student"] .app-command-dock {
     right: 14px;
-    bottom: 94px;
+    bottom: auto;
   }
   .dock-action span,
   .dock-status span {
