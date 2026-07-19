@@ -33,11 +33,11 @@ function latexToHtml(latex) {
   // Integrals, sums, products
   s = s.replace(/\\int/g, '∫').replace(/\\sum/g, '∑').replace(/\\prod/g, '∏');
   // Subscripts & superscripts: x_{sub} → x<sub>sub</sub>, x^{sup} → x<sup>sup</sup>
-  s = s.replace(/\_\{([^}]*)\}/g, '<sub>$1</sub>').replace(/\^\{([^}]*)\}/g, '<sup>$1</sup>');
+  s = s.replace(/_\{([^}]*)\}/g, '<sub>$1</sub>').replace(/\^\{([^}]*)\}/g, '<sup>$1</sup>');
   // Simple superscript: x^2 → x<sup>2</sup> (single char after ^)
   s = s.replace(/\^([0-9a-zA-Z])/g, '<sup>$1</sup>');
   // Simple subscript: x_0 → x<sub>0</sub> (single char after _)
-  s = s.replace(/\_([0-9a-zA-Z])/g, '<sub>$1</sub>');
+  s = s.replace(/_([0-9a-zA-Z])/g, '<sub>$1</sub>');
   // \mathbb{Z} → ℤ, etc.
   s = s.replace(/\\mathbb\{R\}/g, 'ℝ').replace(/\\mathbb\{Z\}/g, 'ℤ').replace(/\\mathbb\{N\}/g, 'ℕ').replace(/\\mathbb\{Q\}/g, 'ℚ');
   // Log base: \log_a → log<sub>a</sub>
@@ -60,7 +60,7 @@ function formatTutorText(msgText) {
     .replace(/\$([^$]+)\$/g, (_, tex) => {
       return `<code style="background:rgba(99,102,241,0.1);padding:2px 5px;border-radius:4px;font-family:'Cambria Math','STIX Two Math',serif;font-size:0.95em">${latexToHtml(tex)}</code>`;
     })
-    .replace(/-\s(.*?)\n/g, '<li style="margin-left:14px;margin-bottom:3px;">$1</li>')
+    .replace(/^-\s(.*?)(?:\n|$)/gm, '<li style="margin-left:14px;margin-bottom:3px;">$1</li>')
     .replace(/\n/g, '<br/>');
   return <div dangerouslySetInnerHTML={{ __html: f }} />;
 }
