@@ -1,6 +1,6 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles } from 'lucide-react';
+import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 
@@ -15,7 +15,23 @@ export default function Navbar({ setActiveTab }) {
     notifications,
     teacherLeaveRequests,
     leaveRequests,
+    logout,
   } = useContext(AppContext);
+
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const todayLabel = useMemo(() => (
     new Date().toLocaleDateString('vi-VN', {
@@ -115,9 +131,74 @@ export default function Navbar({ setActiveTab }) {
         <NotificationCenter setActiveTab={setActiveTab} />
 
         {userSession && (
-          <div className="account-chip">
-            <UserCheck size={14} />
-            <span>{userSession.username}</span>
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="account-chip"
+              style={{
+                cursor: 'pointer',
+                border: showUserDropdown ? '1px solid var(--accent)' : '1px solid var(--line)',
+                boxShadow: showUserDropdown ? '0 0 0 2px rgba(79, 70, 229, 0.15)' : 'none',
+                fontFamily: 'inherit',
+              }}
+              title="Tài khoản cá nhân"
+            >
+              <UserCheck size={14} />
+              <span>{userSession.username}</span>
+            </button>
+            {showUserDropdown && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '8px',
+                  background: 'var(--surface, #fff)',
+                  border: '1px solid var(--border-card, #cbd5e1)',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+                  padding: '6px',
+                  zIndex: 100,
+                  minWidth: '155px'
+                }}
+                className="animate-fade"
+              >
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--line, #f1f5f9)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)' }}>Vai trò</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>
+                    {currentRole === 'admin' ? 'Ban Giám Hiệu' : currentRole === 'teacher' ? 'Giáo Viên' : currentRole === 'student' ? 'Học Sinh' : 'Phụ Huynh'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUserDropdown(false);
+                    logout();
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'var(--accent-danger, #ef4444)',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.2s',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <LogOut size={14} />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
