@@ -227,9 +227,502 @@ function toSeatStudent(student) {
   return { id: student.id, name: student.name };
 }
 
+const playTickSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+    
+    gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.005, audioCtx.currentTime + 0.05);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch (e) {
+    console.error('Audio tick error:', e);
+  }
+};
+
+const playWinSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [261.63, 329.63, 392.00, 523.25];
+    notes.forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      
+      const startTime = audioCtx.currentTime + idx * 0.12;
+      const duration = 0.3;
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.12, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.005, startTime + duration);
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  } catch (e) {
+    console.error('Audio win error:', e);
+  }
+};
+
+function WheelOfNamesModal({ isOpen, onClose, students }) {
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  
+  const [activeIds, setActiveIds] = useState([]);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [winner, setWinner] = useState(null);
+  
+  const angleRef = useRef(0);
+  const speedRef = useRef(0);
+  const isSpinningRef = useRef(false);
+  const lastSoundIndexRef = useRef(-1);
+
+  useEffect(() => {
+    if (students && isOpen) {
+      setActiveIds(students.map(s => s.id));
+    }
+  }, [students, isOpen]);
+
+  const activeStudents = useMemo(() => {
+    if (!students) return [];
+    return students.filter(s => activeIds.includes(s.id));
+  }, [students, activeIds]);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (activeStudents.length === 0) {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fill();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Chọn ít nhất 1 học sinh để quay', centerX, centerY);
+      return;
+    }
+
+    const numSegments = activeStudents.length;
+    const arcSize = (2 * Math.PI) / numSegments;
+
+    for (let i = 0; i < numSegments; i++) {
+      const angle = angleRef.current + i * arcSize;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+      ctx.closePath();
+
+      ctx.fillStyle = `hsl(${(i * 360) / numSegments}, 75%, 55%)`;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle + arcSize / 2);
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 4;
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      
+      const name = activeStudents[i].name;
+      const displayName = name.length > 15 ? name.substring(0, 13) + '..' : name;
+      ctx.fillText(displayName, radius - 15, 0);
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 24, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#6366f1';
+    ctx.fill();
+  }, [activeStudents]);
+
+  useEffect(() => {
+    draw();
+  }, [draw, isOpen]);
+
+  const spin = () => {
+    if (isSpinning || activeStudents.length === 0) return;
+    
+    setIsSpinning(true);
+    isSpinningRef.current = true;
+    setWinner(null);
+
+    speedRef.current = 0.2 + Math.random() * 0.15;
+    lastSoundIndexRef.current = -1;
+
+    const numSegments = activeStudents.length;
+    const arcSize = (2 * Math.PI) / numSegments;
+
+    const animate = () => {
+      angleRef.current += speedRef.current;
+      speedRef.current *= 0.982;
+
+      const normalizedAngle = angleRef.current % (2 * Math.PI);
+      const currentSegmentIdx = Math.floor(normalizedAngle / arcSize) % numSegments;
+      if (currentSegmentIdx !== lastSoundIndexRef.current) {
+        playTickSound();
+        lastSoundIndexRef.current = currentSegmentIdx;
+      }
+
+      draw();
+
+      if (speedRef.current > 0.0012) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        cancelAnimationFrame(animationRef.current);
+        isSpinningRef.current = false;
+        setIsSpinning(false);
+
+        const angleOffset = 3 * Math.PI / 2;
+        let finalAngle = (angleOffset - angleRef.current) % (2 * Math.PI);
+        if (finalAngle < 0) finalAngle += 2 * Math.PI;
+
+        const winnerIdx = Math.floor(finalAngle / arcSize) % numSegments;
+        const winStudent = activeStudents[winnerIdx];
+        
+        setWinner(winStudent);
+        playWinSound();
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20
+      }}
+      onClick={() => !isSpinning && onClose()}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 720,
+          background: '#fff',
+          borderRadius: 20,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative'
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div
+          style={{
+            padding: '16px 24px',
+            borderBottom: '1px solid rgba(148,163,184,0.12)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)'
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              🎯 Vòng Quay Gọi Tên Ngẫu Nhiên
+            </h3>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Quay ngẫu nhiên học sinh trong lớp để phát biểu bài
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isSpinning}
+            style={{
+              border: 'none', background: 'rgba(0,0,0,0.05)', borderRadius: '50%',
+              width: 32, height: 32, display: 'grid', placeItems: 'center',
+              cursor: isSpinning ? 'not-allowed' : 'pointer'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: 400 }}>
+          <div
+            style={{
+              flex: '1 1 360px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              position: 'relative',
+              background: '#fafafa'
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 24,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 0,
+                height: 0,
+                borderLeft: '16px solid transparent',
+                borderRight: '16px solid transparent',
+                borderTop: '28px solid #ef4444',
+                filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.15))',
+                zIndex: 10
+              }}
+            />
+
+            <canvas
+              ref={canvasRef}
+              width={360}
+              height={360}
+              style={{
+                maxWidth: '100%',
+                aspectRatio: '1/1',
+                filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.08))'
+              }}
+            />
+
+            <button
+              onClick={spin}
+              disabled={isSpinning || activeStudents.length === 0}
+              style={{
+                marginTop: 20,
+                width: 140,
+                padding: '12px 24px',
+                borderRadius: 50,
+                border: 'none',
+                background: isSpinning ? '#cbd5e1' : 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: 15,
+                boxShadow: isSpinning ? 'none' : '0 8px 20px rgba(16,185,129,0.3)',
+                cursor: (isSpinning || activeStudents.length === 0) ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+                textTransform: 'uppercase',
+                letterSpacing: '1px'
+              }}
+            >
+              {isSpinning ? 'Đang quay...' : 'QUAY'}
+            </button>
+          </div>
+
+          <div
+            style={{
+              flex: '1 1 240px',
+              borderLeft: '1px solid rgba(148,163,184,0.12)',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: 460
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid rgba(148,163,184,0.12)',
+                display: 'flex',
+                gap: 8,
+                background: '#f8fafc'
+              }}
+            >
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}
+                onClick={() => setActiveIds(students.map(s => s.id))}
+                disabled={isSpinning}
+              >
+                Chọn tất cả
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, padding: '4px 8px', fontSize: 11 }}
+                onClick={() => setActiveIds([])}
+                disabled={isSpinning}
+              >
+                Bỏ chọn hết
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase' }}>
+                Học sinh tham gia ({activeStudents.length}/{students?.length || 0})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {students?.map(s => {
+                  const isChecked = activeIds.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontSize: 12.5,
+                        color: isChecked ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        cursor: isSpinning ? 'not-allowed' : 'pointer',
+                        padding: '4px 6px',
+                        borderRadius: 6,
+                        background: isChecked ? 'rgba(99,102,241,0.04)' : 'transparent',
+                        transition: 'background 0.15s'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={isSpinning}
+                        onChange={() => {
+                          if (isChecked) {
+                            setActiveIds(activeIds.filter(id => id !== s.id));
+                          } else {
+                            setActiveIds([...activeIds, s.id]);
+                          }
+                        }}
+                      />
+                      <span style={{ fontWeight: isChecked ? 600 : 400 }}>{s.name}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 'auto' }}>{s.id}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {winner && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 100,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'animate-fade 0.3s'
+            }}
+          >
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: 24,
+                padding: '32px 40px',
+                textAlign: 'center',
+                maxWidth: 400,
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                position: 'relative'
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Chúc mừng học sinh
+              </div>
+              <h2
+                style={{
+                  fontSize: '2rem',
+                  fontWeight: 900,
+                  margin: '8px 0 16px',
+                  color: '#1e293b',
+                  lineHeight: '1.2'
+                }}
+              >
+                {winner.name}
+              </h2>
+              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>
+                Mã học sinh: <strong style={{ color: '#1e293b' }}>{winner.id}</strong>
+              </div>
+              <button
+                onClick={() => setWinner(null)}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: 50,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  color: '#fff',
+                  fontWeight: 800,
+                  fontSize: 14,
+                  boxShadow: '0 4px 14px rgba(99,102,241,0.4)',
+                  cursor: 'pointer'
+                }}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────
    Seat Card
-───────────────────────────────────────────── */
+   ───────────────────────────────────────────── */
 function SeatCard({
   seat,
   isSelected,
@@ -414,6 +907,9 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   // Determine effective readOnly and highlight from context
   const canEditSeatingChart = currentRole === 'admin' || currentRole === 'teacher';
   const isReadOnly = readOnly || !canEditSeatingChart;
+  const [isEditing, setIsEditing] = useState(false);
+  const [isWheelOpen, setIsWheelOpen] = useState(false);
+  const effectiveReadOnly = isReadOnly || !isEditing;
   const activeStudent = contextStudents?.find(s => s.id === selectedStudentId);
   const effectiveFixedClass = fixedClass || (isReadOnly && activeStudent ? activeStudent.class : null);
   const effectiveHighlightId = highlightStudentId || (isReadOnly ? selectedStudentId : null);
@@ -870,10 +1366,53 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
               <Printer size={15} />
               Xuất sơ đồ
             </button>
+
+            {/* Wheel of Names trigger */}
+            <button
+              className="btn"
+              onClick={() => setIsWheelOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                color: '#fff',
+                borderColor: 'transparent',
+                fontWeight: 600,
+                fontSize: 13,
+                padding: '7px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+              title="Mở vòng quay may mắn gọi tên ngẫu nhiên"
+            >
+              <Compass size={15} />
+              Vòng quay random
+            </button>
+
+            {/* Edit toggle button for teachers/admins */}
+            {!isReadOnly && (
+              <button
+                className={isEditing ? 'btn' : 'btn btn-secondary'}
+                onClick={() => setIsEditing(!isEditing)}
+                style={{
+                  fontSize: 13,
+                  padding: '7px 14px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: isEditing ? '#059669' : undefined,
+                  borderColor: isEditing ? '#059669' : undefined,
+                  color: isEditing ? '#fff' : undefined,
+                }}
+              >
+                {isEditing ? <Unlock size={15} /> : <Lock size={15} />}
+                {isEditing ? 'Hoàn tất sửa' : 'Chỉnh sửa'}
+              </button>
+            )}
           </div>
         </div>
 
-        {!isReadOnly && (
+        {!isReadOnly && isEditing && (
           <div
             className="no-print"
             style={{
@@ -1034,7 +1573,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
           className="seating-workspace"
           style={{
             display: 'grid',
-            gridTemplateColumns: isReadOnly ? '1fr' : 'minmax(0, 1fr) minmax(280px, 320px)',
+            gridTemplateColumns: effectiveReadOnly ? '1fr' : 'minmax(0, 1fr) minmax(280px, 320px)',
             gap: 18,
             alignItems: 'start',
           }}
@@ -1110,7 +1649,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
                 isHighlighted={!!(effectiveHighlightId && seat.student && seat.student.id === effectiveHighlightId)}
                 isSearchMatch={searchMatches.has(seat.index)}
                 isLocked={!!seat.locked}
-                readOnly={isReadOnly}
+                readOnly={effectiveReadOnly}
                 privateView={currentRole === 'parent'}
                 onClick={handleSeatClick}
                 onDragStart={handleDragStart}
@@ -1131,7 +1670,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
           </div>
         </div>
 
-        {!isReadOnly && (
+        {!effectiveReadOnly && (
           <aside
             className="seating-side-panel no-print"
             style={{
@@ -1408,6 +1947,12 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
             </div>
           ))}
         </div>
+
+        <WheelOfNamesModal
+          isOpen={isWheelOpen}
+          onClose={() => setIsWheelOpen(false)}
+          students={classRoster}
+        />
       </div>
     </>
   );
