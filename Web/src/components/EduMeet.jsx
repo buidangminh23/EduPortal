@@ -13,7 +13,12 @@ import {
   Send,
   RotateCcw,
   Eraser,
-  Sparkles
+  Sparkles,
+  Radio,
+  StopCircle,
+  Download,
+  BarChart3,
+  Users
 } from 'lucide-react';
 
 export default function EduMeet() {
@@ -64,6 +69,20 @@ export default function EduMeet() {
   const [newPollOpt1, setNewPollOpt1] = useState('');
   const [newPollOpt2, setNewPollOpt2] = useState('');
   const reactionIdRef = useRef(0);
+
+  // ── Ghi âm cuộc họp (MediaRecorder — chạy thật trên trình duyệt) ──
+  const [recording, setRecording] = useState(false);
+  const [recordingSecs, setRecordingSecs] = useState(0);
+  const [recordedUrl, setRecordedUrl] = useState(null);
+  const [recordedSize, setRecordedSize] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordTimerRef = useRef(null);
+
+  // ── AI tóm tắt (mô phỏng) + biểu đồ ──
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const chartRef = useRef(null);
 
   // Web Audio API Sound Synthesizer for notifications
   const playSound = (type) => {
@@ -178,6 +197,7 @@ export default function EduMeet() {
   };
 
   const handleLeaveCall = () => {
+    stopRecording();
     stopCamera();
     stopScreenShare();
     setInCall(false);
@@ -373,6 +393,127 @@ export default function EduMeet() {
     }));
   };
 
+  // ── Người tham gia (khung nhiều người; nối WebRTC signaling ở backend) ──
+  const peerColors = ['#059669', '#d97706', '#2563eb', '#db2777', '#7c3aed', '#0891b2', '#ca8a04', '#dc2626'];
+  const roster = (students && students.length) ? students : [
+    { id: 'm1', name: 'Lê Mai Chi' }, { id: 'm2', name: 'Nguyễn Hoàng Nam' },
+    { id: 'm3', name: 'Phan Minh Triết' }, { id: 'm4', name: 'Trần Thu Hà' }
+  ];
+  const peerParticipants = roster.slice(0, 8).map((s, i) => ({
+    id: s.id || `p${i}`,
+    name: s.name,
+    micOn: i % 3 !== 0,
+    handRaised: i === 2,
+    color: peerColors[i % peerColors.length]
+  }));
+
+  const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const fmtSize = (b) => b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
+
+  // Ghi âm — MediaRecorder chạy thật trên trình duyệt, file không gửi ra ngoài
+  const startRecording = async () => {
+    try {
+      let recordStream = screenStream || stream;
+      if (!recordStream) {
+        recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      recordedChunksRef.current = [];
+      const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : (MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '');
+      const mr = new MediaRecorder(recordStream, mime ? { mimeType: mime } : undefined);
+      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: recordedChunksRef.current[0]?.type || 'video/webm' });
+        setRecordedUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob); });
+        setRecordedSize(blob.size);
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+      setRecordingSecs(0);
+      recordTimerRef.current = setInterval(() => setRecordingSecs(s => s + 1), 1000);
+    } catch (err) {
+      console.warn('Không ghi âm được:', err.message);
+      alert('Không truy cập được micro/màn hình để ghi. Hãy cấp quyền rồi thử lại.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (recordTimerRef.current) { clearInterval(recordTimerRef.current); recordTimerRef.current = null; }
+    setRecording(false);
+  };
+
+  const downloadRecording = (ext = 'webm') => {
+    if (!recordedUrl) return;
+    const a = document.createElement('a');
+    a.href = recordedUrl;
+    a.download = `cuoc-hop-edumeet-${recordingSecs}s.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  // AI tóm tắt — bản mô phỏng (AI thật: Whisper phiên âm + LLM tóm tắt ở máy chủ nội bộ)
+  const generateSummary = () => {
+    setSummarizing(true);
+    setSummary(null);
+    setTimeout(() => {
+      const topPoll = polls[0];
+      const total = topPoll ? topPoll.options.reduce((a, b) => a + b.votes, 0) : 0;
+      const lead = (topPoll && total) ? [...topPoll.options].sort((a, b) => b.votes - a.votes)[0] : null;
+      setSummary({
+        duration: fmtTime(recordingSecs || 1800),
+        topics: [
+          'Ôn tập chuyên đề Tích phân và ứng dụng tính diện tích hình phẳng',
+          'Chữa bài tập mẫu trên bảng viết trực tuyến',
+          topPoll ? `Khảo sát mức độ hiểu bài: "${topPoll.question}"` : 'Thảo luận phương pháp giải'
+        ],
+        keyPoints: [
+          lead ? `${Math.round((lead.votes / total) * 100)}% học sinh chọn "${lead.text}" ở khảo sát cuối giờ.` : 'Đa số học sinh nắm được ý chính của bài.',
+          `${chatMessages.filter(c => !c.system).length} lượt trao đổi trong khung chat lớp.`,
+          'Một số em cần hỗ trợ thêm phần đặt ẩn phụ khi tính tích phân.'
+        ],
+        actions: [
+          'Giao 5 bài tập tự luyện ứng dụng tích phân cho buổi sau.',
+          'Ghi chú các em cần phụ đạo để giáo viên bộ môn theo dõi.',
+          'Chia sẻ bản ghi buổi học cho học sinh vắng mặt.'
+        ]
+      });
+      setSummarizing(false);
+    }, 1600);
+  };
+
+  // Biểu đồ số liệu cuộc họp (SVG thật, xuất được file)
+  const meetingStats = () => {
+    const chatCount = chatMessages.filter(c => !c.system).length;
+    const pollVotes = polls.reduce((a, p) => a + p.options.reduce((x, o) => x + o.votes, 0), 0);
+    return [
+      { label: 'Tin nhắn', value: chatCount, color: '#6366f1' },
+      { label: 'Vote', value: pollVotes, color: '#10b981' },
+      { label: 'Người', value: peerParticipants.length + 1, color: '#f59e0b' },
+      { label: 'Reaction', value: reactionIdRef.current, color: '#ec4899' },
+      { label: 'Phút', value: Math.max(1, Math.round((recordingSecs || 1800) / 60)), color: '#0891b2' }
+    ];
+  };
+
+  const exportChartSVG = () => {
+    if (!chartRef.current) return;
+    const src = new XMLSerializer().serializeToString(chartRef.current);
+    const blob = new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${src}`], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bieu-do-cuoc-hop.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="animate-fade" style={{ height: 'calc(100vh - 120px)' }}>
       <style>{`
@@ -417,6 +558,7 @@ export default function EduMeet() {
         .reaction-emoji-btn:hover {
           transform: scale(1.35);
         }
+        @keyframes recBlink { 50% { opacity: 0.3; } }
       `}</style>
       {!inCall ? (
         // Lobby view
@@ -473,6 +615,15 @@ export default function EduMeet() {
                 {r.emoji}
               </span>
             ))}
+
+            {recording && (
+              <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 120, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(239,68,68,0.92)', color: '#fff', padding: '5px 12px', borderRadius: 99, fontSize: '0.76rem', fontWeight: 700 }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#fff', animation: 'recBlink 1s infinite' }} /> REC {fmtTime(recordingSecs)}
+              </div>
+            )}
+            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 110, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(30,30,36,0.85)', color: '#fff', padding: '5px 11px', borderRadius: 99, fontSize: '0.74rem', fontWeight: 600 }}>
+              <Users size={13} /> {peerParticipants.length + 1} người
+            </div>
 
             {activePanel === 'whiteboard' ? (
               // Whiteboard Stage
@@ -659,23 +810,23 @@ export default function EduMeet() {
                   <span className="user-name-tag">BẠN ({getUserNameLabel().split(' ')[0]})</span>
                 </div>
 
-                {/* Peer Student 1 */}
-                <div className="video-card">
-                  <div className="video-placeholder">
-                    <div className="avatar" style={{ width: '70px', height: '70px', fontSize: '1.8rem', background: '#059669' }}>C</div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Camera đang tắt</span>
+                {/* Người tham gia — khung nhiều người (nối WebRTC signaling ở backend để có video thật) */}
+                {peerParticipants.map(p => (
+                  <div key={p.id} className={`video-card ${p.handRaised ? 'active-speaker' : ''}`} style={{ position: 'relative' }}>
+                    {p.handRaised && (
+                      <div style={{ position: 'absolute', top: 8, right: 8, background: '#10b981', color: '#fff', padding: '3px 7px', borderRadius: 99, fontSize: '0.68rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3, zIndex: 10 }}>
+                        <Hand size={11} fill="white" />
+                      </div>
+                    )}
+                    <div className="video-placeholder">
+                      <div className="avatar" style={{ width: '70px', height: '70px', fontSize: '1.8rem', background: p.color }}>{p.name.charAt(0)}</div>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Camera đang tắt</span>
+                    </div>
+                    <span className="user-name-tag" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      {p.micOn ? <Mic size={11} /> : <MicOff size={11} style={{ color: '#ef4444' }} />} {p.name}
+                    </span>
                   </div>
-                  <span className="user-name-tag">Lê Mai Chi</span>
-                </div>
-
-                {/* Peer Student 2 */}
-                <div className={`video-card ${currentRole !== 'teacher' ? 'active-speaker' : ''}`}>
-                  <div className="video-placeholder">
-                    <div className="avatar" style={{ width: '70px', height: '70px', fontSize: '1.8rem', background: '#d97706' }}>N</div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Camera đang tắt</span>
-                  </div>
-                  <span className="user-name-tag">Nguyễn Hoàng Nam</span>
-                </div>
+                ))}
               </div>
             )}
 
@@ -749,6 +900,15 @@ export default function EduMeet() {
                 )}
               </div>
 
+              <button
+                onClick={() => recording ? stopRecording() : startRecording()}
+                className={`control-btn ${recording ? 'active' : ''}`}
+                title={recording ? 'Dừng ghi' : 'Ghi âm cuộc họp'}
+                style={recording ? { color: '#ef4444' } : undefined}
+              >
+                {recording ? <StopCircle size={18} /> : <Radio size={18} />}
+              </button>
+
               <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
 
               <button 
@@ -763,7 +923,7 @@ export default function EduMeet() {
 
           {/* Right Panel: Chat / Whiteboard Toggle / Polls */}
           <div className="meet-sidebar glass-panel" style={{ height: '100%', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-            <div className="tabs-container" style={{ marginBottom: '16px', paddingBottom: '4px' }}>
+            <div className="tabs-container" style={{ marginBottom: '16px', paddingBottom: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
               <button onClick={() => setActivePanel('chat')} className={`tab-btn ${activePanel === 'chat' ? 'active' : ''}`} style={{ fontSize: '0.8rem', padding: '4px 8px' }}>
                 Chat ({chatMessages.filter(c => !c.system).length})
               </button>
@@ -772,6 +932,12 @@ export default function EduMeet() {
               </button>
               <button onClick={() => setActivePanel('polls')} className={`tab-btn ${activePanel === 'polls' ? 'active' : ''}`} style={{ fontSize: '0.8rem', padding: '4px 8px' }}>
                 Khảo sát ({polls.length})
+              </button>
+              <button onClick={() => setActivePanel('record')} className={`tab-btn ${activePanel === 'record' ? 'active' : ''}`} style={{ fontSize: '0.8rem', padding: '4px 8px' }}>
+                Ghi âm{recording ? ' ●' : ''}
+              </button>
+              <button onClick={() => setActivePanel('charts')} className={`tab-btn ${activePanel === 'charts' ? 'active' : ''}`} style={{ fontSize: '0.8rem', padding: '4px 8px' }}>
+                Biểu đồ
               </button>
             </div>
 
@@ -921,6 +1087,101 @@ export default function EduMeet() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Ghi âm + AI tóm tắt */}
+            {activePanel === 'record' && (
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="glass-panel" style={{ padding: 12, border: '1px solid var(--border-card)', background: 'rgba(255,255,255,0.02)' }}>
+                  <h4 style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}><Radio size={14} /> Ghi âm cuộc họp</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => recording ? stopRecording() : startRecording()} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '0.82rem', background: recording ? '#ef4444' : undefined, border: recording ? 'none' : undefined }}>
+                      {recording ? '■ Dừng ghi' : '● Bắt đầu ghi'}
+                    </button>
+                    <span style={{ fontSize: '0.85rem', fontVariantNumeric: 'tabular-nums', color: recording ? '#ef4444' : 'var(--text-muted)', fontWeight: 600 }}>{fmtTime(recordingSecs)}</span>
+                  </div>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.4 }}>Không giới hạn thời gian, chạy ngay trên máy — file không gửi ra ngoài.</p>
+                </div>
+
+                {recordedUrl && (
+                  <div className="glass-panel" style={{ padding: 12, border: '1px solid var(--border-card)', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 8 }}>Bản ghi ({fmtSize(recordedSize)})</div>
+                    <video src={recordedUrl} controls style={{ width: '100%', borderRadius: 8, background: '#000', marginBottom: 8 }} />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => downloadRecording('webm')} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.76rem' }}><Download size={12} /> Tải .webm</button>
+                      <button onClick={() => downloadRecording('mp4')} className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: '0.76rem' }}><Download size={12} /> Tải .mp4</button>
+                    </div>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 6 }}>Xuất mp3/mp4 chuẩn cần ffmpeg (trình duyệt hoặc server); hiện tải ở định dạng webm gốc.</p>
+                  </div>
+                )}
+
+                <div className="glass-panel" style={{ padding: 12, border: '1px solid var(--border-card)', background: 'rgba(255,255,255,0.02)' }}>
+                  <h4 style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}><Sparkles size={14} /> AI tóm tắt cuộc họp</h4>
+                  <button onClick={generateSummary} disabled={summarizing} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    {summarizing ? 'Đang tóm tắt…' : 'Tạo bản tóm tắt'}
+                  </button>
+                  {summary && (
+                    <div style={{ marginTop: 12, fontSize: '0.8rem', lineHeight: 1.5, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div><b style={{ color: 'var(--text-primary)' }}>Thời lượng:</b> {summary.duration}</div>
+                      <div><b style={{ color: 'var(--text-primary)' }}>Nội dung chính:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.topics.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+                      <div><b style={{ color: 'var(--text-primary)' }}>Điểm đáng chú ý:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.keyPoints.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+                      <div><b style={{ color: 'var(--text-primary)' }}>Việc cần làm:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.actions.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 8 }}>Bản mô phỏng. AI thật: Whisper (phiên âm) + LLM (tóm tắt) chạy trên máy chủ nội bộ.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Biểu đồ cuộc họp */}
+            {activePanel === 'charts' && (
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={14} /> Số liệu cuộc họp</h4>
+                  <button onClick={exportChartSVG} className="btn btn-secondary" style={{ padding: '5px 9px', fontSize: '0.74rem' }}><Download size={12} /> Tải SVG</button>
+                </div>
+                {(() => {
+                  const data = meetingStats();
+                  const max = Math.max(...data.map(d => d.value), 1);
+                  const W = 300, H = 190, pad = 34, gap = (W - pad) / data.length, bw = gap * 0.6;
+                  return (
+                    <svg ref={chartRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-card)', borderRadius: 8 }} xmlns="http://www.w3.org/2000/svg">
+                      <line x1={pad} y1={H - 24} x2={W - 4} y2={H - 24} stroke="rgba(148,163,184,0.35)" />
+                      {data.map((d, i) => {
+                        const bh = (d.value / max) * (H - 54);
+                        const x = pad + i * gap + (gap - bw) / 2;
+                        const y = H - 24 - bh;
+                        return (
+                          <g key={i}>
+                            <rect x={x} y={y} width={bw} height={bh} rx={3} fill={d.color} />
+                            <text x={x + bw / 2} y={y - 4} fontSize="9" fill="#94a3b8" textAnchor="middle">{d.value}</text>
+                            <text x={x + bw / 2} y={H - 9} fontSize="8" fill="#94a3b8" textAnchor="middle">{d.label}</text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
+
+                {polls.map((poll, pi) => {
+                  const total = poll.options.reduce((a, b) => a + b.votes, 0);
+                  return (
+                    <div key={pi} style={{ padding: 10, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-card)' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, marginBottom: 6 }}>{poll.question}</div>
+                      {poll.options.map((o, oi) => {
+                        const pct = total ? Math.round(o.votes / total * 100) : 0;
+                        return (
+                          <div key={oi} style={{ marginBottom: 5 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: 2 }}><span>{o.text}</span><span>{pct}%</span></div>
+                            <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}><div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: 'var(--accent-primary, #6366f1)' }} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+                <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Tải SVG để chèn báo cáo, hoặc dùng gói "Xuất sơ đồ / biểu đồ" cho các định dạng khác.</p>
               </div>
             )}
           </div>
