@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -263,10 +263,23 @@
     .faq{grid-template-columns:1fr}
   }
   @media print{
-    :root{--shadow:none}
-    body{background:#fff}
-    .card,.value,.pkg,.cta,.tablewrap{break-inside:avoid}
-    section{margin-top:26px}
+    :root{
+      --shadow:none;
+      --paper:#ffffff; --surface:#ffffff; --surface-2:#f7f9f8;
+      --ink:#16252a; --ink-soft:#48595d; --ink-faint:#728082;
+      --line:#dbe3e0; --line-soft:#e7edea;
+      --primary:#0c6b62; --primary-deep:#093f3a; --primary-tint:#e3efec;
+      --accent:#b0710a; --accent-tint:#f6ead2; --accent-ink:#6d4708;
+    }
+    html,body{background:#fff}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .band{background:var(--primary-tint)}
+    .band h2{color:var(--ink)}
+    .band p,.band li{color:var(--ink-soft)}
+    .band .eyebrow{color:var(--primary)}
+    .band li::before{background:var(--primary)}
+    .card,.value,.pkg,.cta,.tablewrap,.hi-card,.qa,.band{break-inside:avoid}
+    section{margin-top:22px}
     .reveal{animation:none;opacity:1;transform:none}
   }
 </style>
