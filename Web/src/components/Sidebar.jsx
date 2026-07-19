@@ -9,7 +9,6 @@ import {
   FileText,
   GraduationCap,
   Award,
-  LogOut,
   Calendar,
   ClipboardCheck,
   CheckSquare,
@@ -96,7 +95,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     selectedStudentId,
     students,
     teachers,
-    logout,
     userSession,
     studentSubTab,
     setStudentSubTab,
@@ -613,24 +611,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       </div>
 
       <div>
-        {/* Logout */}
-        <div style={{ padding: '0 8px 12px 8px' }}>
-          <button
-            onClick={logout}
-            className="btn btn-secondary"
-            style={{
-              width: '100%', padding: '10px',
-              display: 'flex', gap: '8px',
-              color: '#b91c1c',
-              borderColor: 'rgba(185, 28, 28, 0.15)',
-              background: 'rgba(185, 28, 28, 0.04)'
-            }}
-          >
-            <LogOut size={16} />
-            <span style={{ fontWeight: 600 }}>Đăng xuất</span>
-          </button>
-        </div>
-
         {/* Profile widget */}
         <div className="user-profile-widget">
           <div className="avatar" style={{ background: 'var(--accent)' }}>
