@@ -268,7 +268,6 @@ export default function AiLessonPlannerTab() {
                   type="number" 
                   className="form-control"
                   min="5" 
-                  max="30" 
                   value={questionCount} 
                   onChange={e => setQuestionCount(parseInt(e.target.value) || 10)}
                 />
