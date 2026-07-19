@@ -90,6 +90,16 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   // Lesson plan state
   const [newPlanTitle, setNewPlanTitle] = useState('');
   const [newPlanSubject, setNewPlanSubject] = useState('Toán học');
+  const [planSelectedFile, setPlanSelectedFile] = useState(null);
+
+  const handlePlanFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPlanSelectedFile(file);
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      setNewPlanTitle(nameWithoutExt);
+    }
+  };
 
   // Student Conduct state
   const [selectedConductStudent, setSelectedConductStudent] = useState(null);
@@ -291,10 +301,15 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
   const handleLessonPlanSubmit = (e) => {
     e.preventDefault();
+    if (!planSelectedFile) {
+      alert('Vui lòng chọn tệp giáo án từ thiết bị trước!');
+      return;
+    }
     if (!newPlanTitle.trim()) return;
 
     submitLessonPlan('Nguyễn Minh Triết', newPlanSubject, newPlanTitle);
     setNewPlanTitle('');
+    setPlanSelectedFile(null);
     alert('Đã nộp giáo án lên Ban Giám Hiệu thành công!');
   };
 
@@ -735,6 +750,62 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </h2>
 
             <form onSubmit={handleLessonPlanSubmit}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Tải tệp giáo án từ thiết bị</label>
+                <div 
+                  style={{
+                    border: '2px dashed var(--line-strong, #cbd5e1)',
+                    borderRadius: '12px',
+                    padding: '24px 16px',
+                    textAlign: 'center',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative',
+                    marginBottom: '12px'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent, #6c5ce7)';
+                    e.currentTarget.style.background = '#f0f3ff';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--line-strong, #cbd5e1)';
+                    e.currentTarget.style.background = '#f8fafc';
+                  }}
+                  onClick={() => document.getElementById('plan-file-picker').click()}
+                >
+                  <input 
+                    id="plan-file-picker"
+                    type="file"
+                    onChange={handlePlanFileChange}
+                    style={{ display: 'none' }}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={24} color="var(--accent, #6c5ce7)" />
+                    {planSelectedFile ? (
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                          {planSelectedFile.name}
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          {(planSelectedFile.size / 1024).toFixed(1)} KB • Nhấp để chọn tệp khác
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                          Nhấp để chọn tệp giáo án hoặc kéo thả vào đây
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Hỗ trợ: .pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx (Tối đa 25MB)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Tên bài học / Tiêu đề giáo án</label>
                 <input 
