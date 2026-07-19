@@ -301,7 +301,25 @@ export default function Login({ onBack }) {
             </button>
             
             {showConfig && (
-              <div style={{ marginTop: 10, padding: 10, background: 'rgba(0,0,0,0.02)', borderRadius: 8 }}>
+              <div style={{ marginTop: 10, padding: 12, background: 'rgba(0,0,0,0.02)', borderRadius: 10, border: '1px solid rgba(148,163,184,0.1)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12, borderBottom: '1px dashed rgba(148,163,184,0.15)', paddingBottom: 8 }}>
+                  <strong style={{ color: 'var(--accent)' }}>Cách tạo Google Client ID hoạt động:</strong>
+                  <ol style={{ margin: '6px 0 0 14px', padding: 0 }}>
+                    <li>Truy cập <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}>Google Cloud Console</a>.</li>
+                    <li>Tạo dự án mới hoặc chọn dự án hiện có.</li>
+                    <li>Vào mục <strong>APIs & Services</strong> &gt; <strong>Credentials</strong>.</li>
+                    <li>Bấm <strong>Create Credentials</strong> &gt; <strong>OAuth client ID</strong>.</li>
+                    <li>Chọn loại ứng dụng là <strong>Web application</strong>.</li>
+                    <li>Thêm mục <strong>Authorized JavaScript origins</strong>:
+                      <ul style={{ margin: '2px 0 0 12px', padding: 0, listStyle: 'disc' }}>
+                        <li><code>http://localhost:5173</code> (cho chạy local)</li>
+                        <li><code>https://edu-portal-bay.vercel.app</code> (cho Vercel của bạn)</li>
+                      </ul>
+                    </li>
+                    <li>Bấm <strong>Create</strong>, copy mã Client ID thu được dán vào ô dưới:</li>
+                  </ol>
+                </div>
+
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
                   Google OAuth Client ID
                 </label>
