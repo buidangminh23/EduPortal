@@ -20,6 +20,15 @@ import {
   BarChart3,
   Users
 } from 'lucide-react';
+import { createSignaling } from '../lib/edumeetSignaling';
+
+function RemoteVideo({ stream }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && stream) ref.current.srcObject = stream;
+  }, [stream]);
+  return <video ref={ref} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+}
 
 export default function EduMeet() {
   const { currentRole, selectedStudentId, students } = useContext(AppContext);
@@ -83,6 +92,16 @@ export default function EduMeet() {
   const [summary, setSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const chartRef = useRef(null);
+
+  // ── Kết nối backend (AI + WebRTC signaling) ──
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8080';
+  const WS_URL = SERVER_URL.replace(/^http/, 'ws');
+  const streamRef = useRef(null);
+  const recordedBlobRef = useRef(null);
+  const signalRef = useRef(null);
+  const [signalStatus, setSignalStatus] = useState('idle');
+  const [signalPeers, setSignalPeers] = useState([]);
+  const [remoteStreams, setRemoteStreams] = useState({});
 
   // Web Audio API Sound Synthesizer for notifications
   const playSound = (type) => {
@@ -237,6 +256,37 @@ export default function EduMeet() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Giữ streamRef luôn trỏ tới camera stream hiện tại (cho signaling addTrack)
+  useEffect(() => { streamRef.current = stream; }, [stream]);
+
+  // Kết nối WebRTC signaling khi vào phòng; ngắt khi rời
+  useEffect(() => {
+    if (!inCall) return;
+    setSignalPeers([]);
+    setRemoteStreams({});
+    setSignalStatus('connecting');
+    const sig = createSignaling({
+      wsUrl: WS_URL,
+      room: 'edumeet-lop12a1',
+      getLocalStream: () => streamRef.current,
+      handlers: {
+        onStatus: (s) => setSignalStatus(s),
+        onPeerPresence: (id, present) => setSignalPeers(prev => present ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter(p => p !== id)),
+        onRemoteStream: (id, s) => {
+          setRemoteStreams(prev => ({ ...prev, [id]: s }));
+          setSignalPeers(prev => prev.includes(id) ? prev : [...prev, id]);
+        },
+        onPeerLeft: (id) => {
+          setSignalPeers(prev => prev.filter(p => p !== id));
+          setRemoteStreams(prev => { const n = { ...prev }; delete n[id]; return n; });
+        }
+      }
+    });
+    signalRef.current = sig;
+    return () => { sig.close(); signalRef.current = null; setSignalStatus('idle'); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inCall]);
 
   // Bot chat generator simulator
   useEffect(() => {
@@ -425,6 +475,7 @@ export default function EduMeet() {
       mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data); };
       mr.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: recordedChunksRef.current[0]?.type || 'video/webm' });
+        recordedBlobRef.current = blob;
         setRecordedUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob); });
         setRecordedSize(blob.size);
       };
@@ -457,34 +508,67 @@ export default function EduMeet() {
     a.remove();
   };
 
-  // AI tóm tắt — bản mô phỏng (AI thật: Whisper phiên âm + LLM tóm tắt ở máy chủ nội bộ)
-  const generateSummary = () => {
+  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+
+  // AI tóm tắt — gọi backend /api/summarize (Whisper + Qwen nội bộ); lỗi/không có server thì fallback mô phỏng
+  const generateSummary = async () => {
     setSummarizing(true);
     setSummary(null);
-    setTimeout(() => {
-      const topPoll = polls[0];
-      const total = topPoll ? topPoll.options.reduce((a, b) => a + b.votes, 0) : 0;
-      const lead = (topPoll && total) ? [...topPoll.options].sort((a, b) => b.votes - a.votes)[0] : null;
+    const topPoll = polls[0];
+    const total = topPoll ? topPoll.options.reduce((a, b) => a + b.votes, 0) : 0;
+    const lead = (topPoll && total) ? [...topPoll.options].sort((a, b) => b.votes - a.votes)[0] : null;
+    const mock = {
+      topics: [
+        'Ôn tập chuyên đề Tích phân và ứng dụng tính diện tích hình phẳng',
+        'Chữa bài tập mẫu trên bảng viết trực tuyến',
+        topPoll ? `Khảo sát mức độ hiểu bài: "${topPoll.question}"` : 'Thảo luận phương pháp giải'
+      ],
+      keyPoints: [
+        lead ? `${Math.round((lead.votes / total) * 100)}% học sinh chọn "${lead.text}" ở khảo sát cuối giờ.` : 'Đa số học sinh nắm được ý chính của bài.',
+        `${chatMessages.filter(c => !c.system).length} lượt trao đổi trong khung chat lớp.`,
+        'Một số em cần hỗ trợ thêm phần đặt ẩn phụ khi tính tích phân.'
+      ],
+      actions: [
+        'Giao 5 bài tập tự luyện ứng dụng tích phân cho buổi sau.',
+        'Ghi chú các em cần phụ đạo để giáo viên bộ môn theo dõi.',
+        'Chia sẻ bản ghi buổi học cho học sinh vắng mặt.'
+      ]
+    };
+    try {
+      let body;
+      if (recordedBlobRef.current) {
+        body = { audioBase64: await blobToBase64(recordedBlobRef.current) };
+      } else {
+        const transcript = [
+          topPoll ? `Khảo sát: ${topPoll.question}` : '',
+          ...chatMessages.filter(c => !c.system).map(c => `${c.sender}: ${c.text}`)
+        ].filter(Boolean).join('\n');
+        body = { transcript };
+      }
+      const res = await fetch(`${SERVER_URL}/api/summarize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error('server');
+      const data = await res.json();
       setSummary({
         duration: fmtTime(recordingSecs || 1800),
-        topics: [
-          'Ôn tập chuyên đề Tích phân và ứng dụng tính diện tích hình phẳng',
-          'Chữa bài tập mẫu trên bảng viết trực tuyến',
-          topPoll ? `Khảo sát mức độ hiểu bài: "${topPoll.question}"` : 'Thảo luận phương pháp giải'
-        ],
-        keyPoints: [
-          lead ? `${Math.round((lead.votes / total) * 100)}% học sinh chọn "${lead.text}" ở khảo sát cuối giờ.` : 'Đa số học sinh nắm được ý chính của bài.',
-          `${chatMessages.filter(c => !c.system).length} lượt trao đổi trong khung chat lớp.`,
-          'Một số em cần hỗ trợ thêm phần đặt ẩn phụ khi tính tích phân.'
-        ],
-        actions: [
-          'Giao 5 bài tập tự luyện ứng dụng tích phân cho buổi sau.',
-          'Ghi chú các em cần phụ đạo để giáo viên bộ môn theo dõi.',
-          'Chia sẻ bản ghi buổi học cho học sinh vắng mặt.'
-        ]
+        source: data.simulated ? 'máy chủ (mô phỏng)' : `máy chủ · ${data.model || 'AI nội bộ'}`,
+        topics: data.topics?.length ? data.topics : mock.topics,
+        keyPoints: data.keyPoints?.length ? data.keyPoints : mock.keyPoints,
+        actions: data.actions?.length ? data.actions : mock.actions
       });
+    } catch {
+      setSummary({ duration: fmtTime(recordingSecs || 1800), source: 'ngoại tuyến (mô phỏng)', ...mock });
+    } finally {
       setSummarizing(false);
-    }, 1600);
+    }
   };
 
   // Biểu đồ số liệu cuộc họp (SVG thật, xuất được file)
@@ -623,6 +707,10 @@ export default function EduMeet() {
             )}
             <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 110, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(30,30,36,0.85)', color: '#fff', padding: '5px 11px', borderRadius: 99, fontSize: '0.74rem', fontWeight: 600 }}>
               <Users size={13} /> {peerParticipants.length + 1} người
+            </div>
+            <div style={{ position: 'absolute', top: 50, right: 16, zIndex: 110, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(30,30,36,0.85)', color: signalStatus === 'connected' ? '#34d399' : '#fbbf24', padding: '4px 10px', borderRadius: 99, fontSize: '0.68rem', fontWeight: 600 }}
+              title="Trạng thái kết nối máy chủ signaling (video nhiều người thật)">
+              ● Signaling: {signalStatus === 'connected' ? `${signalPeers.length} trực tuyến` : signalStatus === 'connecting' ? 'đang nối…' : signalStatus === 'error' || signalStatus === 'disconnected' ? 'chưa có server' : signalStatus}
             </div>
 
             {activePanel === 'whiteboard' ? (
@@ -810,7 +898,23 @@ export default function EduMeet() {
                   <span className="user-name-tag">BẠN ({getUserNameLabel().split(' ')[0]})</span>
                 </div>
 
-                {/* Người tham gia — khung nhiều người (nối WebRTC signaling ở backend để có video thật) */}
+                {/* Peer TRỰC TIẾP qua WebRTC (khi backend signaling chạy + có người khác vào cùng phòng) */}
+                {signalPeers.map(pid => (
+                  <div key={pid} className="video-card active-speaker" style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 10, background: '#10b981', color: '#fff', padding: '2px 7px', borderRadius: 99, fontSize: '0.62rem', fontWeight: 700 }}>● TRỰC TIẾP</div>
+                    {remoteStreams[pid] ? (
+                      <RemoteVideo stream={remoteStreams[pid]} />
+                    ) : (
+                      <div className="video-placeholder">
+                        <div className="avatar" style={{ width: '70px', height: '70px', fontSize: '1.8rem', background: '#334155' }}>?</div>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Đang kết nối…</span>
+                      </div>
+                    )}
+                    <span className="user-name-tag">Người tham gia trực tiếp</span>
+                  </div>
+                ))}
+
+                {/* Người tham gia — khung nhiều người demo từ danh sách lớp */}
                 {peerParticipants.map(p => (
                   <div key={p.id} className={`video-card ${p.handRaised ? 'active-speaker' : ''}`} style={{ position: 'relative' }}>
                     {p.handRaised && (
@@ -1123,7 +1227,7 @@ export default function EduMeet() {
                   </button>
                   {summary && (
                     <div style={{ marginTop: 12, fontSize: '0.8rem', lineHeight: 1.5, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div><b style={{ color: 'var(--text-primary)' }}>Thời lượng:</b> {summary.duration}</div>
+                      <div><b style={{ color: 'var(--text-primary)' }}>Thời lượng:</b> {summary.duration}{summary.source ? ` · ${summary.source}` : ''}</div>
                       <div><b style={{ color: 'var(--text-primary)' }}>Nội dung chính:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.topics.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
                       <div><b style={{ color: 'var(--text-primary)' }}>Điểm đáng chú ý:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.keyPoints.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
                       <div><b style={{ color: 'var(--text-primary)' }}>Việc cần làm:</b><ul style={{ paddingLeft: 16, marginTop: 4 }}>{summary.actions.map((t, i) => <li key={i}>{t}</li>)}</ul></div>
