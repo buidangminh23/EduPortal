@@ -124,12 +124,13 @@ export default function AiLessonPlannerTab() {
       };
       
       const block = blocksMap[subject] || 'A00';
+      const countVal = parseInt(questionCount) || 10;
 
-      for (let i = 1; i <= questionCount; i++) {
+      for (let i = 1; i <= countVal; i++) {
         let diff = 'Nhận biết';
-        if (i > questionCount * 0.7) diff = 'Vận dụng cao';
-        else if (i > questionCount * 0.4) diff = 'Vận dụng';
-        else if (i > questionCount * 0.2) diff = 'Thông hiểu';
+        if (i > countVal * 0.7) diff = 'Vận dụng cao';
+        else if (i > countVal * 0.4) diff = 'Vận dụng';
+        else if (i > countVal * 0.2) diff = 'Thông hiểu';
 
         questions.push({
           id: `AI_Q_${i}_${Date.now()}`,
@@ -269,7 +270,15 @@ export default function AiLessonPlannerTab() {
                   className="form-control"
                   min="5" 
                   value={questionCount} 
-                  onChange={e => setQuestionCount(parseInt(e.target.value) || 10)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setQuestionCount(val === '' ? '' : parseInt(val));
+                  }}
+                  onBlur={() => {
+                    if (!questionCount || parseInt(questionCount) < 5) {
+                      setQuestionCount(10);
+                    }
+                  }}
                 />
               </div>
 
