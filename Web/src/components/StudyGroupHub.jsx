@@ -41,6 +41,7 @@ export default function StudyGroupHub() {
   // Music state in active room
   const [musicPlaying, setMusicPlaying] = useState(true);
   const [musicType, setMusicType] = useState('lofi');
+  const audioRef = useRef(null);
 
   // Tutor Request form state
   const [selectedTutor, setSelectedTutor] = useState(null);
@@ -60,6 +61,7 @@ export default function StudyGroupHub() {
   const handleLeaveRoom = () => {
     setActiveRoom(null);
     setTimerRunning(false);
+    setMusicPlaying(false);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -85,6 +87,49 @@ export default function StudyGroupHub() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [timerRunning]);
+
+  // ─── Real audio playback hook ───────────────────────────────────────────────
+  useEffect(() => {
+    // Audio source URLs (royalty-free, hosted on public CDNs)
+    const AUDIO_SOURCES = {
+      lofi: 'https://cdn.pixabay.com/audio/2024/11/04/audio_a37537a82f.mp3',
+      ambient: 'https://cdn.pixabay.com/audio/2022/10/30/audio_11529cb57e.mp3'
+    };
+
+    if (!musicPlaying || musicType === 'none') {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      return;
+    }
+
+    // If there's already an audio playing with different src, stop it
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    const src = AUDIO_SOURCES[musicType];
+    if (!src) return;
+
+    const audio = new Audio(src);
+    audio.loop = true;
+    audio.volume = 0.4;
+    audioRef.current = audio;
+
+    // Browsers require user gesture to play audio — the buttons provide that gesture
+    audio.play().catch(() => {
+      // Autoplay blocked by browser, will play on next user interaction
+    });
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [musicPlaying, musicType]);
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
@@ -283,6 +328,26 @@ export default function StudyGroupHub() {
                     style={{ width: '100%', fontSize: '0.8rem', padding: '8px', borderRadius: 12 }}>
                     {musicPlaying ? 'Tắt âm thanh nền' : 'Bật âm thanh nền'}
                   </button>
+
+                  {/* Volume Slider */}
+                  {musicPlaying && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px' }}>
+                      <VolumeX size={14} color="var(--text-muted)" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        defaultValue="40"
+                        onChange={(e) => {
+                          if (audioRef.current) {
+                            audioRef.current.volume = parseInt(e.target.value) / 100;
+                          }
+                        }}
+                        style={{ flex: 1, accentColor: '#8b5cf6', cursor: 'pointer', height: 4 }}
+                      />
+                      <Volume2 size={14} color="#8b5cf6" />
+                    </div>
+                  )}
 
                   {/* Simulated Equalizer Animations */}
                   {musicPlaying && (
