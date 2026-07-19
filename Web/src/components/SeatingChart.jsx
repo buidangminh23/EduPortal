@@ -20,6 +20,7 @@ import {
   XCircle,
   MousePointer2,
   Trophy,
+  Compass,
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -283,7 +284,7 @@ function WheelOfNamesModal({ isOpen, onClose, students }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   
-  const [activeIds, setActiveIds] = useState([]);
+  const [activeIds, setActiveIds] = useState(() => students ? students.map(s => s.id) : []);
   const [isSpinning, setIsSpinning] = useState(false);
   const [winner, setWinner] = useState(null);
   
@@ -291,12 +292,6 @@ function WheelOfNamesModal({ isOpen, onClose, students }) {
   const speedRef = useRef(0);
   const isSpinningRef = useRef(false);
   const lastSoundIndexRef = useRef(-1);
-
-  useEffect(() => {
-    if (students && isOpen) {
-      setActiveIds(students.map(s => s.id));
-    }
-  }, [students, isOpen]);
 
   const activeStudents = useMemo(() => {
     if (!students) return [];
@@ -1949,6 +1944,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
         </div>
 
         <WheelOfNamesModal
+          key={`${selectedClass}-${isWheelOpen}`}
           isOpen={isWheelOpen}
           onClose={() => setIsWheelOpen(false)}
           students={classRoster}

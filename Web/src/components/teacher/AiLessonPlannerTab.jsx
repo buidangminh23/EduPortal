@@ -146,10 +146,10 @@ export default function AiLessonPlannerTab() {
         const realQ = realQuestionsPool[poolIndex];
         const isSpecificTopic = topic && topic.trim() !== '';
         
-        let finalQuestionText = '';
-        let finalOptions = [];
-        let finalCorrectKey = 'B';
-        let finalExplanation = '';
+        let finalQuestionText;
+        let finalOptions;
+        let finalCorrectKey;
+        let finalExplanation;
 
         if (isSpecificTopic && (i > realQuestionsPool.length || topic.toLowerCase().includes('chí phèo') || topic.toLowerCase().includes('tích phân'))) {
           const topicQ = getTopicQuestion(subject, topic, i - 1);
