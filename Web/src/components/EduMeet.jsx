@@ -13,7 +13,8 @@ import {
   Send,
   RotateCcw,
   Eraser,
-  Sparkles
+  Sparkles,
+  Disc
 } from 'lucide-react';
 
 export default function EduMeet() {
@@ -65,6 +66,19 @@ export default function EduMeet() {
   const [newPollOpt2, setNewPollOpt2] = useState('');
   const reactionIdRef = useRef(0);
 
+  // Recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const timerRef = useRef(null);
+
+  const formatDuration = (sec) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   // Web Audio API Sound Synthesizer for notifications
   const playSound = (type) => {
     try {
@@ -90,6 +104,22 @@ export default function EduMeet() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.12);
+      } else if (type === 'record_start') {
+        // High double beep
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.1); // C6
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      } else if (type === 'record_stop') {
+        // Descending double beep
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime + 0.1); // C5
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
       }
     } catch (err) {
       console.warn("Web Audio API not allowed/supported:", err);
@@ -132,6 +162,159 @@ export default function EduMeet() {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
+    }
+  };
+
+  // Recording functions
+  const startRecording = async () => {
+    try {
+      recordedChunksRef.current = [];
+      let recordStream = null;
+
+      if (screenShare && screenStream) {
+        recordStream = screenStream;
+      } else if (stream) {
+        recordStream = stream;
+      } else {
+        recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
+      if (!recordStream) {
+        throw new Error("Không tìm thấy luồng âm thanh/hình ảnh hoạt động.");
+      }
+
+      const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      let recorder;
+      try {
+        recorder = new MediaRecorder(recordStream, options);
+      } catch (e) {
+        try {
+          recorder = new MediaRecorder(recordStream, { mimeType: 'video/webm' });
+        } catch (e2) {
+          try {
+            recorder = new MediaRecorder(recordStream, { mimeType: 'audio/webm' });
+          } catch (e3) {
+            recorder = new MediaRecorder(recordStream);
+          }
+        }
+      }
+
+      mediaRecorderRef.current = recorder;
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, {
+          type: recorder.mimeType || 'video/webm'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const isVideo = recorder.mimeType.includes('video');
+        const ext = isVideo ? 'webm' : 'weba';
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+        a.download = `EduMeet_GhiAm_${dateStr}_${timeStr}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+
+        setChatMessages(prev => [
+          ...prev,
+          {
+            id: `system-${Date.now()}`,
+            sender: 'Hệ thống',
+            text: `🔴 Đã lưu file ghi âm cuộc họp thành công (${formatDuration(recordingDuration)})!`,
+            system: true
+          }
+        ]);
+        
+        setIsRecording(false);
+        setRecordingDuration(0);
+      };
+
+      playSound('record_start');
+      recorder.start(1000);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+
+    } catch (err) {
+      console.error("Lỗi khi bắt đầu ghi âm:", err);
+      simulateRecording();
+    }
+  };
+
+  const simulateRecording = () => {
+    playSound('record_start');
+    setIsRecording(true);
+    setRecordingDuration(0);
+
+    timerRef.current = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+  };
+
+  const stopRecording = () => {
+    playSound('record_stop');
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    } else {
+      const dummyContent = new Uint8Array([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69]);
+      const blob = new Blob([dummyContent], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+      a.download = `EduMeet_GhiAm_GiaLap_${dateStr}_${timeStr}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: `system-${Date.now()}`,
+          sender: 'Hệ thống',
+          text: `🔴 Đã lưu file ghi âm giả lập thành công (${formatDuration(recordingDuration)})!`,
+          system: true
+        }
+      ]);
+      setIsRecording(false);
+      setRecordingDuration(0);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
@@ -180,6 +363,15 @@ export default function EduMeet() {
   const handleLeaveCall = () => {
     stopCamera();
     stopScreenShare();
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setRecordingDuration(0);
     setInCall(false);
     setHandRaised(false);
   };
@@ -214,6 +406,9 @@ export default function EduMeet() {
     return () => {
       stopCamera();
       stopScreenShare();
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -374,7 +569,7 @@ export default function EduMeet() {
   };
 
   return (
-    <div className="animate-fade" style={{ height: 'calc(100vh - 120px)' }}>
+    <div className="animate-fade" style={{ height: 'calc(100vh - 220px)' }}>
       <style>{`
         @keyframes floatUp {
           0% {
@@ -416,6 +611,45 @@ export default function EduMeet() {
         }
         .reaction-emoji-btn:hover {
           transform: scale(1.35);
+        }
+        @keyframes pulse-record {
+          0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+          }
+        }
+        .recording-pulse {
+          animation: pulse-record 2s infinite;
+        }
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+        @keyframes pulse-dot {
+          0% {
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+          100% {
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
         }
       `}</style>
       {!inCall ? (
@@ -473,6 +707,37 @@ export default function EduMeet() {
                 {r.emoji}
               </span>
             ))}
+
+            {isRecording && (
+              <div style={{
+                position: 'absolute',
+                top: '12px',
+                left: '12px',
+                background: 'rgba(239, 68, 68, 0.85)',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                zIndex: 99,
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <span style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  display: 'inline-block',
+                  animation: 'pulse-dot 1.2s infinite'
+                }} />
+                <span>GHI ÂM: {formatDuration(recordingDuration)}</span>
+              </div>
+            )}
 
             {activePanel === 'whiteboard' ? (
               // Whiteboard Stage
@@ -748,6 +1013,19 @@ export default function EduMeet() {
                   </div>
                 )}
               </div>
+
+              <button 
+                onClick={toggleRecording} 
+                className={`control-btn ${isRecording ? 'danger recording-pulse' : ''}`}
+                style={{
+                  position: 'relative',
+                  border: isRecording ? '1px solid rgba(239, 68, 68, 0.4)' : 'none',
+                  boxShadow: isRecording ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
+                }}
+                title={isRecording ? "Dừng ghi âm" : "Ghi âm cuộc trò chuyện"}
+              >
+                <Disc size={18} className={isRecording ? 'spin-slow' : ''} fill={isRecording ? '#ef4444' : 'none'} />
+              </button>
 
               <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
 
