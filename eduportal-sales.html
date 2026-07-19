@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EduPortal — Hồ sơ bán hàng · Gói 1 năm</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  img,svg,video{max-width:100%;height:auto}
+  @media print{#themeToggle{display:none}}
+</style>
+</head>
+<body>
+<button id="themeToggle" aria-label="Đổi sáng/tối" style="position:fixed;top:14px;right:14px;z-index:9999;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.15)"></button>
+<style>
+  :root{
+    --paper:#f4f6f5; --surface:#ffffff; --surface-2:#fbfcfb;
+    --ink:#16252a; --ink-soft:#48595d; --ink-faint:#728082;
+    --line:#dbe3e0; --line-soft:#e7edea;
+    --primary:#0c6b62; --primary-deep:#093f3a; --primary-tint:#e3efec;
+    --accent:#b0710a; --accent-tint:#f6ead2; --accent-ink:#6d4708;
+    --shadow:0 1px 2px rgba(16,40,40,.05),0 8px 28px rgba(16,40,40,.06);
+    --radius:14px; --radius-sm:9px;
+    --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --maxw:960px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0d1618; --surface:#152120; --surface-2:#111b1a;
+      --ink:#e9efec; --ink-soft:#aab9b5; --ink-faint:#7d8d8a;
+      --line:#26332f; --line-soft:#1e2a27;
+      --primary:#37b7a6; --primary-deep:#5fd0bf; --primary-tint:#12302b;
+      --accent:#e0a54b; --accent-tint:#2c2417; --accent-ink:#f0c37e;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#f4f6f5; --surface:#ffffff; --surface-2:#fbfcfb;
+    --ink:#16252a; --ink-soft:#48595d; --ink-faint:#728082;
+    --line:#dbe3e0; --line-soft:#e7edea;
+    --primary:#0c6b62; --primary-deep:#093f3a; --primary-tint:#e3efec;
+    --accent:#b0710a; --accent-tint:#f6ead2; --accent-ink:#6d4708;
+    --shadow:0 1px 2px rgba(16,40,40,.05),0 8px 28px rgba(16,40,40,.06);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d1618; --surface:#152120; --surface-2:#111b1a;
+    --ink:#e9efec; --ink-soft:#aab9b5; --ink-faint:#7d8d8a;
+    --line:#26332f; --line-soft:#1e2a27;
+    --primary:#37b7a6; --primary-deep:#5fd0bf; --primary-tint:#12302b;
+    --accent:#e0a54b; --accent-tint:#2c2417; --accent-ink:#f0c37e;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    line-height:1.62;-webkit-font-smoothing:antialiased;font-size:16px}
+  .sheet{max-width:var(--maxw);margin:0 auto;padding:clamp(20px,5vw,52px) clamp(18px,5vw,40px)}
+  section{margin-top:clamp(38px,6vw,64px)}
+
+  .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--primary);margin:0 0 .55rem}
+  h1{font-size:clamp(2.4rem,7vw,3.6rem);line-height:1.02;letter-spacing:-.02em;font-weight:800;
+    margin:0;text-wrap:balance;color:var(--ink)}
+  h2{font-size:clamp(1.4rem,3.4vw,1.85rem);line-height:1.15;letter-spacing:-.015em;font-weight:800;
+    margin:0 0 .3rem;text-wrap:balance}
+  h3{font-size:1.06rem;font-weight:750;margin:0;letter-spacing:-.01em}
+  p{margin:.5rem 0}
+  .lede{font-size:clamp(1.02rem,2.2vw,1.18rem);color:var(--ink-soft);max-width:60ch;line-height:1.55}
+  .muted{color:var(--ink-soft)} .faint{color:var(--ink-faint)}
+  .sec-head{margin-bottom:22px}
+  .sec-head .eyebrow{color:var(--accent);}
+
+  /* Header */
+  header.hero{padding-top:6px}
+  .hero .brandline{display:flex;align-items:center;gap:11px;margin-bottom:26px}
+  .mark{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;
+    display:grid;place-items:center;font-weight:800;font-size:1.05rem;letter-spacing:-.03em;flex:none}
+  .brandline b{font-weight:750;letter-spacing:-.01em}
+  .hero .lede{margin-top:16px}
+  .meta-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .chip{font-size:.8rem;font-weight:600;color:var(--ink-soft);background:var(--surface);
+    border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+  .pricetag{display:inline-flex;align-items:baseline;gap:8px;margin-top:26px;
+    background:var(--accent-tint);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    color:var(--accent-ink);border-radius:12px;padding:12px 18px}
+  .pricetag .k{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .pricetag .v{font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .pricetags{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .pricetags .pricetag{margin-top:0}
+
+  /* Value strip */
+  .value{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:clamp(20px,3vw,30px)}
+  .value h2{margin-bottom:16px}
+  .value-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .value-grid .cell{padding-left:15px;border-left:2px solid var(--primary)}
+  .value-grid h3{font-size:.98rem;margin-bottom:3px}
+  .value-grid p{font-size:.9rem;color:var(--ink-soft);margin:0}
+
+  /* Tính năng nổi bật & khác biệt */
+  .hi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .hi-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 18px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:7px}
+  .hi-tag{align-self:flex-start;font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px;color:var(--primary-deep);background:var(--primary-tint)}
+  .hi-tag.b{color:var(--accent-ink);background:var(--accent-tint)}
+  .hi-card h3{font-size:1rem;letter-spacing:-.01em}
+  .hi-card p{font-size:.86rem;color:var(--ink-soft);margin:0;line-height:1.45}
+
+  /* Role cards */
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 22px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--primary);opacity:.9}
+  .card .role-k{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);margin-bottom:6px}
+  .card h3{margin-bottom:12px;font-size:1.12rem}
+  .card ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+  .card li{font-size:.9rem;color:var(--ink-soft);padding-left:20px;position:relative;line-height:1.42}
+  .card li::before{content:"";position:absolute;left:0;top:.5em;width:7px;height:7px;border-radius:2px;
+    background:var(--accent)}
+
+  /* Package */
+  .pkg{background:var(--surface);border:1.5px solid var(--primary);border-radius:18px;
+    box-shadow:var(--shadow);overflow:hidden}
+  .pkg-top{background:var(--primary-tint);padding:clamp(22px,3.5vw,32px);border-bottom:1px solid var(--line-soft)}
+  .pkg-top .eyebrow{color:var(--primary-deep)}
+  .price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .price .num{font-size:clamp(2.5rem,6vw,3.4rem);font-weight:800;letter-spacing:-.03em;
+    color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+  .price .per{font-size:1.02rem;font-weight:600;color:var(--ink-soft)}
+  .tiers{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 16px}
+  .tier{flex:1;min-width:170px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+  .tier-cap{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--primary-deep)}
+  .tier-price{font-size:clamp(1.6rem,4.5vw,2.2rem);font-weight:800;letter-spacing:-.02em;color:var(--ink);
+    font-variant-numeric:tabular-nums;line-height:1.05;margin-top:5px}
+  .tier-price span{font-size:.85rem;font-weight:600;color:var(--ink-soft);margin-left:6px}
+  .pkg-both{font-size:.82rem;color:var(--primary-deep);font-weight:600;margin-top:14px}
+  .price .num::after{content:"";display:block;height:5px;background:var(--accent);
+    border-radius:3px;margin-top:6px;opacity:.85}
+  .pkg-terms{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px}
+  .pkg-terms span{font-size:.85rem;color:var(--primary-deep);font-weight:600}
+  .pkg-terms span+span{position:relative;padding-left:19px}
+  .pkg-terms span+span::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+    width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5}
+  .pkg-body{display:grid;grid-template-columns:1.15fr .85fr}
+  .pkg-col{padding:clamp(20px,3vw,28px)}
+  .pkg-col+.pkg-col{border-left:1px solid var(--line-soft)}
+  .pkg-col .col-k{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .pkg-col.free .col-k{color:var(--primary)}
+  .pkg-col.ai .col-k{color:var(--accent)}
+  .free ul{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+  .free li{font-size:.88rem;padding-left:24px;position:relative;color:var(--ink)}
+  .free li::before{content:"✓";position:absolute;left:0;top:-1px;color:var(--primary);font-weight:800;font-size:.92rem}
+  .free li small{color:var(--ink-faint);font-weight:400}
+  .ai-list{display:flex;flex-direction:column;gap:12px}
+  .ai-item{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 15px}
+  .ai-item .n{font-size:.9rem;font-weight:700}
+  .ai-item .q{font-size:1.02rem;font-weight:800;color:var(--accent-ink);font-variant-numeric:tabular-nums}
+  .ai-item .q span{font-size:.8rem;font-weight:600;color:var(--ink-soft)}
+  .ai-item .q.inf{color:var(--primary)}
+  .ai-table table{min-width:230px}
+  .ai-table th,.ai-table td{padding:9px 12px;font-size:.84rem}
+  .ai-table td.pk,.ai-table th.pk{text-align:right;font-variant-numeric:tabular-nums}
+  .ai-table td.pk{font-weight:600;color:var(--ink)}
+  .ai-table .inf{color:var(--primary);font-weight:700;text-align:center}
+  .ai-note{font-size:.8rem;color:var(--ink-faint);margin-top:13px;line-height:1.4}
+
+  /* Top-up */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:440px}
+  th,td{text-align:left;padding:13px 18px;font-size:.9rem;border-bottom:1px solid var(--line-soft)}
+  thead th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);
+    font-weight:700;background:var(--surface-2)}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.86rem}
+  td .pill{display:inline-block;font-size:.72rem;font-weight:700;color:var(--primary-deep);
+    background:var(--primary-tint);border-radius:999px;padding:2px 9px}
+  .convert{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .convert code{font-family:var(--mono);font-size:.82rem;background:var(--surface);border:1px solid var(--line);
+    border-radius:8px;padding:7px 12px;color:var(--ink)}
+  .convert code b{color:var(--accent-ink)}
+
+  /* Compare */
+  .compare table{min-width:600px}
+  .compare .crit{width:23%;font-weight:700;color:var(--ink)}
+  .compare thead th.edu{background:var(--primary-tint);color:var(--primary-deep);border-bottom:2px solid var(--primary)}
+  .compare td.old{color:var(--ink-soft)}
+  .compare td.old .x{color:#c2622f;font-weight:800;margin-right:8px}
+  .compare td.edu{background:var(--primary-tint);color:var(--ink)}
+  .compare td.edu .c{color:var(--primary);font-weight:800;margin-right:8px}
+  .compare tbody td{vertical-align:top}
+  .compare-note{font-size:.84rem;color:var(--ink-faint);margin-top:13px;line-height:1.45}
+  .compare-note b{color:var(--primary-deep)}
+
+  /* EduMeet — spotlight + so sánh */
+  .feat-row{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 20px}
+  .feat-chip{font-size:.82rem;font-weight:600;color:var(--primary-deep);background:var(--primary-tint);
+    border:1px solid color-mix(in srgb,var(--primary) 24%,transparent);border-radius:8px;padding:6px 12px}
+  .vs table{min-width:660px}
+  .vs .feat{width:22%;font-weight:700;color:var(--ink)}
+  .vs thead th.us{background:var(--primary-tint);color:var(--primary-deep);border-bottom:2px solid var(--primary)}
+  .vs tbody td{color:var(--ink-soft);vertical-align:top}
+  .vs tbody td.feat{color:var(--ink)}
+  .vs td.us{background:var(--primary-tint);color:var(--ink);font-weight:650}
+
+  /* Top-ups theo nhóm */
+  .topups{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+  .topup{display:flex;flex-direction:column;gap:12px}
+  .topup table{min-width:250px}
+  .topup-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .topup-k{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--primary-deep);background:var(--primary-tint);border-radius:999px;padding:4px 11px}
+  .topup-k.alt{color:var(--accent-ink);background:var(--accent-tint)}
+  .topup-k.alt2{color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line)}
+  .topup-head h3{font-size:1.04rem}
+  @media (max-width:720px){ .topups{grid-template-columns:1fr} }
+
+  /* Security band */
+  .band{background:var(--primary-deep);color:#eaf4f1;border-radius:18px;padding:clamp(24px,4vw,38px);
+    position:relative;overflow:hidden}
+  :root[data-theme="dark"] .band{background:#0c3b36}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .band{background:#0c3b36}}
+  .band .eyebrow{color:#8fded0}
+  .band h2{color:#fff;max-width:24ch}
+  .band p{color:#c7e2dc;max-width:62ch}
+  .band ul{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  .band li{font-size:.9rem;color:#dcefeb;padding-left:22px;position:relative}
+  .band li::before{content:"";position:absolute;left:0;top:.45em;width:9px;height:9px;border-radius:2px;
+    background:#8fded0;transform:rotate(45deg)}
+
+  /* FAQ */
+  .faq{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+  .qa h3{font-size:.98rem;margin-bottom:4px;color:var(--ink)}
+  .qa h3::before{content:"Q. ";color:var(--accent);font-weight:800}
+  .qa p{font-size:.9rem;color:var(--ink-soft);margin:0}
+
+  /* CTA */
+  .cta{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    box-shadow:var(--shadow);padding:clamp(24px,4vw,40px);text-align:center}
+  .cta h2{margin-bottom:8px}
+  .cta .contact{display:inline-block;margin-top:18px;background:var(--primary);color:#fff;
+    font-weight:700;border-radius:11px;padding:13px 26px;font-size:1rem}
+  .cta .fineprint{font-size:.8rem;color:var(--ink-faint);margin-top:16px;max-width:66ch;margin-left:auto;margin-right:auto}
+
+  footer.foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:.8rem;color:var(--ink-faint)}
+
+  a{color:var(--primary);text-decoration:none}
+  a:focus-visible,.contact:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  .reveal{opacity:0;transform:translateY(10px);animation:rise .6s ease forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.reveal{animation:none;opacity:1;transform:none}}
+
+  @media (max-width:720px){
+    .value-grid{grid-template-columns:1fr;gap:14px}
+    .roles{grid-template-columns:1fr}
+    .pkg-body{grid-template-columns:1fr}
+    .pkg-col+.pkg-col{border-left:none;border-top:1px solid var(--line-soft)}
+    .band ul{grid-template-columns:1fr}
+    .faq{grid-template-columns:1fr}
+  }
+  @media print{
+    :root{--shadow:none}
+    body{background:#fff}
+    .card,.value,.pkg,.cta,.tablewrap{break-inside:avoid}
+    section{margin-top:26px}
+    .reveal{animation:none;opacity:1;transform:none}
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="hero reveal">
+    <div class="brandline">
+      <span class="mark">E</span>
+      <b>EduPortal</b>
+    </div>
+    <p class="eyebrow">Nền tảng quản lý trường học all-in-one</p>
+    <h1>Cả trường học trên một nền tảng.</h1>
+    <p class="lede">Số hóa toàn bộ vận hành cho Ban giám hiệu, Giáo viên, Học sinh và Phụ huynh — kèm trợ lý AI học tập và thanh toán VietQR. Chạy 100% trên web, không cần cài đặt.</p>
+    <div class="meta-strip">
+      <span class="chip">4 vai trò</span>
+      <span class="chip">Trợ lý AI</span>
+      <span class="chip">Thanh toán VietQR</span>
+      <span class="chip">Phòng lab ảo</span>
+      <span class="chip">Một gói · một giá</span>
+    </div>
+    <div class="pricetags">
+      <div class="pricetag">
+        <span class="k">Gói 500 người · 1 năm</span>
+        <span class="v">55.000.000đ</span>
+      </div>
+      <div class="pricetag">
+        <span class="k">Gói 1.000 người · 1 năm</span>
+        <span class="v">90.000.000đ</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="value reveal">
+    <h2>Một nền tảng thay 4–5 phần mềm rời rạc</h2>
+    <p class="muted" style="margin-bottom:20px;max-width:60ch">Sổ điểm, thu học phí, thông báo, họp phụ huynh, học liệu — gộp về cùng một nơi, cùng một dữ liệu.</p>
+    <div class="value-grid">
+      <div class="cell"><h3>Kết nối 3 bên</h3><p>Nhà trường, giáo viên và phụ huynh làm việc trên cùng một dữ liệu — hết cảnh mỗi bên một kiểu.</p></div>
+      <div class="cell"><h3>Hiện đại, mọi thiết bị</h3><p>Giao diện sáng/tối, chạy mượt trên điện thoại lẫn máy tính, không cần đào tạo phức tạp.</p></div>
+      <div class="cell"><h3>Triển khai nhanh</h3><p>Chạy trên web, không cần máy chủ riêng, không cài đặt — mở tài khoản là dùng.</p></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Vượt trội</p>
+      <h2>Tính năng nổi bật &amp; khác biệt</h2>
+    </div>
+    <div class="hi-grid">
+      <div class="hi-card"><span class="hi-tag">AI</span><h3>Gia sư AI 24/7</h3><p>Kèm học sinh mọi lúc — giải Toán, Lý, Hóa, Văn kèm công thức. Không giới hạn, chạy nội bộ.</p></div>
+      <div class="hi-card"><span class="hi-tag">AI</span><h3>Chấm văn &amp; soạn giáo án AI</h3><p>Chấm luận theo tiêu chí, sinh giáo án và đề trắc nghiệm — tiết kiệm hàng giờ cho giáo viên.</p></div>
+      <div class="hi-card"><span class="hi-tag">AI</span><h3>Cảnh báo học sinh nguy cơ</h3><p>Tự chấm điểm rủi ro từ điểm số, vắng học, nợ phí → can thiệp sớm, giảm bỏ học.</p></div>
+      <div class="hi-card"><span class="hi-tag">AI</span><h3>Định hướng đại học &amp; hướng nghiệp</h3><p>Dự đoán xác suất đỗ theo điểm chuẩn, cộng trắc nghiệm tính cách RIASEC.</p></div>
+      <div class="hi-card"><span class="hi-tag b">Độc quyền</span><h3>Phòng thí nghiệm ảo Lý – Hóa</h3><p>Thí nghiệm làm lại vô hạn, an toàn, không tốn hóa chất — chạy ngay trên máy học sinh.</p></div>
+      <div class="hi-card"><span class="hi-tag b">Tích hợp</span><h3>EduMeet trong hệ thống</h3><p>Phòng học trực tuyến + ghi âm + AI tóm tắt cuộc họp — thay Zoom/Meet riêng.</p></div>
+      <div class="hi-card"><span class="hi-tag b">Chăm sóc</span><h3>Hỗ trợ tâm lý &amp; AI Counselor</h3><p>Theo dõi tâm trạng, AI lắng nghe 24/7 và tự hướng học sinh đặt lịch gặp chuyên viên thật khi cần.</p></div>
+      <div class="hi-card"><span class="hi-tag b">Tiện ích</span><h3>Thanh toán VietQR &amp; ví điện tử</h3><p>Đóng học phí, căng tin, ví học sinh ngay trên điện thoại.</p></div>
+      <div class="hi-card"><span class="hi-tag">AI</span><h3>Bản đồ năng lực AI</h3><p>Bản đồ nhiệt điểm mạnh – yếu từng môn, từng chủ đề; kế hoạch ôn thi tự sinh theo lỗ hổng.</p></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Giá trị cho từng người dùng</p>
+      <h2>Mỗi vai trò một lý do để dùng</h2>
+    </div>
+    <div class="roles">
+      <div class="card">
+        <div class="role-k">Ban giám hiệu</div>
+        <h3>Nhìn toàn trường trên một màn hình</h3>
+        <ul>
+          <li>Số liệu tức thời: thu học phí, chuyên cần, sĩ số, nhân sự</li>
+          <li>Cảnh báo sớm học sinh nguy cơ → giảm bỏ học, giữ sĩ số (giữ nguồn thu)</li>
+          <li>So sánh hiệu suất giữa các lớp bằng biểu đồ trực quan</li>
+          <li>Quản lý tài sản, lịch trực, chấm công giáo viên</li>
+          <li><b>Tiết kiệm chi phí:</b> một gói thay 4–5 phần mềm, cắt nhiều hợp đồng lẻ</li>
+          <li><b>Thu học phí nhanh hơn</b> nhờ nhắc tự động + VietQR, giảm nợ đọng</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="role-k">Giáo viên</div>
+        <h3>Bớt việc thủ công, thêm giờ dạy</h3>
+        <ul>
+          <li>Sổ điểm điện tử &amp; sơ đồ chỗ ngồi kéo-thả</li>
+          <li>Trợ lý AI soạn giáo án, tạo đề trắc nghiệm</li>
+          <li>Chấm bài luận AI theo tiêu chí — giáo viên chỉ việc duyệt</li>
+          <li>Bảng tin, bình chọn lớp, họp trực tuyến EduMeet</li>
+          <li>Chat &amp; đặt lịch họp phụ huynh ngay trên hệ thống</li>
+          <li><b>Tiết kiệm hàng giờ mỗi tuần</b> soạn giáo án + chấm bài, không cần app rời</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="role-k">Học sinh</div>
+        <h3>Được kèm cặp mọi lúc</h3>
+        <ul>
+          <li>Gia sư AI 24/7 cho Toán – Lý – Hóa – Văn</li>
+          <li>Chấm văn AI, thi thử &amp; chẩn đoán năng lực</li>
+          <li>Gợi ý trường đại học, hướng nghiệp, kế hoạch học</li>
+          <li>Phòng lab ảo, ví VietQR, huy hiệu &amp; bảng xếp hạng</li>
+          <li>Tư vấn tâm lý &amp; chăm sóc tinh thần 24/7</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="role-k">Phụ huynh</div>
+        <h3>An tâm và minh bạch</h3>
+        <ul>
+          <li>Theo dõi học bạ &amp; nhận xét của giáo viên</li>
+          <li>Điểm danh RFID, xin nghỉ &amp; ký học bạ online</li>
+          <li>Đóng học phí bằng VietQR ngay trên điện thoại</li>
+          <li>Chat &amp; đặt lịch họp 1-1 với giáo viên</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Bài toán tài chính</p>
+      <h2>Mua lẻ bên thứ 3 hay trọn gói EduPortal?</h2>
+    </div>
+    <div class="tablewrap compare">
+      <table>
+        <thead>
+          <tr><th class="crit">Hạng mục</th><th>Mua lẻ (bên thứ 3)</th><th class="edu">EduPortal</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="crit">Sổ điểm &amp; quản lý học tập</td><td class="old"><span class="x">✗</span>Phần mềm riêng, phí theo năm</td><td class="edu"><span class="c">✓</span>Đã gồm</td></tr>
+          <tr><td class="crit">Thu học phí VietQR</td><td class="old"><span class="x">✗</span>Cổng/phần mềm thu phí riêng</td><td class="edu"><span class="c">✓</span>Đã gồm</td></tr>
+          <tr><td class="crit">Họp trực tuyến</td><td class="old"><span class="x">✗</span>License Zoom/Meet/Teams riêng</td><td class="edu"><span class="c">✓</span>EduMeet đã gồm</td></tr>
+          <tr><td class="crit">Học liệu / video bài giảng</td><td class="old"><span class="x">✗</span>Thuê bao LMS riêng</td><td class="edu"><span class="c">✓</span>Đã gồm</td></tr>
+          <tr><td class="crit">Gia sư / luyện thi AI</td><td class="old"><span class="x">✗</span>App riêng, tính theo đầu học sinh</td><td class="edu"><span class="c">✓</span>Gia sư AI đã gồm</td></tr>
+          <tr><td class="crit">Chấm bài &amp; tạo đề AI</td><td class="old"><span class="x">✗</span>Công cụ riêng</td><td class="edu"><span class="c">✓</span>Đã gồm</td></tr>
+          <tr><td class="crit">Đào tạo &amp; hỗ trợ</td><td class="old"><span class="x">✗</span>Mỗi phần mềm một đầu mối</td><td class="edu"><span class="c">✓</span>Một đầu mối duy nhất</td></tr>
+          <tr><td class="crit">Chi phí</td><td class="old"><span class="x">✗</span>Cộng dồn nhiều hợp đồng lẻ</td><td class="edu"><span class="c">✓</span>Một gói từ 55 triệu/năm</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-note">Mua lẻ = <b>nhiều hợp đồng, nhiều đầu mối, chi phí cộng dồn</b> và dữ liệu rời rạc. EduPortal gộp tất cả vào một gói — rẻ hơn và chỉ một đầu mối.</p>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Điểm nhấn tính năng</p>
+      <h2>Phòng học &amp; họp trực tuyến EduMeet</h2>
+    </div>
+    <p class="lede" style="margin-bottom:18px">Dạy học online, phụ đạo, họp phụ huynh — ngay trong EduPortal, không cần Zoom hay Google Meet riêng. Lớp học ảo gắn thẳng với danh sách lớp và điểm danh của trường.</p>
+    <div class="feat-row">
+      <span class="feat-chip">Video &amp; mic</span>
+      <span class="feat-chip">Chia sẻ màn hình</span>
+      <span class="feat-chip">Bảng trắng tương tác</span>
+      <span class="feat-chip">Bình chọn / quiz trực tiếp</span>
+      <span class="feat-chip">Giơ tay &amp; reaction</span>
+      <span class="feat-chip">Chat trong lớp</span>
+      <span class="feat-chip">Ghi âm không giới hạn thời gian</span>
+      <span class="feat-chip">AI tóm tắt cuộc họp</span>
+    </div>
+    <div class="tablewrap vs">
+      <table>
+        <thead>
+          <tr>
+            <th class="feat">Tiêu chí</th>
+            <th class="us">EduMeet</th>
+            <th>Zoom</th>
+            <th>Google Meet</th>
+            <th>MS Teams</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="feat">Cài app / tài khoản riêng</td><td class="us">Không — sẵn trong hệ thống</td><td>Có</td><td>Có</td><td>Có</td></tr>
+          <tr><td class="feat">Gắn lớp học &amp; điểm danh</td><td class="us">Tự động theo lớp</td><td>Không</td><td>Không</td><td>Hạn chế</td></tr>
+          <tr><td class="feat">Giới hạn thời gian</td><td class="us">Không giới hạn</td><td>40 phút (bản free)</td><td>~60 phút (bản free)</td><td>~60 phút (bản free)</td></tr>
+          <tr><td class="feat">Bảng trắng + bình chọn gắn bài học</td><td class="us">Ngay trong lớp</td><td>Rời / hạn chế</td><td>Hạn chế</td><td>Rời</td></tr>
+          <tr><td class="feat">Dữ liệu lưu ở đâu</td><td class="us">Nội bộ trường</td><td>Máy chủ Zoom</td><td>Google</td><td>Microsoft</td></tr>
+          <tr><td class="feat">Chi phí</td><td class="us">Trong gói — 0đ thêm</td><td>License riêng</td><td>Gói Workspace</td><td>Gói M365</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-note">Thế mạnh của EduMeet là <b>tích hợp</b>: nằm trong hệ thống trường, gắn lớp &amp; điểm danh, dữ liệu nội bộ và miễn phí trong gói — không phải chuyển qua lại giữa các ứng dụng rời.</p>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">So sánh chi tiết</p>
+      <h2>Cách làm truyền thống và EduPortal</h2>
+    </div>
+    <div class="tablewrap compare">
+      <table>
+        <thead>
+          <tr>
+            <th class="crit">Tiêu chí</th>
+            <th>Giải pháp truyền thống</th>
+            <th class="edu">EduPortal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="crit">Số công cụ phải dùng</td>
+            <td class="old"><span class="x">✗</span>4–5 phần mềm rời rạc + sổ giấy</td>
+            <td class="edu"><span class="c">✓</span>Một nền tảng duy nhất</td>
+          </tr>
+          <tr>
+            <td class="crit">Điểm số &amp; học bạ</td>
+            <td class="old"><span class="x">✗</span>Sổ giấy, file Excel rời, dễ sai lệch</td>
+            <td class="edu"><span class="c">✓</span>Sổ điểm điện tử, học bạ số, ký online</td>
+          </tr>
+          <tr>
+            <td class="crit">Liên lạc với phụ huynh</td>
+            <td class="old"><span class="x">✗</span>Zalo / điện thoại, tin nhắn trôi mất</td>
+            <td class="edu"><span class="c">✓</span>Bảng tin, chat &amp; thông báo tập trung theo lớp</td>
+          </tr>
+          <tr>
+            <td class="crit">Thu học phí</td>
+            <td class="old"><span class="x">✗</span>Tiền mặt / chuyển khoản, đối soát thủ công</td>
+            <td class="edu"><span class="c">✓</span>VietQR, hóa đơn tự động, theo dõi tức thời</td>
+          </tr>
+          <tr>
+            <td class="crit">Phụ huynh theo dõi con</td>
+            <td class="old"><span class="x">✗</span>Chờ đến buổi họp mới biết tình hình</td>
+            <td class="edu"><span class="c">✓</span>Xem điểm, điểm danh, nhận xét ngay trên điện thoại</td>
+          </tr>
+          <tr>
+            <td class="crit">Hỗ trợ học tập</td>
+            <td class="old"><span class="x">✗</span>Học thêm tốn tiền, phụ thuộc thầy cô rảnh</td>
+            <td class="edu"><span class="c">✓</span>Gia sư AI 24/7 &amp; chấm văn AI</td>
+          </tr>
+          <tr>
+            <td class="crit">Thí nghiệm thực hành</td>
+            <td class="old"><span class="x">✗</span>Phòng lab thật: thiếu thiết bị, tốn hóa chất, lo an toàn</td>
+            <td class="edu"><span class="c">✓</span>Phòng lab ảo Lý – Hóa, làm lại vô hạn, an toàn</td>
+          </tr>
+          <tr>
+            <td class="crit">Học sinh có nguy cơ</td>
+            <td class="old"><span class="x">✗</span>Phát hiện muộn, dò thủ công</td>
+            <td class="edu"><span class="c">✓</span>Cảnh báo sớm tự động cho nhà trường &amp; phụ huynh</td>
+          </tr>
+          <tr>
+            <td class="crit">Quản lý của Ban giám hiệu</td>
+            <td class="old"><span class="x">✗</span>Báo cáo giấy, tổng hợp chậm</td>
+            <td class="edu"><span class="c">✓</span>Dashboard số liệu toàn trường tức thời</td>
+          </tr>
+          <tr>
+            <td class="crit">Dữ liệu &amp; bảo mật</td>
+            <td class="old"><span class="x">✗</span>Rải rác, dễ thất lạc, khó tra cứu</td>
+            <td class="edu"><span class="c">✓</span>Tập trung, phân quyền, xuất Excel bất cứ lúc nào</td>
+          </tr>
+          <tr>
+            <td class="crit">Chi phí</td>
+            <td class="old"><span class="x">✗</span>Nhiều khoản lẻ: mỗi app, học thêm, in ấn, hóa chất</td>
+            <td class="edu"><span class="c">✓</span>Một gói trọn năm, ngân sách rõ ràng</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-note">Truyền thống cộng lại là <b>nhiều khoản chi lẻ và nhiều đầu mối rời rạc</b>. EduPortal gộp tất cả vào một nền tảng, một gói trọn năm.</p>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Bảng giá</p>
+      <h2>Gói EduPortal — hai gói theo quy mô</h2>
+    </div>
+    <div class="pkg">
+      <div class="pkg-top">
+        <p class="eyebrow">Hai gói · trọn năm học</p>
+        <div class="tiers">
+          <div class="tier">
+            <div class="tier-cap">Gói 500 người</div>
+            <div class="tier-price">55.000.000đ<span>/ năm</span></div>
+          </div>
+          <div class="tier">
+            <div class="tier-cap">Gói 1.000 người</div>
+            <div class="tier-price">90.000.000đ<span>/ năm</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pkg-body">
+        <div class="pkg-col free">
+          <div class="col-k">Miễn phí — dùng không giới hạn</div>
+          <ul>
+            <li>Toàn bộ quản lý &amp; vận hành trường</li>
+            <li>Sổ điểm, thi thử &amp; chẩn đoán năng lực</li>
+            <li>Gợi ý đại học &amp; tư vấn hướng nghiệp</li>
+            <li>Kế hoạch học tập &amp; flashcard thông minh</li>
+            <li>Phòng lab ảo Lý – Hóa <small>(chạy ngay trên máy học sinh)</small></li>
+            <li>Thư viện số &amp; cảnh báo rủi ro học sinh</li>
+            <li>Tư vấn tâm lý &amp; chăm sóc tinh thần <small>(AI Counselor nội bộ)</small></li>
+            <li>Bảng tin, chat, họp trực tuyến EduMeet</li>
+            <li>Ghi âm cuộc họp — không giới hạn thời gian</li>
+            <li>Ví &amp; thanh toán học phí VietQR</li>
+          </ul>
+        </div>
+        <div class="pkg-col ai">
+          <div class="col-k">Trợ lý AI kèm theo</div>
+          <div class="tablewrap ai-table">
+            <table>
+              <thead>
+                <tr><th>Tính năng AI</th><th class="pk">Gói 500</th><th class="pk">Gói 1.000</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Gia sư AI</td><td class="inf" colspan="2">Không giới hạn</td></tr>
+                <tr><td>AI tóm tắt cuộc họp</td><td class="inf" colspan="2">Không giới hạn</td></tr>
+                <tr><td>Chấm văn AI</td><td class="pk">500 bài</td><td class="pk">1.000 bài</td></tr>
+                <tr><td>Soạn giáo án / đề</td><td class="pk">300 lượt</td><td class="pk">600 lượt</td></tr>
+                <tr><td>Xuất sơ đồ / biểu đồ</td><td class="pk">5 lượt</td><td class="pk">10 lượt</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="ai-note">Định mức trọn năm (không reset tháng). Gia sư &amp; AI tóm tắt không giới hạn cho cả hai gói. Hết định mức thì mua thêm gói bên dưới.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Mua thêm khi cần</p>
+      <h2>Gói lượt AI bổ sung</h2>
+    </div>
+    <p class="muted" style="max-width:64ch;margin:-4px 0 20px;font-size:.92rem">Gia sư AI, ghi âm và AI tóm tắt cuộc họp dùng không giới hạn (chạy nội bộ). Các tính năng dưới đây tính theo lượt — cần thêm thì mua theo gói:</p>
+    <div class="topups">
+      <div class="topup">
+        <div class="topup-head"><span class="topup-k">Học sinh</span><h3>Chấm văn AI</h3></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Gói</th><th class="num">Giá</th><th class="num">Đơn giá</th></tr></thead>
+            <tbody>
+              <tr><td>10 lượt</td><td class="num">20.000đ</td><td class="num">2.000đ</td></tr>
+              <tr><td>20 lượt</td><td class="num">36.000đ</td><td class="num">1.800đ</td></tr>
+              <tr><td>50 lượt</td><td class="num">80.000đ</td><td class="num">1.600đ</td></tr>
+              <tr><td>100 lượt</td><td class="num">140.000đ</td><td class="num">1.400đ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="topup">
+        <div class="topup-head"><span class="topup-k alt">Giáo viên</span><h3>Soạn giáo án / Tạo đề AI</h3></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Gói</th><th class="num">Giá</th><th class="num">Đơn giá</th></tr></thead>
+            <tbody>
+              <tr><td>10 lượt</td><td class="num">30.000đ</td><td class="num">3.000đ</td></tr>
+              <tr><td>20 lượt</td><td class="num">56.000đ</td><td class="num">2.800đ</td></tr>
+              <tr><td>50 lượt</td><td class="num">125.000đ</td><td class="num">2.500đ</td></tr>
+              <tr><td>100 lượt</td><td class="num">220.000đ</td><td class="num">2.200đ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="topup">
+        <div class="topup-head"><span class="topup-k alt2">Cuộc họp</span><h3>Xuất sơ đồ / biểu đồ</h3></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Gói</th><th class="num">Giá</th><th class="num">Đơn giá</th></tr></thead>
+            <tbody>
+              <tr><td>10 lượt</td><td class="num">10.000đ</td><td class="num">1.000đ</td></tr>
+              <tr><td>20 lượt</td><td class="num">18.000đ</td><td class="num">900đ</td></tr>
+              <tr><td>50 lượt</td><td class="num">40.000đ</td><td class="num">800đ</td></tr>
+              <tr><td>100 lượt</td><td class="num">70.000đ</td><td class="num">700đ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <p class="faint" style="font-size:.82rem;margin-top:14px">Phụ huynh có thể mua thêm cho con; nhà trường có thể mua chung cho lớp ôn thi.</p>
+  </section>
+
+  <section class="reveal">
+    <div class="band">
+      <p class="eyebrow">Điểm khác biệt</p>
+      <h2>Dữ liệu học sinh không rời hệ thống.</h2>
+      <p>Các xử lý AI nhạy cảm — câu hỏi và bài viết của học sinh — chạy trên máy chủ nội bộ. Chỉ những tác vụ chung mới dùng dịch vụ AI cao cấp bên ngoài.</p>
+      <ul>
+        <li>Xử lý AI nội bộ cho nội dung của học sinh</li>
+        <li>Phân quyền chặt: phụ huynh chỉ xem con mình</li>
+        <li>Tuân thủ Nghị định 13/2023 về dữ liệu cá nhân</li>
+        <li>Xuất toàn bộ dữ liệu ra Excel bất cứ lúc nào</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="sec-head">
+      <p class="eyebrow">Giải đáp nhanh</p>
+      <h2>Câu hỏi thường gặp</h2>
+    </div>
+    <div class="faq">
+      <div class="qa"><h3>Mất mạng có dùng được không?</h3><p>Chỉ cần wifi cơ bản; dữ liệu nhẹ, chạy tốt trên điện thoại phụ huynh. Báo cáo có thể xuất ra khi cần.</p></div>
+      <div class="qa"><h3>Giáo viên lớn tuổi dùng có khó?</h3><p>Gói đã bao gồm đào tạo và hỗ trợ. Giao diện đơn giản, đa số giáo viên quen sau 1–2 buổi.</p></div>
+      <div class="qa"><h3>AI có thay giáo viên không?</h3><p>Không. AI là trợ lý hỗ trợ giúp tiết kiệm thời gian; giáo viên luôn là người duyệt cuối cùng.</p></div>
+      <div class="qa"><h3>Trường có sở hữu dữ liệu?</h3><p>Có. Dữ liệu là của trường và có thể xuất ra Excel bất cứ lúc nào — không bị khóa vào nhà cung cấp.</p></div>
+      <div class="qa"><h3>AI tư vấn tâm lý có an toàn cho học sinh?</h3><p>AI chỉ hỗ trợ tinh thần ở mức nhẹ, <b>không thay chuyên viên</b>. Khi có dấu hiệu cần lưu tâm, hệ thống hướng học sinh đặt lịch gặp chuyên viên thật ngay.</p></div>
+      <div class="qa"><h3>Dữ liệu nhạy cảm có gửi ra ngoài?</h3><p>Không. Các xử lý AI nhạy cảm — gia sư, tư vấn tâm lý, bài viết của học sinh — chạy trên máy chủ nội bộ.</p></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="cta">
+      <p class="eyebrow" style="color:var(--accent)">Sẵn sàng triển khai</p>
+      <h2>Đăng ký gói 1 năm — trọn vẹn một năm học</h2>
+      <p class="muted" style="max-width:52ch;margin-left:auto;margin-right:auto">Đặt lịch demo miễn phí để trải nghiệm đầy đủ 4 vai trò và trợ lý AI ngay trên trường của bạn.</p>
+      <div class="contact">Liên hệ tư vấn &amp; demo: [ Tên · SĐT · Email ]</div>
+      <p class="fineprint">Giá đã bao gồm cập nhật tính năng, đào tạo, hỗ trợ kỹ thuật và bảo trì trong suốt năm học. Bảng giá có thể điều chỉnh theo quy mô và loại hình trường.</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>EduPortal — Nền tảng quản lý trường học all-in-one</span>
+    <span>Hồ sơ bán hàng · Gói 1 năm</span>
+  </footer>
+
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('themeToggle');
+  var root=document.documentElement;
+  function cur(){ return root.getAttribute('data-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+  function set(t){ root.setAttribute('data-theme', t); btn.textContent = t === 'dark' ? '☀ Sáng' : '☾ Tối'; }
+  set(cur());
+  btn.addEventListener('click', function(){ set(cur() === 'dark' ? 'light' : 'dark'); });
+})();
+</script>
+</body>
+</html>
