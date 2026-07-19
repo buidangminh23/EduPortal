@@ -7,6 +7,7 @@ import {
   Brain,
   Sliders,
 } from 'lucide-react';
+import { QUESTIONS } from '../../data/mockExamsData';
 
 export default function AiLessonPlannerTab() {
   const { submitLessonPlan, addCustomExam, userSession } = useContext(AppContext);
@@ -126,24 +127,60 @@ export default function AiLessonPlannerTab() {
       const block = blocksMap[subject] || 'A00';
       const countVal = parseInt(questionCount) || 10;
 
+      const subjectMap = {
+        'Toán học': 'Math',
+        'Vật lý': 'Physics',
+        'Ngữ văn': 'Literature',
+        'Tiếng Anh': 'English'
+      };
+      const dbKey = subjectMap[subject] || 'Math';
+      const realQuestionsPool = QUESTIONS[dbKey] || [];
+
       for (let i = 1; i <= countVal; i++) {
         let diff = 'Nhận biết';
         if (i > countVal * 0.7) diff = 'Vận dụng cao';
         else if (i > countVal * 0.4) diff = 'Vận dụng';
         else if (i > countVal * 0.2) diff = 'Thông hiểu';
 
+        const poolIndex = (i - 1) % realQuestionsPool.length;
+        const realQ = realQuestionsPool[poolIndex];
+        const isSpecificTopic = topic && topic.trim() !== '';
+        
+        let finalQuestionText = '';
+        let finalOptions = [];
+        let finalCorrectKey = 'B';
+        let finalExplanation = '';
+
+        if (isSpecificTopic && (i > realQuestionsPool.length || topic.toLowerCase().includes('chí phèo') || topic.toLowerCase().includes('tích phân'))) {
+          const topicQ = getTopicQuestion(subject, topic, i - 1);
+          finalQuestionText = `[Mức độ ${diff}] ${topicQ.question}`;
+          finalOptions = topicQ.options;
+          finalCorrectKey = topicQ.correctKey;
+          finalExplanation = topicQ.explanation;
+        } else if (realQ) {
+          finalQuestionText = `[Mức độ ${diff}] ${realQ.question}`;
+          finalOptions = realQ.options.map(opt => ({ key: opt.key, text: opt.text }));
+          finalCorrectKey = realQ.correctKey;
+          finalExplanation = realQ.explanation;
+        } else {
+          finalQuestionText = `[Mức độ ${diff}] Câu hỏi số ${i}: Phân tích chuyên đề "${topic}" (Lớp ${grade} - Môn ${subject}).`;
+          finalOptions = [
+            { key: 'A', text: `Phương án nhiễu A cho chủ đề ${topic}` },
+            { key: 'B', text: `Phương án chính xác B (Đáp án đúng)` },
+            { key: 'C', text: `Phương án nhiễu C cho chủ đề ${topic}` },
+            { key: 'D', text: `Phương án nhiễu D cho chủ đề ${topic}` }
+          ];
+          finalCorrectKey = 'B';
+          finalExplanation = `Lời giải câu hỏi số ${i}: Áp dụng các quy tắc cơ bản để giải quyết bài tập thuộc chủ đề "${topic}".`;
+        }
+
         questions.push({
           id: `AI_Q_${i}_${Date.now()}`,
           subject,
-          question: `[Mức độ ${diff}] Câu hỏi số ${i}: Nội dung câu hỏi trắc nghiệm minh họa về chủ đề "${topic}" (Lớp ${grade} - Môn ${subject}).`,
-          options: [
-            { key: 'A', text: `Phương án trả lời nhiễu A cho câu hỏi số ${i}` },
-            { key: 'B', text: `Phương án trả lời chính xác B (Đáp án đúng)` },
-            { key: 'C', text: `Phương án trả lời nhiễu C cho câu hỏi số ${i}` },
-            { key: 'D', text: `Phương án trả lời nhiễu D cho câu hỏi số ${i}` }
-          ],
-          correctKey: 'B',
-          explanation: `Lời giải chi tiết câu số ${i}: Dựa vào định lý và tính chất cơ bản của ${topic}, ta áp dụng công thức chính quy để loại trừ các phương án A, C, D. Do đó, phương án B là chính xác nhất.`
+          question: finalQuestionText,
+          options: finalOptions,
+          correctKey: finalCorrectKey,
+          explanation: finalExplanation
         });
       }
 
@@ -184,6 +221,14 @@ export default function AiLessonPlannerTab() {
     window.print();
   };
 
+  const handleTopicChange = (val) => {
+    setTopic(val);
+    const detected = detectSubject(val);
+    if (detected) {
+      setSubject(detected);
+    }
+  };
+
   return (
     <div className="animate-fade">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', alignItems: 'start' }}>
@@ -202,7 +247,7 @@ export default function AiLessonPlannerTab() {
               className="form-control"
               placeholder="Ví dụ: Định lý Py-ta-go, Sóng âm, Chí Phèo..."
               value={topic}
-              onChange={e => setTopic(e.target.value)}
+              onChange={e => handleTopicChange(e.target.value)}
               required
             />
           </div>
@@ -492,3 +537,152 @@ export default function AiLessonPlannerTab() {
     </div>
   );
 }
+
+const detectSubject = (text) => {
+  const t = text.toLowerCase();
+  const litKeywords = ['chí phèo', 'vợ nhặt', 'tây tiến', 'sóng', 'người lái đò', 'vợ chồng a phủ', 'văn học', 'bài thơ', 'tác phẩm', 'quang dũng', 'kim lân', 'nguyễn tuân', 'xuân quỳnh', 'nam cao', 'ngữ văn', 'văn'];
+  const mathKeywords = ['py-ta-go', 'pythagoras', 'tích phân', 'đạo hàm', 'số mũ', 'hình học', 'giới hạn', 'toán học', 'đại số', 'khảo sát hàm số', 'nguyên hàm', 'toán', 'logarit'];
+  const physicsKeywords = ['sóng âm', 'dao động', 'điện xoay chiều', 'vật lý', 'lực', 'quang hình', 'ánh sáng', 'từ trường', 'lý'];
+  const englishKeywords = ['tiếng anh', 'english', 'tenses', 'grammar', 'ngữ pháp', 'từ vựng', 'vocabulary', 'pronunciation'];
+
+  if (litKeywords.some(kw => t.includes(kw))) return 'Ngữ văn';
+  if (mathKeywords.some(kw => t.includes(kw))) return 'Toán học';
+  if (physicsKeywords.some(kw => t.includes(kw))) return 'Vật lý';
+  if (englishKeywords.some(kw => t.includes(kw))) return 'Tiếng Anh';
+  return null;
+};
+
+const getTopicQuestion = (sub, topic, index) => {
+  const t = topic.toLowerCase();
+  
+  if (sub === 'Ngữ văn') {
+    if (t.includes('chí phèo')) {
+      const cpQuestions = [
+        {
+          question: 'Chi tiết "bát cháo hành" của Thị Nở trong truyện ngắn "Chí Phèo" mang ý nghĩa nghệ thuật sâu sắc nào?',
+          options: [
+            { key: 'A', text: 'Là món ăn ngon nhất Chí Phèo từng được thưởng thức.' },
+            { key: 'B', text: 'Biểu tượng của tình thương, hơi ấm nhân tình đánh thức phần người lương thiện bị vùi lấp của Chí Phèo.' },
+            { key: 'C', text: 'Sự chăm sóc mang tính vụ lợi của Thị Nở dành cho Chí Phèo.' },
+            { key: 'D', text: 'Thể hiện cuộc sống nghèo đói, túng quẫn của người dân làng Vũ Đại.' }
+          ],
+          correctKey: 'B',
+          explanation: 'Bát cháo hành của Thị Nở là biểu tượng của tình thương cảm mộc mạc, không vụ lợi. Đó là lần đầu tiên Chí Phèo được một bàn tay đàn bà chăm sóc. Hơi ấm của bát cháo hành và sự quan tâm của Thị Nở đã đánh thức bản tính lương thiện, khao khát làm người hòa nhập xã hội trong Chí Phèo. Chọn B.'
+        },
+        {
+          question: 'Tiếng chửi của nhân vật Chí Phèo ở phần mở đầu tác phẩm thể hiện trạng thái tâm lý nào?',
+          options: [
+            { key: 'A', text: 'Sự say rượu quá mức khiến đầu óc không còn tỉnh táo.' },
+            { key: 'B', text: 'Sự phản kháng tuyệt vọng trước số phận bị cướp đi nhân hình, nhân tính và khao khát giao tiếp với đồng loại.' },
+            { key: 'C', text: 'Thái độ nghênh ngang, thách thức của một kẻ côn đồ khét tiếng.' },
+            { key: 'D', text: 'Nỗi oán hận đối với chính gia đình của bản thân mình.' }
+          ],
+          correctKey: 'B',
+          explanation: 'Chí Phèo chửi trời, chửi đời, chửi làng Vũ Đại, và cuối cùng chửi ai không chửi nhau với hắn. Tiếng chửi là công cụ giao tiếp duy nhất còn lại của Chí Phèo với cuộc đời. Phản ứng im lặng của dân làng Vũ Đại đẩy Chí Phèo vào sự cô độc tuyệt đối. Chọn B.'
+        },
+        {
+          question: 'Ai là người chịu trách nhiệm trực tiếp đẩy Chí Phèo vào con đường lưu manh hóa sau khi ra tù?',
+          options: [
+            { key: 'A', text: 'Thị Nở.' },
+            { key: 'B', text: 'Bá Kiến.' },
+            { key: 'C', text: 'Lý Cường.' },
+            { key: 'D', text: 'Bà cô Thị Nở.' }
+          ],
+          correctKey: 'B',
+          explanation: 'Bá Kiến - đại diện cho giai cấp địa chủ phong kiến bóc lột - đã đẩy Chí Phèo vào tù vì lòng ghen tuông vô cớ. Sau khi Chí Phèo ra tù, Bá Kiến tiếp tục lợi dụng sự phẫn uất của Chí Phèo biến hắn thành tay sai đắc lực, đẩy hắn sâu hơn vào vũng bùn tội lỗi. Chọn B.'
+        },
+        {
+          question: 'Bi kịch lớn nhất của nhân vật Chí Phèo ở cuối truyện ngắn là gì?',
+          options: [
+            { key: 'A', text: 'Bị Thị Nở từ chối chung sống.' },
+            { key: 'B', text: 'Khát khao trở về làm người lương thiện bị cự tuyệt, dẫn đến cái chết bi thảm.' },
+            { key: 'C', text: 'Bị Bá Kiến đâm chết tại nhà.' },
+            { key: 'D', text: 'Không có tiền tiêu xài và bị cả làng đuổi đi.' }
+          ],
+          correctKey: 'B',
+          explanation: 'Bi kịch của Chí Phèo không chỉ dừng lại ở bi kịch bị từ chối tình yêu. Đó là bi kịch tinh thần đau đớn khi nhận ra mình không thể làm người lương thiện được nữa vì xã hội đã cướp đi quyền đó. Cái chết của Chí Phèo là lời tố cáo sâu sắc xã hội đương thời. Chọn B.'
+        }
+      ];
+      return cpQuestions[index % cpQuestions.length];
+    }
+    
+    return {
+      question: `Trong chương trình Ngữ văn lớp 12, khi phân tích chủ đề "${topic}", khía cạnh nghệ thuật nào cần được tập trung làm nổi bật nhất?`,
+      options: [
+        { key: 'A', text: 'Xây dựng cốt truyện giật gân, ly kỳ.' },
+        { key: 'B', text: 'Giá trị nhân đạo sâu sắc và nghệ thuật khắc họa nội tâm nhân vật độc đáo.' },
+        { key: 'C', text: 'Sử dụng nhiều thuật ngữ khoa học hàn lâm phức tạp.' },
+        { key: 'D', text: 'Tập trung miêu tả cảnh quan thiên nhiên trù phú.' }
+      ],
+      correctKey: 'B',
+      explanation: `Đối với đề tài "${topic}", giá trị nhân đạo cùng nghệ thuật miêu tả tâm lý nhân vật luôn đóng vai trò chủ đạo, giúp truyền tải thông điệp nhân văn của tác giả một cách sâu sắc nhất. Chọn B.`
+    };
+  }
+
+  if (sub === 'Toán học') {
+    if (topic.toLowerCase().includes('tích phân') || topic.toLowerCase().includes('nguyên hàm')) {
+      const mathQ = [
+        {
+          question: 'Tính tích phân I = ∫ (2x + 1) dx từ x=0 đến x=1.',
+          options: [
+            { key: 'A', text: 'I = 1' },
+            { key: 'B', text: 'I = 2' },
+            { key: 'C', text: 'I = 3' },
+            { key: 'D', text: 'I = 0' }
+          ],
+          correctKey: 'B',
+          explanation: 'Họ nguyên hàm của 2x + 1 là F(x) = x^2 + x. Áp dụng công thức Newton-Leibniz: I = F(1) - F(0) = (1^2 + 1) - (0^2 + 0) = 2. Chọn B.'
+        },
+        {
+          question: 'Tính diện tích S của hình phẳng giới hạn bởi đồ thị hàm số y = x^2, trục hoành Ox và hai đường thẳng x=0, x=3.',
+          options: [
+            { key: 'A', text: 'S = 3' },
+            { key: 'B', text: 'S = 9' },
+            { key: 'C', text: 'S = 27' },
+            { key: 'D', text: 'S = 18' }
+          ],
+          correctKey: 'B',
+          explanation: 'Diện tích S = ∫ x^2 dx từ x=0 đến x=3. Nguyên hàm là F(x) = x^3 / 3. Ta có S = (3^3 / 3) - 0 = 27/3 = 9. Chọn B.'
+        }
+      ];
+      return mathQ[index % mathQ.length];
+    }
+    return {
+      question: `Tìm công thức toán học chính xác khi xử lý bài toán liên quan đến chuyên đề "${topic}" (Lớp 12).`,
+      options: [
+        { key: 'A', text: 'Áp dụng công thức nhân đôi lượng giác.' },
+        { key: 'B', text: 'Áp dụng định lý đạo hàm và tích phân cơ bản để xác định cực trị/diện tích.' },
+        { key: 'C', text: 'Sử dụng bảng phân phối Gauss thống kê.' },
+        { key: 'D', text: 'Áp dụng định lý Cosin trong tam giác thường.' }
+      ],
+      correctKey: 'B',
+      explanation: `Đối với chuyên đề "${topic}" môn Toán học lớp 12, việc vận dụng định lý đạo hàm để khảo sát hàm số hoặc tích phân tính diện tích là phương pháp cốt lõi để tìm ra lời giải chính xác. Chọn B.`
+    };
+  }
+
+  if (sub === 'Vật lý') {
+    return {
+      question: `Trong thí nghiệm hoặc bài tập Vật lý về chủ đề "${topic}", đại lượng nào sau đây quyết định tính chất vật lý đặc trưng của hệ?`,
+      options: [
+        { key: 'A', text: 'Nhiệt độ môi trường bên ngoài.' },
+        { key: 'B', text: 'Chu kỳ dao động, tần số riêng hoặc bước sóng của sóng truyền.' },
+        { key: 'C', text: 'Khối lượng của vật cản xung quanh.' },
+        { key: 'D', text: 'Độ ẩm không khí tại phòng thí nghiệm.' }
+      ],
+      correctKey: 'B',
+      explanation: `Khi khảo sát chuyên đề "${topic}", các thông số đặc trưng như tần số, chu kỳ hay bước sóng luôn là đại lượng cốt lõi định hình hành vi dao động hoặc truyền sóng của hệ vật lý. Chọn B.`
+    };
+  }
+
+  return {
+    question: `Choose the correct statement or grammatical form regarding the topic "${topic}":`,
+    options: [
+      { key: 'A', text: 'It is an obsolete structure that is rarely used in practice.' },
+      { key: 'B', text: 'It represents a standard academic concept widely tested in national exams.' },
+      { key: 'C', text: 'It has no logical explanation and must be memorized by heart.' },
+      { key: 'D', text: 'It is only applicable in informal conversations.' }
+    ],
+    correctKey: 'B',
+    explanation: `The concept of "${topic}" is a fundamental part of the curriculum, frequently appearing in intermediate and advanced evaluations. Choice B is correct.`
+  };
+};

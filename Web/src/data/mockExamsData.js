@@ -18,7 +18,7 @@ export const SUBJECT_NAMES = {
 };
 
 // High-fidelity subject questions shared across blocks
-const QUESTIONS = {
+export const QUESTIONS = {
   Math: [
     {
       id: 'QM1',
