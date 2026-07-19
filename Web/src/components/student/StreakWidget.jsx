@@ -155,11 +155,17 @@ export default function StreakWidget() {
           {isBig && (
             <span style={{
               position: 'absolute', top: '-8px', right: '-18px',
-              fontSize: '1.5rem',
               animation: fireAnim ? 'fireJump 0.4s ease alternate 3' : 'none',
               display: 'inline-block',
             }}>
-              🔥
+              <Flame 
+                size={22} 
+                style={{ 
+                  color: '#ef4444', 
+                  fill: '#f97316',
+                  filter: 'drop-shadow(0 2px 4px rgba(239, 68, 68, 0.35))'
+                }} 
+              />
             </span>
           )}
         </div>
