@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LayoutGrid,
   Shuffle,
@@ -442,18 +443,19 @@ function WheelOfNamesModal({ isOpen, onClose, students }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
         background: 'rgba(15, 23, 42, 0.65)',
         backdropFilter: 'blur(8px)',
-        zIndex: 9999,
+        zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20
+        padding: '40px 20px',
+        overflowY: 'auto'
       }}
       onClick={() => !isSpinning && onClose()}
     >
@@ -467,7 +469,8 @@ function WheelOfNamesModal({ isOpen, onClose, students }) {
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          position: 'relative'
+          position: 'relative',
+          margin: 'auto'
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -711,7 +714,8 @@ function WheelOfNamesModal({ isOpen, onClose, students }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
