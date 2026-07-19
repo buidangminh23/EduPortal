@@ -493,7 +493,8 @@
   max-width: 500px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  background: #18181b;
+  background: var(--surface);
+  color: var(--text-primary);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
   padding: 28px;

@@ -119,6 +119,21 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const [resTitle, setResTitle] = useState('');
   const [resSubject, setResSubject] = useState('Toán học');
   const [resType, setResType] = useState('pdf');
+  const [resSelectedFile, setResSelectedFile] = useState(null);
+
+  const handleResFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setResSelectedFile(file);
+      const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      setResTitle(nameWithoutExt);
+      
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (['pdf', 'pptx', 'docx'].includes(ext)) {
+        setResType(ext);
+      }
+    }
+  };
 
   // Exam Creator States
   const [showCreateExamModal, setShowCreateExamModal] = useState(false);
@@ -1195,12 +1210,72 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             
             <form onSubmit={(e) => {
               e.preventDefault();
+              if (!resSelectedFile) {
+                alert('Vui lòng chọn tệp tài liệu từ thiết bị trước!');
+                return;
+              }
               if (!resTitle.trim()) return;
               uploadResource(resSubject, resTitle, resType, 'Nguyễn Minh Triết');
               setResTitle('');
+              setResSelectedFile(null);
               alert('Đã đăng tải học liệu số thành công! Học sinh có thể tải về học tập.');
             }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Tải tệp từ thiết bị</label>
+                <div 
+                  style={{
+                    border: '2px dashed var(--line-strong, #cbd5e1)',
+                    borderRadius: '12px',
+                    padding: '24px 16px',
+                    textAlign: 'center',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-fast)',
+                    position: 'relative'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent, #6c5ce7)';
+                    e.currentTarget.style.background = '#f0f3ff';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--line-strong, #cbd5e1)';
+                    e.currentTarget.style.background = '#f8fafc';
+                  }}
+                  onClick={() => document.getElementById('res-file-picker').click()}
+                >
+                  <input 
+                    id="res-file-picker"
+                    type="file"
+                    onChange={handleResFileChange}
+                    style={{ display: 'none' }}
+                    accept=".pdf,.pptx,.docx"
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={24} color="var(--accent, #6c5ce7)" />
+                    {resSelectedFile ? (
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                          {resSelectedFile.name}
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          {(resSelectedFile.size / 1024).toFixed(1)} KB • Nhấp để chọn tệp khác
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                          Nhấp để chọn tệp hoặc kéo thả vào đây
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Hỗ trợ định dạng: .pdf, .pptx, .docx (Tối đa 25MB)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Tên tài liệu / Chuyên đề</label>
                 <input 
