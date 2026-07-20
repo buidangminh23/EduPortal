@@ -183,8 +183,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
           { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',   icon: Calendar },
           { id: 'journal',             label: 'Sổ đầu bài',           icon: BookOpen },
-          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
-          { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
           { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
           { id: 'ai_risk',             label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle },
           { id: 'class_comparison',    label: 'So Sánh Các Lớp',      icon: Activity },
