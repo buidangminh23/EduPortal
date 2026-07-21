@@ -110,6 +110,39 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     status: 'published',
     solutions: []
   },
+  {
+    id: 'base-lit-11',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Tắt Đèn (Ngô Tất Tố)',
+    triggers: ['tat den', 'ngo tat to', 'chi dau', 'tuc nuoc vo bo', 'tat den cua ai'],
+    content: 'Phân tích trọng tâm tiểu thuyết **"Tắt đèn"** (Ngô Tất Tố):\n\n- **Tác giả:** Nhà văn Ngô Tất Tố.\n\n- **Nội dung trọng tâm:** Phản ánh nỗi khổ tận cùng của người nông dân dưới chế độ sưu thuế dã man và sức sống phản kháng mạnh mẽ của chị Dậu trong đoạn trích *"Tức nước vỡ bờ"*.',
+    source_ref: 'SGK Ngữ văn 8 & THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-12',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Người Lái Đò Sông Đà (Nguyễn Tuân)',
+    triggers: ['nguoi lai do song da', 'nguyen tuan', 'song da', 'ong lai do', 'nguoi lai do song da cua ai'],
+    content: 'Phân tích trọng tâm tùy bút **"Người lái đò Sông Đà"** (Nguyễn Tuân):\n\n- **Tác giả:** Nhà văn Nguyễn Tuân - bậc thầy của thể loại tùy bút.\n\n- **Nội dung trọng tâm:** Khắc họa vẻ đẹp hung bạo nhưng đầy trữ tình của con sông Đà cùng hình tượng chất nghệ sĩ tài hoa của người lái đò trên sóng nước.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-13',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Đồng Chí (Chính Hữu)',
+    triggers: ['dong chi', 'chinh huu', 'tho dong chi', 'dau súng trang treo', 'dong chi cua ai'],
+    content: 'Phân tích trọng tâm bài thơ **"Đồng chí"** (Chính Hữu):\n\n- **Tác giả:** Nhà thơ Chính Hữu.\n\n- **Nội dung trọng tâm:** Tình đồng chí, đồng đội gắn bó keo sơn giữa những người lính nông dân trong kháng chiến chống Pháp, đúc kết qua hình ảnh biểu tượng *"Đầu súng ánh trăng treo"*.',
+    source_ref: 'SGK Ngữ văn 9 & THPT',
+    status: 'published',
+    solutions: []
+  },
 
   // ─── TOÁN HỌC (MATHEMATICS) ────────────────────────────────────────────────
   {
@@ -187,6 +220,28 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     status: 'published',
     solutions: []
   },
+  {
+    id: 'base-math-05',
+    layer: 'base',
+    subject: 'Toán học',
+    topic: 'Cấp số cộng và Cấp số nhân',
+    triggers: ['cap so cong', 'cap so nhan', 'cong sai', 'cong boi'],
+    content: 'Công thức Cấp số cộng (công sai $d$) và Cấp số nhân (công bội $q$):\n\n- **Cấp số cộng:** Số hạng tổng quát $$u_n = u_1 + (n - 1)d$$\n- Tổng $n$ số hạng đầu: $$S_n = \\frac{n(u_1 + u_n)}{2}$$\n\n- **Cấp số nhân:** Số hạng tổng quát $$u_n = u_1 \\cdot q^{n-1}$$\n- Tổng $n$ số hạng đầu: $$S_n = u_1 \\frac{1 - q^n}{1 - q} \\quad (q \\neq 1)$$',
+    source_ref: 'SGK Toán 11 - Chương II',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-math-06',
+    layer: 'base',
+    subject: 'Toán học',
+    topic: 'Định lý Định lý Pitago và Tam giác Đồng dạng',
+    triggers: ['dinh ly pitago', 'pythagoras', 'tam giac dong dang', 'dinh ly thales'],
+    content: 'Định lý Pitago trong tam giác vuông (cạnh huyền $c$, 2 cạnh góc vuông $a, b$):\n\n$$a^2 + b^2 = c^2 \\Rightarrow c = \\sqrt{a^2 + b^2}$$\n\nTam giác đồng dạng (Tỷ số đồng dạng $k$):\n\n$$\\frac{A\'B\'}{AB} = \\frac{B\'C\'}{BC} = \\frac{A\'C\'}{AC} = k$$',
+    source_ref: 'SGK Toán 8 & 9',
+    status: 'published',
+    solutions: []
+  },
 
   // ─── VẬT LÝ (PHYSICS) ─────────────────────────────────────────────────────
   {
@@ -232,6 +287,17 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     status: 'published',
     solutions: []
   },
+  {
+    id: 'base-physics-04',
+    layer: 'base',
+    subject: 'Vật lý',
+    topic: 'Định luật II Newton và Động lực học',
+    triggers: ['dinh luy 2 newton', 'dinh luat newton', 'gia toc a', 'luc f'],
+    content: 'Định luật II Newton:\n\n$$\\vec{F} = m \\cdot \\vec{a} \\Rightarrow a = \\frac{F}{m}$$\n\nGia tốc của một vật cùng hướng với lực tác dụng lên vật. Độ lớn của gia tốc tỷ lệ thuận với độ lớn của lực và tỷ lệ nghịch với khối lượng của vật.',
+    source_ref: 'SGK Vật lý 10 - Chương II',
+    status: 'published',
+    solutions: []
+  },
 
   // ─── HÓA HỌC (CHEMISTRY) ──────────────────────────────────────────────────
   {
@@ -264,6 +330,17 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     triggers: ['este', 'thuy phan este', 'xaphong hoa', 'phan ung este hoa'],
     content: 'Phản ứng Thủy phân Este đơn chức trong môi trường Kiềm (Phản ứng Xà phòng hóa):\n\n$$\\text{RCOOR\'} + \\text{NaOH} \\xrightarrow{t^o} \\text{RCOONa} + \\text{R\'OH}$$\n\nĐây là phản ứng một chiều, xảy ra hoàn toàn khi đun nóng.',
     source_ref: 'SGK Hóa học 12 - Chương I',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-chem-03',
+    layer: 'base',
+    subject: 'Hóa học',
+    topic: 'Amin, Amino Axit và Peptit',
+    triggers: ['amino axit', 'anilin', 'gluxit', 'peptit', 'protein'],
+    content: 'Tính chất lưỡng tính của Amino axit ($H_2N-R-COOH$):\n\n- Tác dụng với axit: $$H_2N-R-COOH + HCl \\rightarrow ClH_3N-R-COOH$$\n- Tác dụng với bazơ: $$H_2N-R-COOH + NaOH \\rightarrow H_2N-R-COONa + H_2O$$',
+    source_ref: 'SGK Hóa học 12 - Chương III',
     status: 'published',
     solutions: []
   },
@@ -300,6 +377,17 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     topic: 'Chiến dịch Điện Biên Phủ năm 1954',
     triggers: ['dien bien phu', 'dien bien phu 1954', 'vo nguyen giap dien bien phu'],
     content: 'Tóm tắt trọng tâm **Chiến thắng Điện Biên Phủ năm 1954**:\n\n- **Thời gian:** Sau 56 ngày đêm chiến đấu kiên cường (13/3/1954 - 7/5/1954) dưới sự chỉ huy của Đại tướng Võ Nguyên Giáp.\n\n- **Ý nghĩa:** Đập tan tập đoàn cứ điểm quân sự mạnh nhất của thực dân Pháp, buộc Pháp phải ký Hiệp định Giơ-ne-vơ chấm dứt chiến tranh tại Đông Dương.',
+    source_ref: 'SGK Lịch sử 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-his-03',
+    layer: 'base',
+    subject: 'Lịch sử',
+    topic: 'Đại thắng Mùa Xuân năm 1975',
+    triggers: ['dai thang mua xuan 1975', '30 thang 4 1975', 'giai phong mien nam'],
+    content: 'Tóm tắt trọng tâm **Đại thắng Mùa Xuân năm 1975**:\n\n- **Mốc lịch sử:** 11 giờ 30 phút ngày 30/4/1975, lá cờ cách mạng tung bay trên Dinh Độc Lập, đánh dấu Chiến dịch Hồ Chí Minh hoàn toàn thắng lợi.\n\n- **Ý nghĩa:** Giải phóng hoàn toàn miền Nam, thống nhất đất nước Việt Nam.',
     source_ref: 'SGK Lịch sử 12',
     status: 'published',
     solutions: []
