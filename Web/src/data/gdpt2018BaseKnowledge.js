@@ -149,12 +149,34 @@ export const GDPT2018_BASE_KNOWLEDGE = [
 
   // ─── NGỮ VĂN ──────────────────────────────────────────────────────────────
   {
+    id: 'base-lit-04',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Lão Hạc (Nam Cao)',
+    triggers: ['lao hac', 'nam cao', 'cau vang', 'lao hac cua ai', 'truyen ngan lao hac'],
+    content: 'Phân tích trọng tâm tác phẩm **"Lão Hạc"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao (tên khai sinh là Trần Hữu Trí, 1915–1951), ông sáng tác tác phẩm vào năm 1943. Ông là một trong những kiệt tác gia tiêu biểu nhất của dòng văn học hiện thực phê phán Việt Nam trước Cách mạng tháng Tám.\n\n- **Nội dung trọng tâm:** Tác phẩm khắc họa bi kịch tha hóa và nghèo khổ tàn nhẫn của người nông dân Việt Nam trước năm 1945, đồng thời ngợi ca nhân cách cao đẹp, lòng tự trọng muôn đời của Lão Hạc qua chi tiết bán Cậu Vàng và tự chọn cái chết bằng bả chó để giữ trọn mảnh vườn cho con trai.',
+    source_ref: 'SGK Ngữ văn 8 & Ngữ văn THCS/THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-05',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Chí Phèo (Nam Cao)',
+    triggers: ['chi pheo', 'nam cao chi pheo', 'thi no', 'lang vu dai', 'ba kien'],
+    content: 'Phân tích trọng tâm kiệt tác **"Chí Phèo"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao.\n\n- **Nội dung trọng tâm:** Phơi bày bi kịch bị tha hóa, lưu manh hóa và bi kịch bị từ chối quyền làm người của Chí Phèo dưới sự tàn bạo của tầng lớp bá chủ địa chủ (Bá Kiến), đồng thời khẳng định bản chất lương thiện tiềm tàng của con người qua bát cháo hành của Thị Nở.',
+    source_ref: 'SGK Ngữ văn 11 & THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
     id: 'base-lit-01',
     layer: 'base',
     subject: 'Ngữ văn',
     topic: 'Tác phẩm Vợ chồng A Phủ (Tô Hoài)',
     triggers: ['vo chong a phu', 'nhan vat mi', 'to hoai', 'mi va a phu'],
-    content: 'Phân tích trọng tâm tác phẩm **"Vợ chồng A Phủ"** (Tô Hoài):\n\n- **Giá trị hiện thực:** Phơi bày số phận đau khổ, kiếp sống nô lệ của Mị và A Phủ dưới ách áp bức của giai cấp chúa đất phong kiến miền núi (cường quyền Pá Tra) và hủ tục cúng trình ma.\n\n- **Giá trị nhân đạo:** Khám phá, ngợi ca sức sống tiềm tàng mãnh liệt và khát vọng tự do của Mị. Đỉnh cao là hành động Mị cởi trói cho A Phủ trong đêm đông và cùng chạy trốn đến Hồng Ngài.',
+    content: 'Phân tích trọng tâm tác phẩm **"Vợ chồng A Phủ"** (Tô Hoài):\n\n- **Tác giả:** Nhà văn Tô Hoài.\n\n- **Giá trị hiện thực:** Phơi bày số phận đau khổ, kiếp sống nô lệ của Mị và A Phủ dưới ách áp bức của giai cấp chúa đất phong kiến miền núi (cường quyền Pá Tra) và hủ tục cúng trình ma.\n\n- **Giá trị nhân đạo:** Khám phá, ngợi ca sức sống tiềm tàng mãnh liệt và khát vọng tự do của Mị. Đỉnh cao là hành động Mị cởi trói cho A Phủ trong đêm đông và cùng chạy trốn đến Hồng Ngài.',
     source_ref: 'SGK Ngữ văn 12 - Tập 2',
     status: 'published',
     solutions: []
@@ -165,7 +187,7 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     subject: 'Ngữ văn',
     topic: 'Tác phẩm Vợ Nhặt (Kim Lân)',
     triggers: ['vo nhat', 'kim lan', 'trang nhat vo', 'nan doi 1945'],
-    content: 'Phân tích trọng tâm tác phẩm **"Vợ Nhặt"** (Kim Lân):\n\n- Bối cảnh: Nạn đói thảm khốc năm 1945.\n\n- Ý nghĩa tư tưởng: Trong ranh giới mong manh giữa sự sống và cái chết, những người lao động nghèo khổ không hề mất đi tình thương yêu gia đình và niềm tin bất diệt vào tương lai.',
+    content: 'Phân tích trọng tâm tác phẩm **"Vợ Nhặt"** (Kim Lân):\n\n- **Tác giả:** Nhà văn Kim Lân.\n\n- **Bối cảnh:** Nạn đói thảm khốc năm 1945.\n\n- **Ý nghĩa tư tưởng:** Trong ranh giới mong manh giữa sự sống và cái chết, những người lao động nghèo khổ không hề mất đi tình thương yêu gia đình và niềm tin bất diệt vào tương lai.',
     source_ref: 'SGK Ngữ văn 12 - Tập 2',
     status: 'published',
     solutions: []
@@ -178,6 +200,39 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     triggers: ['nhung ngoi sao xa xoi', 'le minh khue', 'phuong dinh', 'thao va nho'],
     content: 'Phân tích trọng tâm truyện ngắn **"Những ngôi sao xa xôi"** (Lê Minh Khuê):\n\n- **Tác giả:** Nhà văn Lê Minh Khuê (sinh năm 1949 tại Thanh Hóa), từng là nữ thanh niên xung phong trên tuyến đường Trường Sơn khốc liệt thời chống Mỹ.\n\n- **Vẻ đẹp thế hệ trẻ:** Khắc họa tinh thần dũng cảm, lạc quan, tình đồng đội gắn bó và tâm hồn trong sáng, mộng mơ của ba nữ thanh niên xung phong (Phương Định, Nho, chị Thao) trên tuyến đường Trường Sơn.',
     source_ref: 'SGK Ngữ văn 9 & Ngữ văn THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-06',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Chiếc Thuyền Ngoài Xa (Nguyễn Minh Châu)',
+    triggers: ['chiec thuyen ngoai xa', 'nguyen minh chau', 'phung va dau', 'nguoi dan ba chai'],
+    content: 'Phân tích trọng tâm tác phẩm **"Chiếc thuyền ngoài xa"** (Nguyễn Minh Châu):\n\n- **Tác giả:** Nhà văn Nguyễn Minh Châu.\n\n- **Nội dung trọng tâm:** Chiêm nghiệm sâu sắc về mối quan hệ giữa nghệ thuật và cuộc sống. Nghệ thuật không thể chỉ nhìn từ xa lãng mạn mà phải đi sâu vào bản chất đa chiều, phức tạp của đời sống con người.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-07',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Sóng (Xuân Quỳnh)',
+    triggers: ['song xuan quynh', 'xuan quynh', 'tho song'],
+    content: 'Phân tích trọng tâm bài thơ **"Sóng"** (Xuân Quỳnh):\n\n- **Tác giả:** Nữ nhà thơ Xuân Quỳnh.\n\n- **Nội dung trọng tâm:** Vẻ đẹp tâm hồn người phụ nữ trong tình yêu: vừa truyền thống, thủy chung, vừa hiện đại, táo bạo, khao khát hạnh phúc lứa đôi.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-08',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Tây Tiến (Quang Dũng)',
+    triggers: ['tay tien', 'quang dung', 'doan binh tay tien'],
+    content: 'Phân tích trọng tâm bài thơ **"Tây Tiến"** (Quang Dũng):\n\n- **Tác giả:** Nhà thơ Quang Dũng.\n\n- **Nội dung trọng tâm:** Bức tranh thiên nhiên miền Tây Bắc hùng vĩ, thơ mộng và hình tượng người lính Tây Tiến hào hoa, lãng mạn nhưng vô cùng dũng cảm.',
+    source_ref: 'SGK Ngữ văn 12',
     status: 'published',
     solutions: []
   }
