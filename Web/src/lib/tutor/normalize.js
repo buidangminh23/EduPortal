@@ -1,7 +1,9 @@
 const STOP_WORDS = new Set([
-  'của', 'là', 'và', 'cho', 'một', 'các', 'em', 'thầy', 'cô', 'hỏi',
-  'cách', 'giải', 'làm', 'được', 'không', 'gì', 'như', 'thế', 'nào',
-  'với', 'trong', 'trên', 'khi', 'ra', 'vào', 'nhé', 'cho', 'tôi', 'mình'
+  'cua', 'la', 'va', 'cho', 'mot', 'cac', 'em', 'thay', 'co', 'hoi',
+  'cach', 'giai', 'lam', 'duoc', 'khong', 'gi', 'nhu', 'the', 'nao',
+  'voi', 'trong', 'tren', 'khi', 'ra', 'vao', 'nhe', 'toi', 'minh',
+  'tac', 'pham', 'bai', 'tap', 'cau', 'biet', 'ai', 'de', 'thi', 'chuyen',
+  'mang', 've', 'tim', 'hieu', 'viet', 'doan', 'phan', 'tich', 'la', 'cua'
 ]);
 
 export function normalizeVietnameseText(text) {
@@ -26,10 +28,11 @@ export function tokenizeText(text) {
   const bigrams = [];
 
   for (let i = 0; i < rawTokens.length - 1; i++) {
-    const bg = `${rawTokens[i]} ${rawTokens[i + 1]}`;
-    // Exclude bigrams made entirely of stopwords
-    if (!STOP_WORDS.has(rawTokens[i]) || !STOP_WORDS.has(rawTokens[i + 1])) {
-      bigrams.push(bg);
+    const t1 = rawTokens[i];
+    const t2 = rawTokens[i + 1];
+    // Include bigram only if at least one token is non-stopword
+    if (!STOP_WORDS.has(t1) || !STOP_WORDS.has(t2)) {
+      bigrams.push(`${t1} ${t2}`);
     }
   }
 

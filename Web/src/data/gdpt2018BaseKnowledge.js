@@ -153,7 +153,7 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     layer: 'base',
     subject: 'Ngữ văn',
     topic: 'Tác phẩm Vợ chồng A Phủ (Tô Hoài)',
-    triggers: ['vo chong a phu', 'tac pham mi', 'to hoai', 'mi va a phu'],
+    triggers: ['vo chong a phu', 'nhan vat mi', 'to hoai', 'mi va a phu'],
     content: 'Phân tích trọng tâm tác phẩm **"Vợ chồng A Phủ"** (Tô Hoài):\n\n- **Giá trị hiện thực:** Phơi bày số phận đau khổ, kiếp sống nô lệ của Mị và A Phủ dưới ách áp bức của giai cấp chúa đất phong kiến miền núi (cường quyền Pá Tra) và hủ tục cúng trình ma.\n\n- **Giá trị nhân đạo:** Khám phá, ngợi ca sức sống tiềm tàng mãnh liệt và khát vọng tự do của Mị. Đỉnh cao là hành động Mị cởi trói cho A Phủ trong đêm đông và cùng chạy trốn đến Hồng Ngài.',
     source_ref: 'SGK Ngữ văn 12 - Tập 2',
     status: 'published',
@@ -164,9 +164,20 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     layer: 'base',
     subject: 'Ngữ văn',
     topic: 'Tác phẩm Vợ Nhặt (Kim Lân)',
-    triggers: ['vo nhat', 'kim lan', 'trang nhat vo', 'nạn đao 1945'],
+    triggers: ['vo nhat', 'kim lan', 'trang nhat vo', 'nan doi 1945'],
     content: 'Phân tích trọng tâm tác phẩm **"Vợ Nhặt"** (Kim Lân):\n\n- Bối cảnh: Nạn đói thảm khốc năm 1945.\n\n- Ý nghĩa tư tưởng: Trong ranh giới mong manh giữa sự sống và cái chết, những người lao động nghèo khổ không hề mất đi tình thương yêu gia đình và niềm tin bất diệt vào tương lai.',
     source_ref: 'SGK Ngữ văn 12 - Tập 2',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-03',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Những Ngôi Sao Xa Xôi (Lê Minh Khuê)',
+    triggers: ['nhung ngoi sao xa xoi', 'le minh khue', 'phuong dinh', 'thao va nho'],
+    content: 'Phân tích trọng tâm truyện ngắn **"Những ngôi sao xa xôi"** (Lê Minh Khuê):\n\n- **Tác giả:** Nhà văn Lê Minh Khuê (sinh năm 1949 tại Thanh Hóa), từng là nữ thanh niên xung phong trên tuyến đường Trường Sơn khốc liệt thời chống Mỹ.\n\n- **Vẻ đẹp thế hệ trẻ:** Khắc họa tinh thần dũng cảm, lạc quan, tình đồng đội gắn bó và tâm hồn trong sáng, mộng mơ của ba nữ thanh niên xung phong (Phương Định, Nho, chị Thao) trên tuyến đường Trường Sơn.',
+    source_ref: 'SGK Ngữ văn 9 & Ngữ văn THPT',
     status: 'published',
     solutions: []
   }
