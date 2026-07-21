@@ -1,5 +1,117 @@
 export const GDPT2018_BASE_KNOWLEDGE = [
-  // ─── TOÁN HỌC ─────────────────────────────────────────────────────────────
+  // ─── NGỮ VĂN (LITERATURE) ──────────────────────────────────────────────────
+  {
+    id: 'base-lit-04',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Lão Hạc (Nam Cao)',
+    triggers: ['lao hac', 'nam cao lao hac', 'cau vang', 'lao hac cua ai', 'truyen ngan lao hac'],
+    content: 'Phân tích trọng tâm tác phẩm **"Lão Hạc"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao (tên khai sinh là Trần Hữu Trí, 1915–1951), ông sáng tác tác phẩm vào năm 1943. Nam Cao là kiệt tác gia tiêu biểu của dòng văn học hiện thực phê phán Việt Nam trước Cách mạng tháng Tám.\n\n- **Nội dung trọng tâm:** Tác phẩm khắc họa bi kịch nghèo khổ tàn nhẫn của người nông dân Việt Nam trước năm 1945, đồng thời ngợi ca nhân cách cao đẹp, lòng tự trọng muôn đời của Lão Hạc qua chi tiết bán Cậu Vàng và tự chọn cái chết bằng bả chó để giữ trọn mảnh vườn cho con trai.',
+    source_ref: 'SGK Ngữ văn 8 & THCS/THPT GDPT 2018',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-05',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Chí Phèo (Nam Cao)',
+    triggers: ['chi pheo', 'nam cao chi pheo', 'thi no', 'lang vu dai', 'ba kien', 'chi pheo cua ai'],
+    content: 'Phân tích trọng tâm kiệt tác **"Chí Phèo"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao.\n\n- **Nội dung trọng tâm:** Phơi bày bi kịch bị tha hóa, lưu manh hóa và bi kịch bị từ chối quyền làm người của Chí Phèo dưới sự tàn bạo của tầng lớp bá chủ địa chủ (Bá Kiến), đồng thời khẳng định bản chất lương thiện tiềm tàng của con người qua bát cháo hành của Thị Nở.',
+    source_ref: 'SGK Ngữ văn 11 & THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-01',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Vợ chồng A Phủ (Tô Hoài)',
+    triggers: ['vo chong a phu', 'nhan vat mi', 'to hoai', 'mi va a phu', 'vo chong a phu cua ai'],
+    content: 'Phân tích trọng tâm tác phẩm **"Vợ chồng A Phủ"** (Tô Hoài):\n\n- **Tác giả:** Nhà văn Tô Hoài.\n\n- **Giá trị hiện thực:** Phơi bày số phận đau khổ, kiếp sống nô lệ của Mị và A Phủ dưới ách áp bức của giai cấp chúa đất phong kiến miền núi (cường quyền Pá Tra) và hủ tục cúng trình ma.\n\n- **Giá trị nhân đạo:** Khám phá, ngợi ca sức sống tiềm tàng mãnh liệt và khát vọng tự do của Mị. Đỉnh cao là hành động Mị cởi trói cho A Phủ trong đêm đông và cùng chạy trốn đến Hồng Ngài.',
+    source_ref: 'SGK Ngữ văn 12 - Tập 2',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-02',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Vợ Nhặt (Kim Lân)',
+    triggers: ['vo nhat', 'kim lan', 'trang nhat vo', 'nan doi 1945', 'vo nhat cua ai'],
+    content: 'Phân tích trọng tâm tác phẩm **"Vợ Nhặt"** (Kim Lân):\n\n- **Tác giả:** Nhà văn Kim Lân.\n\n- **Bối cảnh:** Nạn đói thảm khốc năm 1945.\n\n- **Ý nghĩa tư tưởng:** Trong ranh giới mong manh giữa sự sống và cái chết, những người lao động nghèo khổ không hề mất đi tình thương yêu gia đình và niềm tin bất diệt vào tương lai.',
+    source_ref: 'SGK Ngữ văn 12 - Tập 2',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-03',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Những Ngôi Sao Xa Xôi (Lê Minh Khuê)',
+    triggers: ['nhung ngoi sao xa xoi', 'le minh khue', 'phuong dinh', 'thao va nho', 'nhung ngoi sao xa xoi cua ai'],
+    content: 'Phân tích trọng tâm truyện ngắn **"Những ngôi sao xa xôi"** (Lê Minh Khuê):\n\n- **Tác giả:** Nhà văn Lê Minh Khuê (sinh năm 1949 tại Thanh Hóa), từng là nữ thanh niên xung phong trên tuyến đường Trường Sơn khốc liệt thời chống Mỹ.\n\n- **Vẻ đẹp thế hệ trẻ:** Khắc họa tinh thần dũng cảm, lạc quan, tình đồng đội gắn bó và tâm hồn trong sáng, mộng mơ của ba nữ thanh niên xung phong (Phương Định, Nho, chị Thao) trên tuyến đường Trường Sơn.',
+    source_ref: 'SGK Ngữ văn 9 & Ngữ văn THPT',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-06',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Tác phẩm Chiếc Thuyền Ngoài Xa (Nguyễn Minh Châu)',
+    triggers: ['chiec thuyen ngoai xa', 'nguyen minh chau', 'phung va dau', 'nguoi dan ba chai', 'chiec thuyen ngoai xa cua ai'],
+    content: 'Phân tích trọng tâm tác phẩm **"Chiếc thuyền ngoài xa"** (Nguyễn Minh Châu):\n\n- **Tác giả:** Nhà văn Nguyễn Minh Châu.\n\n- **Nội dung trọng tâm:** Chiêm nghiệm sâu sắc về mối quan hệ giữa nghệ thuật và cuộc sống. Nghệ thuật không thể chỉ nhìn từ xa lãng mạn mà phải đi sâu vào bản chất đa chiều, phức tạp của đời sống con người.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-07',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Sóng (Xuân Quỳnh)',
+    triggers: ['song xuan quynh', 'xuan quynh', 'tho song', 'song cua ai'],
+    content: 'Phân tích trọng tâm bài thơ **"Sóng"** (Xuân Quỳnh):\n\n- **Tác giả:** Nữ nhà thơ Xuân Quỳnh.\n\n- **Nội dung trọng tâm:** Vẻ đẹp tâm hồn người phụ nữ trong tình yêu: vừa truyền thống, thủy chung, vừa hiện đại, táo bạo, khao khát hạnh phúc lứa đôi.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-08',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Tây Tiến (Quang Dũng)',
+    triggers: ['tay tien', 'quang dung', 'doan binh tay tien', 'tay tien cua ai'],
+    content: 'Phân tích trọng tâm bài thơ **"Tây Tiến"** (Quang Dũng):\n\n- **Tác giả:** Nhà thơ Quang Dũng.\n\n- **Nội dung trọng tâm:** Bức tranh thiên nhiên miền Tây Bắc hùng vĩ, thơ mộng và hình tượng người lính Tây Tiến hào hoa, lãng mạn nhưng vô cùng dũng cảm.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-09',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Bài thơ Việt Bắc (Tố Hữu)',
+    triggers: ['viet bac', 'to huu', 'tho viet bac', 'viet bac cua ai'],
+    content: 'Phân tích trọng tâm trường ca **"Việt Bắc"** (Tố Hữu):\n\n- **Tác giả:** Nhà thơ Tố Hữu - lá cờ đầu của thơ ca cách mạng Việt Nam.\n\n- **Nội dung trọng tâm:** Bản hùng ca về cuộc kháng chiến chống Pháp và khúc hát tình nghĩa sâu nặng giữa cán bộ kháng chiến và nhân dân Việt Bắc.',
+    source_ref: 'SGK Ngữ văn 12',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-lit-10',
+    layer: 'base',
+    subject: 'Ngữ văn',
+    topic: 'Kiệt tác Truyện Kiều (Nguyễn Du)',
+    triggers: ['truyen kieu', 'nguyen du', 'thuy kieu', 'chi em thuy kieu', 'truyen kieu cua ai'],
+    content: 'Phân tích trọng tâm kiệt tác **"Truyện Kiều"** (Đoạn trường tân thanh - Nguyễn Du):\n\n- **Tác giả:** Đại danh nhân văn hóa thế giới Nguyễn Du.\n\n- **Giá trị:** Tác phẩm đỉnh cao của nền văn học dân tộc, kết tinh thành tựu ngôn ngữ Nôm và tư tưởng nhân đạo bao la cho số phận người phụ nữ.',
+    source_ref: 'SGK Ngữ văn 9 & THPT',
+    status: 'published',
+    solutions: []
+  },
+
+  // ─── TOÁN HỌC (MATHEMATICS) ────────────────────────────────────────────────
   {
     id: 'base-math-01',
     layer: 'base',
@@ -64,8 +176,19 @@ export const GDPT2018_BASE_KNOWLEDGE = [
       }
     ]
   },
+  {
+    id: 'base-math-04',
+    layer: 'base',
+    subject: 'Toán học',
+    topic: 'Hàm số Mũ và Logarit',
+    triggers: ['logarit', 'ham so mu', 'phuong trinh logarit', 'dieu kien logarit'],
+    content: 'Công thức biến đổi Logarit cơ bản ($a > 0, a \\neq 1, b > 0$):\n\n$$\\log_a(b \\cdot c) = \\log_a b + \\log_a c$$\n\n$$\\log_a\\left(\\frac{b}{c}\\right) = \\log_a b - \\log_a c$$\n\n$$\\log_a(b^k) = k \\cdot \\log_a b$$\n\n*Điều kiện xác định:* Cơ số $a > 0, a \\neq 1$ và biểu thức dưới dấu logarit $b > 0$.',
+    source_ref: 'SGK Toán 12 - Chương II',
+    status: 'published',
+    solutions: []
+  },
 
-  // ─── VẬT LÝ ───────────────────────────────────────────────────────────────
+  // ─── VẬT LÝ (PHYSICS) ─────────────────────────────────────────────────────
   {
     id: 'base-physics-01',
     layer: 'base',
@@ -98,8 +221,19 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     status: 'published',
     solutions: []
   },
+  {
+    id: 'base-physics-03',
+    layer: 'base',
+    subject: 'Vật lý',
+    topic: 'Dao động điều hòa (Con lắc đơn & Lò xo)',
+    triggers: ['dao dong dieu hoa', 'con lac don', 'con lac lo xo', 'chu ky con lac'],
+    content: 'Công thức Chu kỳ dao động điều hòa:\n\n- Con lắc lò xo: $$T = 2\\pi \\sqrt{\\frac{m}{k}}$$\n- Con lắc đơn: $$T = 2\\pi \\sqrt{\\frac{l}{g}}$$\n\nPhương trình dao động: $$x = A \\cos(\\omega t + \\varphi)$$',
+    source_ref: 'SGK Vật lý 12 - Chương I',
+    status: 'published',
+    solutions: []
+  },
 
-  // ─── HÓA HỌC ──────────────────────────────────────────────────────────────
+  // ─── HÓA HỌC (CHEMISTRY) ──────────────────────────────────────────────────
   {
     id: 'base-chem-01',
     layer: 'base',
@@ -122,8 +256,69 @@ export const GDPT2018_BASE_KNOWLEDGE = [
       }
     ]
   },
+  {
+    id: 'base-chem-02',
+    layer: 'base',
+    subject: 'Hóa học',
+    topic: 'Este và Phản ứng Thủy phân Este',
+    triggers: ['este', 'thuy phan este', 'xaphong hoa', 'phan ung este hoa'],
+    content: 'Phản ứng Thủy phân Este đơn chức trong môi trường Kiềm (Phản ứng Xà phòng hóa):\n\n$$\\text{RCOOR\'} + \\text{NaOH} \\xrightarrow{t^o} \\text{RCOONa} + \\text{R\'OH}$$\n\nĐây là phản ứng một chiều, xảy ra hoàn toàn khi đun nóng.',
+    source_ref: 'SGK Hóa học 12 - Chương I',
+    status: 'published',
+    solutions: []
+  },
 
-  // ─── TIẾNG ANH ────────────────────────────────────────────────────────────
+  // ─── SINH HỌC (BIOLOGY) ───────────────────────────────────────────────────
+  {
+    id: 'base-bio-01',
+    layer: 'base',
+    subject: 'Sinh học',
+    topic: 'Cấu trúc ADN và Quy luật Di truyền Mendel',
+    triggers: ['adn', 'phien ma', 'dich ma', 'mendel', 'quy luat di truyen mendel'],
+    content: 'Nguyên tắc bổ sung trong cấu trúc ADN và Phiên mã:\n\n- Nguyên tắc cặp bazơ trên ADN: $$A - T, \\quad G - X$$\n- Khi phiên mã tổng hợp mARN: $$A_{gốc} \\rightarrow U, \\quad T_{gốc} \\rightarrow A, \\quad G_{gốc} \\rightarrow X, \\quad X_{gốc} \\rightarrow G$$\n\nQuy luật phân ly độc lập Mendel: Tỷ lệ kiểu hình F2 khi lai 2 cặp tính trạng thuần chủng tương phản là $$9 : 3 : 3 : 1$$.',
+    source_ref: 'SGK Sinh học 12 - Chương I & II',
+    status: 'published',
+    solutions: []
+  },
+
+  // ─── LỊCH SỬ (HISTORY) ────────────────────────────────────────────────────
+  {
+    id: 'base-his-01',
+    layer: 'base',
+    subject: 'Lịch sử',
+    topic: 'Cách mạng Tháng Tám năm 1945',
+    triggers: ['cach mang thang tam', 'cach mang 1945', 'tuyen ngon doc lap 1945', 'bac ho doc tuyen ngon'],
+    content: 'Tóm tắt trọng tâm **Cách mạng Tháng Tám năm 1945**:\n\n- **Sự kiện:** Dưới sự lãnh đạo của Đảng Cộng sản Đông Dương và Chủ tịch Hồ Chí Minh, nhân dân cả nước đã tổng khởi nghĩa giành chính quyền thành công.\n\n- **Mốc lịch sử:** Ngày 2/9/1945 tại Quảng trường Ba Đình, Chủ tịch Hồ Chí Minh đọc bản *Tuyên ngôn Độc lập*, khai sinh ra nước Việt Nam Dân chủ Cộng hòa.',
+    source_ref: 'SGK Lịch sử 12 - Chương III',
+    status: 'published',
+    solutions: []
+  },
+  {
+    id: 'base-his-02',
+    layer: 'base',
+    subject: 'Lịch sử',
+    topic: 'Chiến dịch Điện Biên Phủ năm 1954',
+    triggers: ['dien bien phu', 'dien bien phu 1954', 'vo nguyen giap dien bien phu'],
+    content: 'Tóm tắt trọng tâm **Chiến thắng Điện Biên Phủ năm 1954**:\n\n- **Thời gian:** Sau 56 ngày đêm chiến đấu kiên cường (13/3/1954 - 7/5/1954) dưới sự chỉ huy của Đại tướng Võ Nguyên Giáp.\n\n- **Ý nghĩa:** Đập tan tập đoàn cứ điểm quân sự mạnh nhất của thực dân Pháp, buộc Pháp phải ký Hiệp định Giơ-ne-vơ chấm dứt chiến tranh tại Đông Dương.',
+    source_ref: 'SGK Lịch sử 12',
+    status: 'published',
+    solutions: []
+  },
+
+  // ─── ĐỊA LÝ (GEOGRAPHY) ───────────────────────────────────────────────────
+  {
+    id: 'base-geo-01',
+    layer: 'base',
+    subject: 'Địa lý',
+    topic: 'Đặc điểm Địa hình và Khí hậu Việt Nam',
+    triggers: ['dia hinh viet nam', 'khi hau viet nam', 'nhiet doi am gio mua'],
+    content: 'Đặc điểm nổi bật của Địa hình và Khí hậu Việt Nam:\n\n- **Địa hình:** Đồi núi chiếm 3/4 diện tích lãnh thổ, nhưng chủ yếu là đồi núi thấp (dưới 1000m chiếm 85%).\n- **Khí hậu:** Nằm hoàn toàn trong vùng nội nhiệt đới, mang tính chất Nhiệt đới ẩm gió mùa có mùa đông lạnh ở phía Bắc và 2 mùa mưa - khô rõ rệt ở phía Nam.',
+    source_ref: 'SGK Địa lý 12 - Địa lý Tự nhiên',
+    status: 'published',
+    solutions: []
+  },
+
+  // ─── TIẾNG ANH (ENGLISH) ──────────────────────────────────────────────────
   {
     id: 'base-eng-01',
     layer: 'base',
@@ -143,96 +338,6 @@ export const GDPT2018_BASE_KNOWLEDGE = [
     triggers: ['cau bi dong', 'passive voice', 'chuyen sang bi dong'],
     content: 'Công thức chung của Câu Bị động:\n\n$$\\text{Chủ ngữ (O cũ)} + \\text{to be} + V_3/ed + (\\text{by } S_{\\text{cũ}})$$\n\n*Ví dụ:*\n- Chủ động: *The teacher grades the assignment.*\n- Bị động: *The assignment is graded by the teacher.*',
     source_ref: 'SGK Tiếng Anh 12 - Grammar Reference',
-    status: 'published',
-    solutions: []
-  },
-
-  // ─── NGỮ VĂN ──────────────────────────────────────────────────────────────
-  {
-    id: 'base-lit-04',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Lão Hạc (Nam Cao)',
-    triggers: ['lao hac', 'nam cao', 'cau vang', 'lao hac cua ai', 'truyen ngan lao hac'],
-    content: 'Phân tích trọng tâm tác phẩm **"Lão Hạc"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao (tên khai sinh là Trần Hữu Trí, 1915–1951), ông sáng tác tác phẩm vào năm 1943. Ông là một trong những kiệt tác gia tiêu biểu nhất của dòng văn học hiện thực phê phán Việt Nam trước Cách mạng tháng Tám.\n\n- **Nội dung trọng tâm:** Tác phẩm khắc họa bi kịch tha hóa và nghèo khổ tàn nhẫn của người nông dân Việt Nam trước năm 1945, đồng thời ngợi ca nhân cách cao đẹp, lòng tự trọng muôn đời của Lão Hạc qua chi tiết bán Cậu Vàng và tự chọn cái chết bằng bả chó để giữ trọn mảnh vườn cho con trai.',
-    source_ref: 'SGK Ngữ văn 8 & Ngữ văn THCS/THPT',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-05',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Chí Phèo (Nam Cao)',
-    triggers: ['chi pheo', 'nam cao chi pheo', 'thi no', 'lang vu dai', 'ba kien'],
-    content: 'Phân tích trọng tâm kiệt tác **"Chí Phèo"** (Nam Cao):\n\n- **Tác giả:** Nhà văn Nam Cao.\n\n- **Nội dung trọng tâm:** Phơi bày bi kịch bị tha hóa, lưu manh hóa và bi kịch bị từ chối quyền làm người của Chí Phèo dưới sự tàn bạo của tầng lớp bá chủ địa chủ (Bá Kiến), đồng thời khẳng định bản chất lương thiện tiềm tàng của con người qua bát cháo hành của Thị Nở.',
-    source_ref: 'SGK Ngữ văn 11 & THPT',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-01',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Vợ chồng A Phủ (Tô Hoài)',
-    triggers: ['vo chong a phu', 'nhan vat mi', 'to hoai', 'mi va a phu'],
-    content: 'Phân tích trọng tâm tác phẩm **"Vợ chồng A Phủ"** (Tô Hoài):\n\n- **Tác giả:** Nhà văn Tô Hoài.\n\n- **Giá trị hiện thực:** Phơi bày số phận đau khổ, kiếp sống nô lệ của Mị và A Phủ dưới ách áp bức của giai cấp chúa đất phong kiến miền núi (cường quyền Pá Tra) và hủ tục cúng trình ma.\n\n- **Giá trị nhân đạo:** Khám phá, ngợi ca sức sống tiềm tàng mãnh liệt và khát vọng tự do của Mị. Đỉnh cao là hành động Mị cởi trói cho A Phủ trong đêm đông và cùng chạy trốn đến Hồng Ngài.',
-    source_ref: 'SGK Ngữ văn 12 - Tập 2',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-02',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Vợ Nhặt (Kim Lân)',
-    triggers: ['vo nhat', 'kim lan', 'trang nhat vo', 'nan doi 1945'],
-    content: 'Phân tích trọng tâm tác phẩm **"Vợ Nhặt"** (Kim Lân):\n\n- **Tác giả:** Nhà văn Kim Lân.\n\n- **Bối cảnh:** Nạn đói thảm khốc năm 1945.\n\n- **Ý nghĩa tư tưởng:** Trong ranh giới mong manh giữa sự sống và cái chết, những người lao động nghèo khổ không hề mất đi tình thương yêu gia đình và niềm tin bất diệt vào tương lai.',
-    source_ref: 'SGK Ngữ văn 12 - Tập 2',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-03',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Những Ngôi Sao Xa Xôi (Lê Minh Khuê)',
-    triggers: ['nhung ngoi sao xa xoi', 'le minh khue', 'phuong dinh', 'thao va nho'],
-    content: 'Phân tích trọng tâm truyện ngắn **"Những ngôi sao xa xôi"** (Lê Minh Khuê):\n\n- **Tác giả:** Nhà văn Lê Minh Khuê (sinh năm 1949 tại Thanh Hóa), từng là nữ thanh niên xung phong trên tuyến đường Trường Sơn khốc liệt thời chống Mỹ.\n\n- **Vẻ đẹp thế hệ trẻ:** Khắc họa tinh thần dũng cảm, lạc quan, tình đồng đội gắn bó và tâm hồn trong sáng, mộng mơ của ba nữ thanh niên xung phong (Phương Định, Nho, chị Thao) trên tuyến đường Trường Sơn.',
-    source_ref: 'SGK Ngữ văn 9 & Ngữ văn THPT',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-06',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Tác phẩm Chiếc Thuyền Ngoài Xa (Nguyễn Minh Châu)',
-    triggers: ['chiec thuyen ngoai xa', 'nguyen minh chau', 'phung va dau', 'nguoi dan ba chai'],
-    content: 'Phân tích trọng tâm tác phẩm **"Chiếc thuyền ngoài xa"** (Nguyễn Minh Châu):\n\n- **Tác giả:** Nhà văn Nguyễn Minh Châu.\n\n- **Nội dung trọng tâm:** Chiêm nghiệm sâu sắc về mối quan hệ giữa nghệ thuật và cuộc sống. Nghệ thuật không thể chỉ nhìn từ xa lãng mạn mà phải đi sâu vào bản chất đa chiều, phức tạp của đời sống con người.',
-    source_ref: 'SGK Ngữ văn 12',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-07',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Bài thơ Sóng (Xuân Quỳnh)',
-    triggers: ['song xuan quynh', 'xuan quynh', 'tho song'],
-    content: 'Phân tích trọng tâm bài thơ **"Sóng"** (Xuân Quỳnh):\n\n- **Tác giả:** Nữ nhà thơ Xuân Quỳnh.\n\n- **Nội dung trọng tâm:** Vẻ đẹp tâm hồn người phụ nữ trong tình yêu: vừa truyền thống, thủy chung, vừa hiện đại, táo bạo, khao khát hạnh phúc lứa đôi.',
-    source_ref: 'SGK Ngữ văn 12',
-    status: 'published',
-    solutions: []
-  },
-  {
-    id: 'base-lit-08',
-    layer: 'base',
-    subject: 'Ngữ văn',
-    topic: 'Bài thơ Tây Tiến (Quang Dũng)',
-    triggers: ['tay tien', 'quang dung', 'doan binh tay tien'],
-    content: 'Phân tích trọng tâm bài thơ **"Tây Tiến"** (Quang Dũng):\n\n- **Tác giả:** Nhà thơ Quang Dũng.\n\n- **Nội dung trọng tâm:** Bức tranh thiên nhiên miền Tây Bắc hùng vĩ, thơ mộng và hình tượng người lính Tây Tiến hào hoa, lãng mạn nhưng vô cùng dũng cảm.',
-    source_ref: 'SGK Ngữ văn 12',
     status: 'published',
     solutions: []
   }
