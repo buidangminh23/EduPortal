@@ -1,6 +1,24 @@
 import { retrieveBestEntry } from './retrieve';
+import { evaluateMathExpression } from './mathEvaluator';
 
 export function resolveTutorResponse(query, { teacherEntries = [], groupEntries = [], baseEntries = [] }) {
+  // Layer T0: Dynamic Arithmetic Engine (Evaluates math calculations like 1+4=, 25*4, 100/5)
+  const mathEval = evaluateMathExpression(query);
+  if (mathEval) {
+    return {
+      entry: {
+        id: 'math-eval-dynamic',
+        topic: `Phép tính: ${mathEval.expression}`,
+        content: mathEval.formattedOutput,
+        source_ref: 'Máy tính số học tự động EduPortal',
+        solutions: []
+      },
+      confidence: 1.0,
+      layer: 'T0',
+      layerName: 'Máy tính số học'
+    };
+  }
+
   // Layer T3: Teacher specific entries (highest priority)
   const teacherResult = retrieveBestEntry(query, teacherEntries);
   if (teacherResult.entry) {
