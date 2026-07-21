@@ -1,6 +1,10 @@
 import { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MOCK_EXAM_HISTORY } from '../data/mockExamsData';
 import { useAuth } from './AuthContext';
+import { resolveTutorResponse } from '../lib/tutor/resolve';
+import { generateScaffoldedResponse } from '../lib/tutor/llmClient';
+import { GDPT2018_BASE_KNOWLEDGE } from '../data/gdpt2018BaseKnowledge';
+import { isTopicInSyllabusScope } from '../lib/tutor/syllabusScope';
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -1693,96 +1697,52 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [groupEntries, setGroupEntries] = useState([]);
+
   const sendTutorMessage = (text) => {
     const userMsg = { sender: 'user', text };
     setTutorChat(prev => [...prev, userMsg]);
 
-    setTimeout(() => {
-      let replyText = '';
-      const normalized = text.toLowerCase().trim();
+    setTimeout(async () => {
+      const teacherEntries = JSON.parse(localStorage.getItem('mock_sb_knowledge_entries') || '[]').filter(e => e.status === 'published');
+      const baseEntries = GDPT2018_BASE_KNOWLEDGE;
+
+      const resolution = resolveTutorResponse(text, { teacherEntries, groupEntries, baseEntries });
       
-      // Helper to capitalize words
-      const capitalize = (str) => str.replace(/\b\w/g, c => c.toUpperCase());
-
-      // Check for simple arithmetic queries
-      const mathExpr = normalized
-        .replace(/cộng/g, '+')
-        .replace(/trừ/g, '-')
-        .replace(/nhân/g, '*')
-        .replace(/chia/g, '/')
-        .replace(/tính|bằng mấy|bằng bao nhiêu|giải|=|\s|\?/g, '');
-
-      // Allow only numbers, dots, parenthesises, and operators +, -, *, /, ^
-      const hasOnlyMathChars = /^[0-9+\-*/^().]+$/.test(mathExpr);
-      // Prevent consecutive operators
-      const hasValidOperators = !/[+\-*/^.]{2,}/.test(mathExpr);
-      // Must contain at least one operator
-      const hasOperator = /[+\-*/^]/.test(mathExpr);
-      // Must contain at least one digit
-      const hasDigit = /\d/.test(mathExpr);
-
-      let calculated = false;
-      if (hasOnlyMathChars && hasValidOperators && hasOperator && hasDigit) {
-        try {
-          const sanitizedExpr = mathExpr.replace(/\^/g, '**');
-          // Evaluate using Function constructor safely
-          if (/^[0-9+\-*/.**()]+$/.test(sanitizedExpr)) {
-            const result = new Function(`return ${sanitizedExpr}`)();
-            if (result === Infinity || Object.is(result, -Infinity)) {
-              replyText = `### 📐 Giải đáp nhanh Toán học:\n\nPhép tính của bạn: **${text}**\n\nKết quả: \nPhép chia cho 0 không xác định. (Vô cực)`;
-            } else if (isNaN(result)) {
-              replyText = `### 📐 Giải đáp nhanh Toán học:\n\nPhép tính của bạn: **${text}**\n\nKết quả: \nPhép tính không hợp lệ.`;
-            } else {
-              replyText = `### 📐 Giải đáp nhanh Toán học:\n\nPhép tính của bạn: **${text}**\n\nKết quả: \n$$${mathExpr.replace(/\*\*/g, '^')} = ${result}$$\n\nChúc bạn học tập tốt! Nếu cần giải thích lý thuyết hay giải bài toán nâng cao khác, cứ nhắn cho mình nhé.`;
-            }
-            calculated = true;
-          }
-        } catch {
-          // Ignore and let standard flow handle it
+      let responseObj;
+      if (resolution.entry) {
+        const inScope = isTopicInSyllabusScope(resolution.entry.topic, journalEntries, '12A1');
+        if (!inScope) {
+          responseObj = {
+            isCrisis: false,
+            message: `### 📌 Thông báo tiến độ lớp học\n\nChủ đề **"${resolution.entry.topic}"** nằm ngoài tiến độ hiện tại trên sổ đầu bài của lớp. Lớp em chưa học tới chuyên đề này nhé!`
+          };
+        } else {
+          responseObj = await generateScaffoldedResponse({
+            query: text,
+            retrievedEntry: resolution.entry,
+            presetName: 'Gợi mở từng bước',
+            competencyScore: 7
+          });
         }
-      }
-      
-      if (calculated) {
-        // Handled
-      } else if (normalized.includes('tích phân')) {
-        replyText = `### 📐 Giải đáp môn Toán (Chuyên đề Tích phân):\n\nPhương pháp cốt lõi để giải toán tích phân nâng cao là **Tích phân từng phần**:\n$$\\int u \\, dv = u \\cdot v - \\int v \\, du$$\n\n**Mẹo đặt biến u:** *"Nhất lô (log), nhì đa (đa thức), tam lượng (lượng giác), tứ mũ"*. \n\n*Ví dụ:* Tính $I = \\int x \\ln(x) \\, dx$\nĐặt $u = \\ln(x) \\Rightarrow du = \\frac{1}{x}dx$\nĐặt $dv = x \\, dx \\Rightarrow v = \\frac{x^2}{2}$\nÁp dụng công thức:\n$$I = \\frac{x^2}{2} \\ln(x) - \\int \\frac{x^2}{2} \\cdot \\frac{1}{x} \\, dx = \\frac{x^2}{2} \\ln(x) - \\frac{x^2}{4} + C$$`;
-      } else if (normalized.includes('đạo hàm')) {
-        replyText = `### 📐 Giải đáp môn Toán (Chuyên đề Đạo hàm):\n\nCác công thức đạo hàm cơ bản cần nhớ:\n1. Đạo hàm hàm số lũy thừa: $$(x^n)' = n \\cdot x^{n-1}$$\n2. Đạo hàm hàm số thương: $$(\\frac{u}{v})' = \\frac{u'v - uv'}{v^2}$$\n3. Đạo hàm lượng giác: $$(\\sin x)' = \\cos x, \\quad (\\cos x)' = -\\sin x$$`;
-      } else if (normalized.includes('logarit') || normalized.includes('lôgarit')) {
-        replyText = `### 📐 Giải đáp môn Toán (Chuyên đề Logarit):\n\nCác tính chất quan trọng của Logarit:\n- Logarit của một tích: $$\\log_a(x \\cdot y) = \\log_a x + \\log_a y$$\n- Logarit của một thương: $$\\log_a(\\frac{x}{y}) = \\log_a x - \\log_a y$$\n- Đổi cơ số: $$\\log_a b = \\frac{\\log_c b}{\\log_c a}$$`;
-      } else if (normalized.includes('xyz') || normalized.includes('tọa độ') || normalized.includes('tọ độ')) {
-        replyText = `### 📐 Giải đáp môn Toán (Chuyên đề Hình học Oxyz):\n\nPhương trình tổng quát của **Mặt phẳng** trong không gian Oxyz có dạng:\n$$Ax + By + Cz + D = 0$$\nTrong đó vectơ pháp tuyến là $\\vec{n} = (A; B; C)$.\n\nKhoảng cách từ điểm $M(x_0; y_0; z_0)$ đến mặt phẳng $(\\alpha)$ là:\n$$d(M, \\alpha) = \\frac{|Ax_0 + By_0 + Cz_0 + D|}{\\sqrt{A^2 + B^2 + C^2}}$$`;
-      } else if (normalized.includes('toán') || normalized.includes('phương trình') || normalized.includes('hàm số') || normalized.includes('đồ thị')) {
-        replyText = `### 📐 Hỗ trợ giải toán THPT:\n\nChào bạn, mình có thể giải toán lớp 10, 11, 12. Hãy cung cấp đề bài cụ thể (ví dụ: Tìm cực trị hàm số, giải phương trình mũ, lượng giác...) để mình hỗ trợ nhé.\n\n*Công thức nghiệm phương trình bậc 2:* $ax^2 + bx + c = 0$ ($a \\neq 0$):\n$$\\Delta = b^2 - 4ac \\quad \\Rightarrow \\quad x_{1,2} = \\frac{-b \\pm \\sqrt{\\Delta}}{2a}$$`;
-      } else if (normalized.includes('rlc') || normalized.includes('xoay chiều')) {
-        replyText = `### ⚛️ Giải đáp môn Vật lý (Dòng điện xoay chiều):\n\nĐối với mạch xoay chiều RLC nối tiếp, công thức **Tổng trở** toàn mạch là:\n$$Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$$\nTrong đó:\n- Cảm kháng: $Z_L = \\omega L$\n- Dung kháng: $Z_C = \\frac{1}{\\omega C}$\n\nKhi $Z_L = Z_C$, mạch xảy ra **cộng hưởng điện**:\n- Tổng trở đạt giá trị nhỏ nhất: $Z_{min} = R$\n- Cường độ dòng điện hiệu dụng đạt cực đại: $I_{max} = \\frac{U}{R}$`;
-      } else if (normalized.includes('sóng')) {
-        replyText = `### ⚛️ Giải đáp môn Vật lý (Chuyên đề Sóng học):\n\nCông thức liên hệ giữa bước sóng $\\lambda$, vận tốc truyền sóng $v$, chu kỳ $T$ và tần số $f$:\n$$\\lambda = v \\cdot T = \\frac{v}{f}$$\n\nĐiều kiện để xảy ra hiện tượng giao thoa sóng (2 nguồn cùng pha):\n- Điểm cực đại giao thoa: $$d_2 - d_1 = k\\lambda \\quad (k \\in \\mathbb{Z})$$\n- Điểm cực tiểu giao thoa: $$d_2 - d_1 = (k + 0.5)\\lambda \\quad (k \\in \\mathbb{Z})$$`;
-      } else if (normalized.includes('lực') || normalized.includes('chuyển động') || normalized.includes('gia tốc')) {
-        replyText = `### ⚛️ Giải đáp môn Vật lý (Chuyên đề Cơ học):\n\nĐịnh luật II Newton - công thức nền tảng của cơ học:\n$$\\vec{F} = m \\cdot \\vec{a}$$\n\nCông thức tính quãng đường chuyển động thẳng biến đổi đều:\n$$s = v_0 t + \\frac{1}{2}at^2$$\nCông thức độc lập thời gian:\n$$v^2 - v_0^2 = 2as$$`;
-      } else if (normalized.includes('lý') || normalized.includes('vật lý')) {
-        replyText = `### ⚛️ Hỗ trợ học tập môn Vật lý:\n\nMình có thể hỗ trợ bạn các kiến thức về: **Cơ học, Sóng cơ, Điện xoay chiều, Dao động điều hòa, Quang hình**. Hãy gửi câu hỏi chi tiết để mình hướng dẫn công thức giải cụ thể nhé!`;
-      } else if (normalized.includes('phản ứng') || normalized.includes('hóa học') || normalized.includes('kim loại') || normalized.includes('axit') || normalized.includes('bazơ')) {
-        replyText = `### 🧪 Giải đáp môn Hóa học:\n\nKhi cho kim loại kiềm (M) tác dụng với nước ở điều kiện thường:\n$$2\\text{M} + 2\\text{H}_2\\text{O} \\rightarrow 2\\text{MOH} + \\text{H}_2\\uparrow$$\n\n- Phản ứng diễn ra mãnh liệt, tỏa nhiệt lớn. Dung dịch thu được có môi trường bazơ mạnh làm quỳ tím hóa xanh, phenolphtalein hóa hồng.\n\n*Ví dụ về kết tủa đồng (II) hiđroxit xanh lam:* \n$$\\text{CuSO}_4 + 2\\text{NaOH} \\rightarrow \\text{Cu(OH)}_2\\downarrow \\text{ (xanh)} + \\text{Na}_2\\text{SO}_4$$`;
-      } else if (normalized.includes('thì') || normalized.includes('hoàn thành') || normalized.includes('present perfect')) {
-        replyText = `### 🇬🇧 Giải đáp Tiếng Anh (Present Perfect Tense):\n\nThì **Hiện tại hoàn thành** dùng để diễn tả hành động đã xảy ra và kéo dài đến hiện tại, hoặc vừa mới xảy ra để lại kết quả ở hiện tại.\n\n**Cấu trúc:**\n- Khẳng định: $$S + \\text{have/has} + V_3/ed$$\n- Phủ định: $$S + \\text{have/has} + \\text{not} + V_3/ed$$\n- Nghi vấn: $$\\text{Have/Has} + S + V_3/ed?$$\n\n*Dấu hiệu nhận biết:* since, for, already, yet, just, ever, never, so far.`;
-      } else if (normalized.includes('bị động') || normalized.includes('passive')) {
-        replyText = `### 🇬🇧 Giải đáp Tiếng Anh (Passive Voice):\n\nCâu bị động được dùng khi ta muốn nhấn mạnh đối tượng chịu tác động của hành động hơn là bản thân chủ thể thực hiện hành động.\n\n**Công thức tổng quát:**\n$$\\text{Chủ ngữ (O cũ)} + \\text{to be} + V_3/ed + (\\text{by } S_{\\text{cũ}})$$\n\n*Ví dụ:* \n- Active: *The teacher grades the essay.*\n- Passive: *The essay is graded by the teacher.*`;
-      } else if (normalized.includes('mệnh đề') || normalized.includes('quan hệ') || normalized.includes('relative')) {
-        replyText = `### 🇬🇧 Giải đáp Tiếng Anh (Relative Clauses):\n\nMệnh đề quan hệ dùng để bổ nghĩa cho danh từ đứng trước nó:\n- **Who**: Thay thế cho danh từ chỉ người đóng vai trò chủ ngữ (*The girl who is singing...*)\n- **Whom**: Thay thế cho danh từ chỉ người đóng vai trò tân ngữ (*The man whom you met...*)\n- **Which**: Thay thế cho danh từ chỉ vật đóng vai trò chủ ngữ/tân ngữ (*The book which I read...*)\n- **Whose**: Chỉ sở hữu cho cả người và vật (*The boy whose father is a teacher...*)`;
-      } else if (normalized.includes('văn') || normalized.includes('phân tích') || normalized.includes('vợ nhặt') || normalized.includes('vợ chồng a phủ')) {
-        replyText = `### 📖 Gợi ý phân tích môn Ngữ Văn:\n\nTác phẩm **"Vợ chồng A Phủ"** (Tô Hoài) nổi bật với hai giá trị lớn:\n\n1. **Giá trị hiện thực:** Phơi bày nỗi khổ cực, kiếp sống nô lệ của Mị và A Phủ dưới ách thống trị của bọn chúa đất phong kiến miền núi (cường quyền Pá Tra và hủ tục cúng trình ma).\n2. **Giá trị nhân đạo:** Phát hiện, ngợi ca vẻ đẹp tâm hồn và sức sống tiềm tàng mãnh liệt của người lao động. Hành động Mị cởi trói cho A Phủ trong đêm đông là đỉnh cao của sự thức tỉnh tự ý thức và khát vọng tự do cá nhân.\n\nBạn cần viết đoạn mở bài, thân bài hay kết bài cho tác phẩm nào, hãy gõ câu hỏi cho mình nhé!`;
-      } else if (normalized.includes('xin chào') || normalized.includes('hello') || normalized.includes('hi') || normalized.includes('chào')) {
-        replyText = `### 🤖 Trợ lý Gia sư AI 24/7 chào bạn!\n\nMình là trợ lý học tập thông minh. Mình có thể hỗ trợ bạn:\n- 📐 Giải toán (tích phân, đạo hàm, logarit, hình Oxyz...)\n- ⚛️ Hướng dẫn công thức Vật lý (sóng, RLC xoay chiều, động học...)\n- 🧪 Viết phương trình Hóa học và giải thích hiện tượng\n- 🇬🇧 Hệ thống ngữ pháp Tiếng Anh (thì hoàn thành, bị động, mệnh đề quan hệ...)\n- 📖 Dàn ý phân tích tác phẩm Ngữ Văn lớp 11, 12\n\nBạn muốn mình trợ giúp nội dung nào hôm nay? Hãy nhập câu hỏi cụ thể nhé!`;
       } else {
-        // Dynamic Fallback Generator
-        const cleanQuery = text.replace(/[.?/!]/g, '').trim();
-        const capitalizedTopic = capitalize(cleanQuery);
-        replyText = `### 🤖 Trợ lý AI phản hồi về chuyên đề: **${capitalizedTopic}**\n\nChào bạn, mình đã ghi nhận thắc mắc của bạn về **"${cleanQuery}"**. Đây là một nội dung rất thú vị trong chương trình học. Dưới đây là phân tích sư phạm tổng quan dành cho bạn:\n\n#### 1. Khái niệm & Định nghĩa cơ bản\n**${capitalizedTopic}** là một khái niệm cốt lõi đại diện cho các nguyên lý, quy luật vận hành hoặc hệ thống lý thuyết liên quan đến nội dung bạn vừa hỏi. Nó đóng vai trò làm cầu nối giữa lý thuyết trừu tượng và ứng dụng thực tế.\n\n#### 2. Công thức / Quy tắc trọng tâm cần nhớ\nĐể giải quyết các bài tập thuộc chuyên đề này, bạn cần ghi nhớ công thức nền tảng sau:\n$$\\text{Kết quả} = \\frac{\\text{Thông tin đầu vào} \\cdot \\text{Hệ số tác động}}{\\text{Mức độ cản trở}}$$\n\n- Đảm bảo quy đổi đồng nhất các đơn vị đo lường trước khi tính toán.\n- Chú ý các điều kiện biên hoặc các trường hợp đặc biệt ngoại lệ có thể xảy ra.\n\n#### 3. Ví dụ minh họa áp dụng\n*Đề bài:* Cho các thông số đầu vào cơ bản của hệ thống đạt trạng thái cân bằng động. Hãy phân tích xu hướng thay đổi khi tăng gấp đôi lực tác động.\n\n*Lời giải chi tiết từng bước:*\n- **Bước 1:** Thiết lập phương trình cân bằng trạng thái ban đầu của hệ thống.\n- **Bước 2:** Thay thế biến số mới vào phương trình ($X_{mới} = 2 \\cdot X_0$).\n- **Bước 3:** Giải phương trình và kết luận hệ thống sẽ dịch chuyển theo chiều thuận và đạt giá trị hiệu suất tăng gấp **${(1.5 + Math.random()).toFixed(1)}** lần.\n\nNếu bạn có đề bài trắc nghiệm hoặc tự luận cụ thể nào khác về **${cleanQuery}**, hãy gửi ngay cho mình để chúng ta cùng giải chi tiết nhé!`;
+        const newQueueItem = {
+          id: 'RQ' + Date.now(),
+          question: text,
+          studentName: userSession?.displayName || 'Học sinh',
+          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setReviewQueue(prev => [newQueueItem, ...prev]);
+
+        responseObj = await generateScaffoldedResponse({
+          query: text,
+          retrievedEntry: null
+        });
       }
 
-      setTutorChat(prev => [...prev, { sender: 'tutor', text: replyText }]);
-    }, 1200);
+      setTutorChat(prev => [...prev, { sender: 'tutor', text: responseObj.message }]);
+    }, 800);
   };
 
   // Actions for RFID Điểm Danh
@@ -2882,6 +2842,8 @@ export const AppProvider = ({ children }) => {
       tournaments, setTournaments,
       processPayment,
       globalSearch,
+      reviewQueue, setReviewQueue,
+      groupEntries, setGroupEntries,
     }}>
       {children}
     </AppContext.Provider>

@@ -14,15 +14,23 @@ import PresetPicker from './tutor/PresetPicker';
 import KnowledgeList from './tutor/KnowledgeList';
 import KnowledgeEditor from './tutor/KnowledgeEditor';
 import TestPanel from './tutor/TestPanel';
-import { Compass, Book, HelpCircle, Loader2 } from 'lucide-react';
+import ReviewQueue from './tutor/ReviewQueue';
+import GoldenSet from './tutor/GoldenSet';
+import CoverageBoard from './tutor/CoverageBoard';
+import DepartmentHub from './tutor/DepartmentHub';
+import { Compass, Book, HelpCircle, Loader2, Award, Users, Activity } from 'lucide-react';
 
 export default function AiTutorTrainerTab() {
   const { profile } = useAuth();
-  const { flashcards, assignments } = useContext(AppContext);
+  const { flashcards, assignments, reviewQueue, setReviewQueue, groupEntries, setGroupEntries } = useContext(AppContext);
 
   const [presets, setPresets] = useState([]);
   const [config, setConfig] = useState(null);
   const [entries, setEntries] = useState([]);
+  const [goldenTests, setGoldenTests] = useState([
+    { id: 'GT1', question: 'Tính tích phân nguyên hàm', expected_behavior: 'Phải trả về công thức int u dv = uv - v du' },
+    { id: 'GT2', question: 'Mạch xoay chiều RLC cộng hưởng', expected_behavior: 'Phải trả về Z_min = R' }
+  ]);
   
   const [activeSubTab, setActiveSubTab] = useState('method');
   const [editingEntry, setEditingEntry] = useState(null);
@@ -31,8 +39,6 @@ export default function AiTutorTrainerTab() {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Subject is derived from teacher's profile/subject assignment
-  // e.g. profile.subject, fallback to 'Toán học'
   const teacherSubject = profile?.subject || 'Toán học';
   const schoolId = profile?.school_id || 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
@@ -42,17 +48,17 @@ export default function AiTutorTrainerTab() {
       const presetsData = await fetchPresets();
       setPresets(presetsData);
 
-      const configData = await fetchTutorConfig(profile.id);
+      const configData = await fetchTutorConfig(profile?.id);
       setConfig(configData);
 
-      const entriesData = await fetchKnowledgeEntries(profile.id, schoolId, teacherSubject);
+      const entriesData = await fetchKnowledgeEntries(profile?.id, schoolId, teacherSubject);
       setEntries(entriesData);
     } catch (err) {
       console.error('Error loading AiTutor data:', err);
     } finally {
       setLoading(false);
     }
-  }, [profile.id, schoolId, teacherSubject]);
+  }, [profile, schoolId, teacherSubject]);
 
   useEffect(() => {
     if (profile) {
@@ -84,45 +90,38 @@ export default function AiTutorTrainerTab() {
   };
 
   const handlePublish = async () => {
-    const updated = { 
-      ...config, 
-      status: 'published', 
-      version: (config.version || 1) + 1,
-      published_at: new Date().toISOString()
-    };
+    const nextVer = (parseFloat(config?.version || '1.0') + 0.1).toFixed(1);
+    const updated = { ...config, status: 'published', version: nextVer };
     setConfig(updated);
     try {
       await saveTutorConfig(updated);
-      alert(`Xuất bản thành công gia sư phiên bản v${updated.version}!`);
+      alert(`Đã xuất bản cấu hình Gia sư AI phiên bản ${nextVer} thành công!`);
     } catch (err) {
       console.error('Error publishing config:', err);
     }
   };
 
-  const handleSaveEntry = async (entry, solutions) => {
+  const handleSaveEntry = async (entryData) => {
     try {
-      await saveKnowledgeEntry({
-        ...entry,
-        school_id: schoolId,
-        owner_id: profile.id
-      }, solutions);
-      
+      const saved = await saveKnowledgeEntry(entryData, profile?.id, schoolId, teacherSubject);
+      setEntries(prev => {
+        const exists = prev.some(e => e.id === saved.id);
+        if (exists) return prev.map(e => e.id === saved.id ? saved : e);
+        return [saved, ...prev];
+      });
       setEditingEntry(null);
       setIsAddingNew(false);
-      // Reload entries
-      const entriesData = await fetchKnowledgeEntries(profile.id, schoolId, teacherSubject);
-      setEntries(entriesData);
     } catch (err) {
-      console.error('Error saving knowledge entry:', err);
-      alert('Không thể lưu kiến thức, vui lòng thử lại!');
+      console.error('Error saving entry:', err);
+      alert('Không thể lưu tri thức. Vui lòng thử lại.');
     }
   };
 
-  const handleDeleteEntry = async (id) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa mục kiến thức này không?')) return;
+  const handleDeleteEntry = async (entryId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa mục tri thức này?')) return;
     try {
-      await deleteKnowledgeEntry(id);
-      setEntries(entries.filter(e => e.id !== id));
+      await deleteKnowledgeEntry(entryId);
+      setEntries(prev => prev.filter(e => e.id !== entryId));
     } catch (err) {
       console.error('Error deleting entry:', err);
     }
@@ -131,22 +130,12 @@ export default function AiTutorTrainerTab() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      // Pass existing flashcards and homework assignments to scan
-      const drafts = await generateDraftsFromExisting({
-        teacherProfile: profile,
-        schoolId,
-        subject: teacherSubject,
-        flashcards: flashcards || [],
-        assignments: assignments || []
-      });
-      
-      if (drafts.length > 0) {
-        alert(`Đã trích xuất thành công ${drafts.length} mục kiến thức nháp từ học liệu của bạn!`);
-        const entriesData = await fetchKnowledgeEntries(profile.id, schoolId, teacherSubject);
-        setEntries(entriesData);
-      } else {
-        alert('Không tìm thấy học liệu phù hợp để trích xuất hoặc dữ liệu đã tồn tại.');
+      const drafts = generateDraftsFromExisting(flashcards, assignments, teacherSubject);
+      for (const draft of drafts) {
+        const saved = await saveKnowledgeEntry(draft, profile?.id, schoolId, teacherSubject);
+        setEntries(prev => [saved, ...prev]);
       }
+      alert(`Đã tự động tạo nháp ${drafts.length} mục tri thức từ flashcard & bài tập!`);
     } catch (err) {
       console.error('Error generating drafts:', err);
     } finally {
@@ -154,18 +143,33 @@ export default function AiTutorTrainerTab() {
     }
   };
 
+  const handleReTeach = (queueId, newEntry) => {
+    handleSaveEntry({
+      ...newEntry,
+      status: 'published'
+    });
+    setReviewQueue(prev => prev.filter(q => q.id !== queueId));
+    alert('Đã dạy lại gia sư và xuất bản tri thức mới thành công!');
+  };
+
+  const handleAddGoldenTest = (testCase) => {
+    setGoldenTests(prev => [...prev, testCase]);
+  };
+
+  const handleApproveGroupEntry = (entry) => {
+    setGroupEntries(prev => [entry, ...prev]);
+    alert('Đã duyệt và lưu tri thức dùng chung cho Tổ bộ môn!');
+  };
+
   if (loading) {
     return (
-      <div style={{ display: 'grid', placeItems: 'center', height: '60vh' }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <Loader2 size={36} className="spin" style={{ color: 'var(--accent)' }} />
-          <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Đang tải dữ liệu gia sư...</span>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 12 }}>
+        <Loader2 className="animate-spin" size={24} style={{ color: 'var(--accent)' }} />
+        <span>Đang tải dữ liệu huấn luyện gia sư...</span>
       </div>
     );
   }
 
-  // Render Editor view if creating or editing
   if (editingEntry || isAddingNew) {
     return (
       <div style={{ padding: 20 }}>
@@ -190,17 +194,20 @@ export default function AiTutorTrainerTab() {
         <div>
           <h2 className="display" style={{ fontSize: '1.6rem', margin: 0 }}>Huấn Luyện Gia Sư AI</h2>
           <p style={{ margin: '4px 0 0 0', fontSize: 13.5, color: 'var(--text-secondary)' }}>
-            Môn học: <strong style={{ color: 'var(--accent)' }}>{teacherSubject}</strong> · Thiết lập phương pháp và nạp kiến thức để cá nhân hóa gia sư cho lớp học.
+            Môn học: <strong style={{ color: 'var(--accent)' }}>{teacherSubject}</strong> · Đào tạo gia sư sư phạm đa tầng (Giáo viên, Tổ bộ môn, Tầng nền GDPT 2018).
           </p>
         </div>
       </div>
 
       {/* Sub Tabs Navigation */}
-      <div style={{ display: 'flex', borderBottom: '1px solid rgba(148,163,184,0.15)', gap: 24 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(148,163,184,0.15)', gap: 16, flexWrap: 'wrap' }}>
         {[
           { id: 'method', label: 'Phương Pháp & Giọng Điệu', icon: Compass },
           { id: 'knowledge', label: 'Kho Tri Thức & Bài Giải', icon: Book },
-          { id: 'review', label: 'Hàng Đợi Duyệt', icon: HelpCircle }
+          { id: 'review', label: `Cần Duyệt (${reviewQueue.length})`, icon: HelpCircle },
+          { id: 'golden', label: 'Bộ Đề Vàng', icon: Award },
+          { id: 'department', label: 'Tổ Bộ Môn', icon: Users },
+          { id: 'coverage', label: 'Độ Phủ Tri Thức', icon: Activity }
         ].map(t => {
           const Icon = t.icon;
           const isActive = activeSubTab === t.id;
@@ -212,17 +219,14 @@ export default function AiTutorTrainerTab() {
                 background: 'transparent',
                 border: 'none',
                 padding: '12px 4px',
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: isActive ? 700 : 500,
                 color: isActive ? 'var(--accent, #3b82f6)' : 'var(--text-secondary)',
                 borderBottom: isActive ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                transition: 'all 0.15s ease',
-                outline: 'none',
-                marginBottom: -1
+                gap: 6
               }}
             >
               <Icon size={16} />
@@ -261,13 +265,32 @@ export default function AiTutorTrainerTab() {
           )}
 
           {activeSubTab === 'review' && (
-            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <HelpCircle size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
-              <h4 style={{ margin: '0 0 8px 0', fontWeight: 700, color: 'var(--text-primary)' }}>Màn Hình Hàng Đợi Duyệt (Giai đoạn 4)</h4>
-              <p style={{ margin: 0, fontSize: 13.5, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
-                Ở giai đoạn sau, khi học sinh đặt câu hỏi ngoài phạm vi, câu hỏi và gợi ý trả lời sẽ tự động rơi vào đây để thầy/cô "Dạy lại" gia sư chỉ với 1 click.
-              </p>
-            </div>
+            <ReviewQueue
+              queue={reviewQueue}
+              onReTeach={handleReTeach}
+            />
+          )}
+
+          {activeSubTab === 'golden' && (
+            <GoldenSet
+              tests={goldenTests}
+              entries={entries}
+              onAddTest={handleAddGoldenTest}
+            />
+          )}
+
+          {activeSubTab === 'department' && (
+            <DepartmentHub
+              groupEntries={groupEntries}
+              onApproveGroupEntry={handleApproveGroupEntry}
+            />
+          )}
+
+          {activeSubTab === 'coverage' && (
+            <CoverageBoard
+              entries={entries}
+              queue={reviewQueue}
+            />
           )}
         </div>
 
