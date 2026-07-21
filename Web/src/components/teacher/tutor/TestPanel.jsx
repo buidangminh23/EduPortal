@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, RefreshCw } from 'lucide-react';
 import { resolveTutorResponse } from '../../../lib/tutor/resolve';
 import { GDPT2018_BASE_KNOWLEDGE } from '../../../data/gdpt2018BaseKnowledge';
+import { formatTutorText } from '../../../lib/tutor/formatText';
 
 export default function TestPanel({ 
   entries = [], 
@@ -180,16 +181,7 @@ export default function TestPanel({
                 border: m.sender === 'tutor' ? '1px solid rgba(148,163,184,0.1)' : 'none'
               }}
             >
-              {/* Basic rendering of markdown headings and paragraphs for preview */}
-              {m.text.split('\n\n').map((para, pIdx) => {
-                if (para.startsWith('### ')) {
-                  return <h5 key={pIdx} style={{ margin: '0 0 6px 0', fontSize: 14, fontWeight: 700 }}>{para.replace('### ', '')}</h5>;
-                }
-                if (para.startsWith('**') && para.endsWith('**')) {
-                  return <p key={pIdx} style={{ margin: 0, fontWeight: 700 }}>{para.replace(/\*\*/g, '')}</p>;
-                }
-                return <p key={pIdx} style={{ margin: '0 0 6px 0', lastChild: { marginBottom: 0 } }}>{para}</p>;
-              })}
+              {m.sender === 'tutor' ? formatTutorText(m.text) : m.text}
             </div>
           </div>
         ))}

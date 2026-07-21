@@ -2,32 +2,7 @@ import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Send, Sparkles, MessageSquare } from 'lucide-react';
 
-// ─── Lightweight LaTeX → HTML converter for common math notations ─────────────
-function latexToHtml(latex) {
-  let s = latex;
-  s = s.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '<span style="display:inline-block;text-align:center;vertical-align:middle"><span style="display:block;border-bottom:1px solid currentColor;padding:0 4px">$1</span><span style="display:block;padding:0 4px">$2</span></span>');
-  s = s.replace(/\\sqrt\{([^}]*)\}/g, '√($1)');
-  s = s.replace(/\\vec\{([^}]*)\}/g, '$1\u20D7');
-  s = s.replace(/\\(sin|cos|tan|cot|sec|csc|log|ln|lim|max|min|sup|inf)\b/g, '<span style="font-style:normal;font-weight:500">$1</span>');
-  s = s.replace(/\\text\{([^}]*)\}/g, '<span style="font-style:normal">$1</span>');
-  s = s.replace(/\\alpha/g, 'α').replace(/\\beta/g, 'β').replace(/\\gamma/g, 'γ').replace(/\\delta/g, 'δ');
-  s = s.replace(/\\Delta/g, 'Δ').replace(/\\lambda/g, 'λ').replace(/\\omega/g, 'ω').replace(/\\pi/g, 'π');
-  s = s.replace(/\\theta/g, 'θ').replace(/\\sigma/g, 'σ').replace(/\\mu/g, 'μ').replace(/\\phi/g, 'φ');
-  s = s.replace(/\\cdot/g, '·').replace(/\\times/g, '×').replace(/\\div/g, '÷');
-  s = s.replace(/\\pm/g, '±').replace(/\\mp/g, '∓').replace(/\\neq/g, '≠');
-  s = s.replace(/\\leq/g, '≤').replace(/\\geq/g, '≥').replace(/\\approx/g, '≈');
-  s = s.replace(/\\Rightarrow/g, '⇒').replace(/\\rightarrow/g, '→').replace(/\\Leftarrow/g, '⇐');
-  s = s.replace(/\\infty/g, '∞').replace(/\\quad/g, '  ').replace(/\\qquad/g, '    ');
-  s = s.replace(/\\in/g, '∈').replace(/\\subset/g, '⊂').replace(/\\cup/g, '∪').replace(/\\cap/g, '∩');
-  s = s.replace(/\\int/g, '∫').replace(/\\sum/g, '∑').replace(/\\prod/g, '∏');
-  s = s.replace(/_\{([^}]*)\}/g, '<sub>$1</sub>').replace(/\^\{([^}]*)\}/g, '<sup>$1</sup>');
-  s = s.replace(/\^([0-9a-zA-Z])/g, '<sup>$1</sup>');
-  s = s.replace(/_([0-9a-zA-Z])/g, '<sub>$1</sub>');
-  s = s.replace(/\\mathbb\{R\}/g, 'ℝ').replace(/\\mathbb\{Z\}/g, 'ℤ').replace(/\\mathbb\{N\}/g, 'ℕ').replace(/\\mathbb\{Q\}/g, 'ℚ');
-  s = s.replace(/log<sub>([^<]*)<\/sub>/g, 'log<sub>$1</sub>');
-  s = s.replace(/\\,/g, ' ').replace(/\\;/g, ' ').replace(/\\ /g, ' ');
-  return s;
-}
+import { formatTutorText } from '../lib/tutor/formatText';
 
 export default function AITutor() {
   const { tutorChat, sendTutorMessage } = useContext(AppContext);
