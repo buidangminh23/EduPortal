@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, RefreshCw } from 'lucide-react';
+import { resolveTutorResponse } from '../../../lib/tutor/resolve';
+import { GDPT2018_BASE_KNOWLEDGE } from '../../../data/gdpt2018BaseKnowledge';
 
 export default function TestPanel({ 
   entries = [], 
@@ -60,10 +62,13 @@ export default function TestPanel({
         return;
       }
 
-      // Check for trigger matches in knowledge entries
-      const matchedEntry = entries.find(entry => 
-        (entry.triggers || []).some(t => normalized.includes(t.toLowerCase().trim()))
-      );
+      // Check for trigger matches across 3 layers (Teacher -> Group -> GDPT 2018 Base)
+      const resolution = resolveTutorResponse(userText, {
+        teacherEntries: entries,
+        groupEntries: [],
+        baseEntries: GDPT2018_BASE_KNOWLEDGE
+      });
+      const matchedEntry = resolution.entry;
 
       if (matchedEntry) {
         const solution = matchedEntry.solutions?.[0];
