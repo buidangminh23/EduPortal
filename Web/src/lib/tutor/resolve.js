@@ -1,8 +1,32 @@
 import { retrieveBestEntry } from './retrieve';
 import { evaluateMathExpression } from './mathEvaluator';
+import { solveDynamicWordProblem } from './problemParamSolver';
 
 export function resolveTutorResponse(query, { teacherEntries = [], groupEntries = [], baseEntries = [] }) {
-  // Layer T0: Dynamic Arithmetic Engine (Evaluates math calculations like 1+4=, 25*4, 100/5)
+  // Layer T0-A: Dynamic Word Problem Solver (Parses custom numerical parameters e.g. R=40, ZL=100, ZC=70 or 4.6g Na)
+  const wordProblemEval = solveDynamicWordProblem(query);
+  if (wordProblemEval) {
+    return {
+      entry: {
+        id: 'word-problem-dynamic',
+        topic: wordProblemEval.topic,
+        content: wordProblemEval.formattedOutput,
+        source_ref: 'Giải toán tự động EduPortal Solver',
+        solutions: [
+          {
+            problem: wordProblemEval.problem,
+            steps: wordProblemEval.steps,
+            answer: wordProblemEval.answer
+          }
+        ]
+      },
+      confidence: 1.0,
+      layer: 'T0',
+      layerName: 'Bộ giải toán cụ thể tự động'
+    };
+  }
+
+  // Layer T0-B: Dynamic Arithmetic Engine (Evaluates math calculations like 1+4=, 25*4, 100/5)
   const mathEval = evaluateMathExpression(query);
   if (mathEval) {
     return {
