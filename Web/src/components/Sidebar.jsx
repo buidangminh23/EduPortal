@@ -34,7 +34,8 @@ import {
   Target,
   AlertTriangle,
   Camera,
-  Sparkles
+  Sparkles,
+  Compass
 } from 'lucide-react';
 
 // Sub-nav items for student dashboard
@@ -67,6 +68,7 @@ const TEACHER_SUB_ITEMS = [
   { id: 'resources',           label: 'Học Liệu Bài Giảng',     icon: BookOpen },
   { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
   { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
+  { id: 'ai_tutor_trainer',    label: 'Huấn Luyện Gia Sư AI',  icon: Compass },
   { id: 'assignments',         label: 'Giao Bài Tập',          icon: CheckSquare },
   { id: 'mock_exams',          label: 'Điểm Thi Thử Lớp',      icon: ClipboardList },
   { id: 'qa',                  label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare },

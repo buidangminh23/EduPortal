@@ -1,5 +1,7 @@
 import { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { INITIAL_MOCK_EXAM_HISTORY } from '../data/mockExamsData';
+import { useAuth } from './AuthContext';
+
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
@@ -747,15 +749,25 @@ export const AppProvider = ({ children }) => {
 
   const [theme] = useState('light');
   
-  const [userSession, setUserSession] = useState(() => {
-    const saved = localStorage.getItem('userSession');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const { profile, signOut: authSignOut } = useAuth();
 
-  const [currentRole, setCurrentRole] = useState(() => {
-    const savedSession = localStorage.getItem('userSession');
-    return savedSession ? JSON.parse(savedSession).role : '';
-  });
+  const userSession = useMemo(() => {
+    if (!profile) return null;
+    return {
+      username: profile.email ? profile.email.split('@')[0] : '',
+      role: profile.role,
+      displayName: profile.full_name,
+      avatarUrl: profile.avatar_url,
+      class: profile.role === 'student' ? '12A1' : null,
+      studentId: profile.role === 'student' ? profile.id : null,
+      email: profile.email
+    };
+  }, [profile]);
+
+  const currentRole = profile?.role || '';
+
+  const setUserSession = () => {};
+  const setCurrentRole = () => {};
 
   // Shared student sub-tab state (controlled from Sidebar)
   const [studentSubTab, setStudentSubTab] = useState('overview');
@@ -1322,10 +1334,8 @@ export const AppProvider = ({ children }) => {
   }, [timetableSlots]);
 
   // Actions
-  const logout = () => {
-    localStorage.removeItem('userSession');
-    setUserSession(null);
-    setCurrentRole('');
+  const logout = async () => {
+    await authSignOut();
     window.location.reload();
   };
 

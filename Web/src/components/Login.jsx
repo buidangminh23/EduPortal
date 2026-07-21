@@ -1,5 +1,6 @@
 import { useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { AppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Shield, GraduationCap, User, Users, Key, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 
 const ROLES = [
@@ -18,6 +19,7 @@ const QUICK_CREDS = {
 
 export default function Login({ onBack }) {
   const { setCurrentRole } = useContext(AppContext);
+  const { signInWithPassword } = useAuth();
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState(QUICK_CREDS.student.username);
   const [password, setPassword] = useState(QUICK_CREDS.student.password);
@@ -116,31 +118,15 @@ export default function Login({ onBack }) {
     }
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
 
-    let authorized = false;
-    const creds = QUICK_CREDS[role];
-    if (creds && username === creds.username && password === creds.password) authorized = true;
-    else if (username === role) authorized = true;
+    const { error } = await signInWithPassword(username, password);
 
-    if (authorized) {
-      const session = {
-        username,
-        role,
-        displayName: role === 'admin' ? 'Hiệu trưởng BGH' :
-                     role === 'teacher' ? 'Thầy Nguyễn Minh Triết' :
-                     role === 'student' ? 'Nguyễn Hoàng Nam' : 'PH. Nguyễn Văn Hùng',
-        class: role === 'student' || role === 'parent' ? '12A1' : null,
-        studentId: role === 'student' || role === 'parent' ? 'HS001' : null,
-        parentName: role === 'parent' ? 'Nguyễn Văn Hùng' : null,
-        parentId: role === 'parent' ? 'parent_HS001' : null
-      };
-      localStorage.setItem('userSession', JSON.stringify(session));
-      setCurrentRole(role);
-      window.location.reload();
+    if (error) {
+      alert(error.message || 'Tên đăng nhập hoặc mật khẩu không chính xác!');
     } else {
-      alert('Tên đăng nhập hoặc mật khẩu không chính xác! Hãy chọn một thẻ vai trò để điền nhanh.');
+      window.location.reload();
     }
   };
 
