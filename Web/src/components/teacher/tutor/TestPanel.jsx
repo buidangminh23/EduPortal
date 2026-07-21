@@ -3,6 +3,7 @@ import { Send, Bot, RefreshCw } from 'lucide-react';
 import { resolveTutorResponse } from '../../../lib/tutor/resolve';
 import { GDPT2018_BASE_KNOWLEDGE } from '../../../data/gdpt2018BaseKnowledge';
 import { formatTutorText } from '../../../lib/tutor/formatText';
+import { formatFocusedResponse } from '../../../lib/tutor/intentFocalizer';
 
 export default function TestPanel({ 
   entries = [], 
@@ -45,7 +46,6 @@ export default function TestPanel({
 
     setTimeout(() => {
       let replyText = '';
-      const normalized = userText.toLowerCase().trim();
 
       // If we are currently in a Socratic dialogue, check student response
       if (activePreset.name === 'Gợi mở từng bước' && activeExercise) {
@@ -72,35 +72,7 @@ export default function TestPanel({
       const matchedEntry = resolution.entry;
 
       if (matchedEntry) {
-        const solution = matchedEntry.solutions?.[0];
-
-        if (activePreset.name === 'Gợi mở từng bước' && solution && solution.steps?.length > 0) {
-          // Initialize Socratic flow
-          const firstStep = solution.steps[0];
-          replyText = `### 📐 Giải đáp: **${matchedEntry.topic}** (Phương pháp gợi mở)\n\nChào bạn, hãy cùng giải bài toán này từng bước một nhé.\n\n**Đề bài:** ${solution.problem}\n\n**Bước 1:** ${firstStep.content}\n\n*Câu hỏi gợi ý:* ${firstStep.hint || 'Hãy thực hiện phép tính trên.'}`;
-          setActiveExercise({
-            problem: solution.problem,
-            steps: solution.steps,
-            answer: solution.answer
-          });
-          setCurrentStepIdx(0);
-        } else if (activePreset.name === 'Mẫu rồi luyện' && solution) {
-          replyText = `### 📐 Lời giải mẫu: **${matchedEntry.topic}**\n\n**Bài toán:** ${solution.problem}\n\n**Giải chi tiết từng bước:**\n\n${solution.steps.map(s => `- **Bước ${s.n}:** ${s.content}`).join('\n')}\n\n**Kết quả:** $${solution.answer}$$\n\n---\n\n*Bây giờ bạn hãy thử làm một bài tập tự luyện tương tự nhé!*`;
-        } else if (activePreset.name === 'Chắc lý thuyết trước') {
-          replyText = `### 📚 Lý thuyết trọng tâm: **${matchedEntry.topic}**\n\n**Nội dung kiến thức cần nắm:**\n\n${matchedEntry.content}\n\n${solution ? `*Ví dụ minh họa:* ${solution.problem}\nĐáp án: $${solution.answer}$` : ''}\n\n*Hãy ghi nhớ kỹ công thức và điều kiện áp dụng trước khi giải bài nhé!*`;
-        } else if (activePreset.name === 'Ôn thi tốc độ' && solution) {
-          replyText = `### ⚡ Mẹo giải nhanh: **${matchedEntry.topic}**\n\n**Bài toán:** ${solution.problem}\n\n**Hướng đi nhanh nhất:** ${solution.steps[0]?.content || matchedEntry.content}\n\n**Đáp số trắc nghiệm:** $${solution.answer}$$\n\n*Mẹo ôn thi:* Hãy nhớ dạng này thường có bẫy ở điều kiện xác định.`;
-        } else {
-          // Fallback if no solution is attached
-          replyText = `### 📖 Kiến thức bộ môn: **${matchedEntry.topic}**\n\n${matchedEntry.content}\n\n*(Chưa soạn bài tập mẫu cho chuyên đề này)*`;
-        }
-
-        // Apply tone modifications
-        if (tone === 'than_mat') {
-          replyText += `\n\n*Cố lên nhé, bạn đang làm rất tốt! Cần mình trợ giúp gì thêm cứ nói nha. ❤️*`;
-        } else if (tone === 'nghiem_tuc') {
-          replyText += `\n\n*Đề nghị ôn tập kỹ công thức trước khi sang chủ đề tiếp theo.*`;
-        }
+        replyText = formatFocusedResponse(userText, matchedEntry, activePreset.name, tone);
       } else {
         // Guardrail: Do not fabricate answers
         replyText = `### ⚠️ Thông báo từ Gia sư AI:\n\nEm chưa được huấn luyện về từ khóa **"${userText}"** trong chuyên đề môn học này.\n\n*Giáo viên sẽ nhận được thông tin câu hỏi này để cập nhật thêm vào kho kiến thức.*`;
