@@ -696,50 +696,118 @@ export default function MockExamTab({ student }) {
                       dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(currentQuestion.question) }}
                     />
 
-                    {/* Options */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {currentQuestion.options.map(option => {
-                        const isSelected = examAnswers[currentQuestion.id] === option.key;
-                        return (
-                          <button
-                            key={option.key}
-                            onClick={() => handleSelectOption(currentQuestion.id, option.key)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '16px',
-                              borderRadius: '12px',
-                              border: isSelected ? '2px solid var(--accent-primary)' : '1px solid #cbd5e1',
-                              background: isSelected ? 'var(--accent-primary-glow)' : 'white',
-                              color: '#1e293b',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontWeight: isSelected ? 600 : 500,
-                              fontSize: '0.92rem',
-                              transition: 'all 0.15s',
-                              gap: '12px'
-                            }}
-                          >
-                            <span style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              border: isSelected ? 'none' : '1px solid #94a3b8',
-                              background: isSelected ? 'var(--accent-primary)' : 'transparent',
-                              color: isSelected ? 'white' : '#64748b',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.8rem',
-                              fontWeight: 'bold'
-                            }}>
-                              {option.key}
-                            </span>
-                            <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {/* Question Type 1: 4 Options (Single Choice A, B, C, D) */}
+                    {(!currentQuestion.type || currentQuestion.type === 'single') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {currentQuestion.options?.map(option => {
+                          const isSelected = examAnswers[currentQuestion.id] === option.key;
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              onClick={() => handleSelectOptionSingle(currentQuestion.id, option.key)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '16px',
+                                borderRadius: '12px',
+                                border: isSelected ? '2px solid var(--accent-primary, #6366f1)' : '1px solid #cbd5e1',
+                                background: isSelected ? 'rgba(99, 102, 241, 0.08)' : 'white',
+                                color: '#1e293b',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontWeight: isSelected ? 700 : 500,
+                                fontSize: '0.92rem',
+                                transition: 'all 0.15s',
+                                gap: '12px'
+                              }}
+                            >
+                              <span style={{
+                                width: '26px',
+                                height: '26px',
+                                borderRadius: '50%',
+                                background: isSelected ? 'var(--accent-primary, #6366f1)' : '#f1f5f9',
+                                color: isSelected ? 'white' : '#475569',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.85rem',
+                                fontWeight: 800
+                              }}>
+                                {option.key}
+                              </span>
+                              <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Question Type 2: True / False (Phần II) */}
+                    {currentQuestion.type === 'tf' && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                          <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                              <th style={{ padding: '10px', textAlign: 'left' }}>Mệnh đề</th>
+                              <th style={{ padding: '10px', width: '90px', textAlign: 'center' }}>Đúng</th>
+                              <th style={{ padding: '10px', width: '90px', textAlign: 'center' }}>Sai</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentQuestion.statements?.map(st => {
+                              const userAnsObj = examAnswers[currentQuestion.id] || {};
+                              const userVal = userAnsObj[st.id];
+
+                              return (
+                                <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '12px 10px' }}>
+                                    <strong>{st.id})</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(st.text) }} />
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectOptionTF(currentQuestion.id, st.id, true)}
+                                      className={`btn ${userVal === true ? 'btn-primary' : 'btn-secondary'}`}
+                                      style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px' }}
+                                    >
+                                      Đúng
+                                    </button>
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectOptionTF(currentQuestion.id, st.id, false)}
+                                      className={`btn ${userVal === false ? 'btn-primary' : 'btn-secondary'}`}
+                                      style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px' }}
+                                    >
+                                      Sai
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Question Type 3: Short Answer (Phần III) */}
+                    {currentQuestion.type === 'short' && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                          Nhập đáp số / kết quả của bạn:
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Gõ kết quả số học vào đây (ví dụ: 2, 15, 3.14)..."
+                          value={examAnswers[currentQuestion.id] || ''}
+                          onChange={e => handleSelectOptionShort(currentQuestion.id, e.target.value)}
+                          style={{ height: '48px', fontSize: '1rem', fontWeight: 600 }}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })()}
