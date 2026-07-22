@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES } from '../../data/mockExamsData';
+import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
   Award,
   ArrowRight,
@@ -498,7 +499,7 @@ export default function MockExamTab({ student }) {
 
                     <p
                       style={{ fontSize: '1.05rem', fontWeight: 600, color: '#1e293b', marginBottom: '24px', lineHeight: 1.6 }}
-                      dangerouslySetInnerHTML={{ __html: currentQuestion.question }}
+                      dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(currentQuestion.question) }}
                     />
 
                     {/* Options */}
@@ -540,7 +541,7 @@ export default function MockExamTab({ student }) {
                             }}>
                               {option.key}
                             </span>
-                            <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                            <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
                           </button>
                         );
                       })}
@@ -717,7 +718,7 @@ export default function MockExamTab({ student }) {
 
                     <p
                       style={{ fontSize: '0.98rem', fontWeight: 600, color: '#1e293b', marginBottom: '16px', lineHeight: 1.5 }}
-                      dangerouslySetInnerHTML={{ __html: q.question }}
+                      dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.question) }}
                     />
 
                     {/* Options show */}
@@ -768,7 +769,7 @@ export default function MockExamTab({ student }) {
                             }}>
                               {option.key}
                             </strong>
-                            <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                            <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
                           </div>
                         );
                       })}
@@ -785,7 +786,7 @@ export default function MockExamTab({ student }) {
                       lineHeight: 1.5
                     }}>
                       <strong style={{ display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', color: '#6366f1' }}>LỜI GIẢI CHI TIẾT:</strong>
-                      <div dangerouslySetInnerHTML={{ __html: q.explanation }} />
+                      <div dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.explanation) }} />
                     </div>
                   </div>
                 );
