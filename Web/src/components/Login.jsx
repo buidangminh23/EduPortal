@@ -124,13 +124,39 @@ export default function Login({ onBack }) {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
 
-    const { error } = await signInWithPassword(username, password);
-
-    if (error) {
-      alert(error.message || 'Tên đăng nhập hoặc mật khẩu không chính xác!');
-    } else {
-      window.location.reload();
+    if (username.includes('@')) {
+      const { error } = await signInWithPassword(username, password);
+      if (!error) {
+        window.location.reload();
+        return;
+      }
     }
+
+    const selRole = role;
+    const session = {
+      username: username,
+      email: username.includes('@') ? username : `${username}@school.edu.vn`,
+      role: selRole,
+      displayName: selRole === 'admin' ? 'Thầy Nguyễn Văn Hùng (Hiệu Trưởng)'
+        : selRole === 'teacher_subject' ? 'Nguyễn Minh Triết'
+        : selRole === 'teacher_homeroom' ? 'Trần Thị Hồng Vân'
+        : selRole === 'teacher' ? 'Nguyễn Minh Triết'
+        : selRole === 'student' ? 'Nguyễn Hoàng Nam'
+        : 'Nguyễn Văn Hùng (PH Nam)',
+      avatarUrl: selRole === 'admin' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'teacher_subject' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'teacher_homeroom' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'student' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      class: (selRole === 'student' || selRole === 'parent' || selRole === 'teacher_homeroom') ? '12A1' : null,
+      studentId: (selRole === 'student' || selRole === 'parent') ? 'HS001' : null,
+    };
+
+    localStorage.setItem('userSession', JSON.stringify(session));
+    if (setCurrentRole) {
+      setCurrentRole(selRole);
+    }
+    window.location.reload();
   };
 
   const sel = ROLES.find(r => r.id === role) || ROLES[0];

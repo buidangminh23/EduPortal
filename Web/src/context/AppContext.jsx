@@ -755,23 +755,48 @@ export const AppProvider = ({ children }) => {
   
   const { profile, signOut: authSignOut } = useAuth();
 
+  const [mockSession, setMockSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem('userSession');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const userSession = useMemo(() => {
-    if (!profile) return null;
-    return {
-      username: profile.email ? profile.email.split('@')[0] : '',
-      role: profile.role,
-      displayName: profile.full_name,
-      avatarUrl: profile.avatar_url,
-      class: profile.role === 'student' ? '12A1' : null,
-      studentId: profile.role === 'student' ? profile.id : null,
-      email: profile.email
-    };
-  }, [profile]);
+    if (profile) {
+      return {
+        username: profile.email ? profile.email.split('@')[0] : '',
+        role: profile.role,
+        displayName: profile.full_name,
+        avatarUrl: profile.avatar_url,
+        class: profile.role === 'student' ? '12A1' : null,
+        studentId: profile.role === 'student' ? profile.id : null,
+        email: profile.email
+      };
+    }
+    return mockSession;
+  }, [profile, mockSession]);
 
-  const currentRole = profile?.role || '';
+  const currentRole = userSession?.role || '';
 
-  const setUserSession = () => {};
-  const setCurrentRole = () => {};
+  const setUserSession = (session) => {
+    setMockSession(session);
+    if (session) {
+      localStorage.setItem('userSession', JSON.stringify(session));
+    } else {
+      localStorage.removeItem('userSession');
+    }
+  };
+
+  const setCurrentRole = (newRole) => {
+    if (userSession) {
+      const updated = { ...userSession, role: newRole };
+      localStorage.setItem('userSession', JSON.stringify(updated));
+      setMockSession(updated);
+    }
+  };
 
   // Shared student sub-tab state (controlled from Sidebar)
   const [studentSubTab, setStudentSubTab] = useState('overview');
