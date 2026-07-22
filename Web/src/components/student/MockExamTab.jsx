@@ -179,13 +179,25 @@ export default function MockExamTab({ student }) {
     };
   }, [examMode, examSecondsLeft, handleAutoSubmit]);
 
-  const handleStartExam = (exam) => {
-    setActiveExam(exam);
-    const subjects = getExamSubjects(exam);
+  const handleStartExam = (exam, subjectFilter = null) => {
+    let examToRun = exam;
+    if (subjectFilter) {
+      const filteredQs = exam.questions.filter(q => q.subject === subjectFilter);
+      examToRun = {
+        ...exam,
+        id: `${exam.id}_${subjectFilter}`,
+        title: `Đề thi thử Tốt nghiệp THPT Môn ${SUBJECT_NAMES[subjectFilter] || subjectFilter}`,
+        duration: 50, // Official 50 mins per single subject exam
+        questions: filteredQs
+      };
+    }
+
+    setActiveExam(examToRun);
+    const subjects = getExamSubjects(examToRun);
     setSelectedSubjectTab(subjects[0] || 'Math');
     setExamMode('taking');
     setExamAnswers({});
-    setExamSecondsLeft(exam.duration * 60);
+    setExamSecondsLeft(examToRun.duration * 60);
     setCurrentQuestionIndex(0);
     setReviewingPastAttempt(null);
   };
@@ -269,43 +281,50 @@ export default function MockExamTab({ student }) {
       {examMode === null && (
         <div>
           {/* Header Card */}
-          <div className="glass-panel" style={{ padding: '28px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5))' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div className="glass-panel" style={{ padding: '28px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.55))' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ClipboardList size={28} color="var(--accent-primary)" /> Thi Thử Đại Học THPT Quốc Gia (Format Bộ GD&ĐT 2025+)
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '6px' }}>
-                  Hệ thống phân chia theo các môn thi độc lập, hỗ trợ 3 dạng trắc nghiệm mới (4 lựa chọn, Đúng/Sai, Điền số) và tính điểm chuẩn 30.0đ.
+                  Chọn thi riêng lẻ từng <strong>Môn học</strong> (50 phút) hoặc thi toàn bộ <strong>Tổ hợp Khối thi</strong> (Toán - Lý - Hóa, Văn - Sử - Địa...).
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {Object.keys(BLOCKS).map(blockKey => (
-                  <button
-                    key={blockKey}
-                    onClick={() => setSelectedBlockKey(blockKey)}
-                    className={`btn ${selectedBlockKey === blockKey ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{
-                      padding: '10px 18px',
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      borderRadius: '12px',
-                      border: selectedBlockKey === blockKey ? 'none' : '1px solid #cbd5e1',
-                      background: selectedBlockKey === blockKey ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
-                      color: selectedBlockKey === blockKey ? 'white' : '#4f46e5'
-                    }}
-                  >
-                    {BLOCKS[blockKey].name}
-                  </button>
-                ))}
+
+              {/* Selector Bar 1: Block Selector */}
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Award size={14} color="var(--accent-primary)" /> 1. Chọn Tổ hợp Khối thi Đại Học:
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {Object.keys(BLOCKS).map(blockKey => (
+                    <button
+                      key={blockKey}
+                      onClick={() => setSelectedBlockKey(blockKey)}
+                      className={`btn ${selectedBlockKey === blockKey ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{
+                        padding: '10px 18px',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        borderRadius: '12px',
+                        border: selectedBlockKey === blockKey ? 'none' : '1px solid #cbd5e1',
+                        background: selectedBlockKey === blockKey ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
+                        color: selectedBlockKey === blockKey ? 'white' : '#4f46e5'
+                      }}
+                    >
+                      {BLOCKS[blockKey].name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Integrated System Exam Cards */}
+          {/* Integrated System Exam Cards & Single Subject Selection */}
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Award size={20} color="var(--accent-primary)" /> Đề thi THPT Quốc gia theo Môn học của {BLOCKS[selectedBlockKey].name}
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={20} color="var(--accent-primary)" /> Danh sách Môn thi & Đề thi THPT Quốc Gia ({BLOCKS[selectedBlockKey].name})
             </h3>
 
             {(() => {
@@ -315,26 +334,36 @@ export default function MockExamTab({ student }) {
               const subjects = Array.from(new Set(systemExam.questions.map(q => q.subject)));
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(255, 255, 255, 0.85))' }}>
+                <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(255, 255, 255, 0.9))', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', background: 'rgba(99,102,241,0.1)', padding: '4px 10px', borderRadius: '99px' }}>
-                          Đề thi THPT Quốc gia Chính thức
-                        </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={14} /> {systemExam.duration} phút
-                        </span>
-                      </div>
-
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-primary)', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '99px' }}>
+                        Đề thi THPT Quốc gia Chính thức
+                      </span>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', marginTop: '8px' }}>
                         {systemExam.title}
                       </h4>
                     </div>
+                  </div>
 
-                    <div style={{ marginTop: '20px' }}>
+                  {/* Explicit Subject Selection Options */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>
+                      👉 Vui lòng chọn phương thức làm bài thi bên dưới:
+                    </div>
+
+                    {/* Option 1: Full Block Multi-Subject Exam */}
+                    <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '2px solid #6366f1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#4338ca', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          🚀 Thi toàn bộ Tổ hợp {BLOCKS[selectedBlockKey].name} ({subjects.map(s => SUBJECT_NAMES[s]).join(' - ')})
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>
+                          Thời gian: <strong>{systemExam.duration} phút</strong> | Thang điểm xét tuyển: <strong>30.0 điểm</strong> (3 Môn liên tiếp)
+                        </div>
+                      </div>
                       <button
-                        onClick={() => handleStartExam(systemExam)}
+                        onClick={() => handleStartExam(systemExam, null)}
                         className="btn btn-primary"
                         style={{
                           width: '100%',
