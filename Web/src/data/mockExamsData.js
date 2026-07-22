@@ -84,6 +84,27 @@ export const QUESTIONS = {
       ],
       correctKey: 'A',
       explanation: 'Không gian mẫu là số cách chọn 2 quả bóng bất kỳ từ 10 quả: <i>n</i>(&Omega;) = <i>C</i><sub>10</sub><sup>2</sup> = 45.<br/>Gọi biến cố <i>X</i> là "lấy được 2 quả cùng màu" (hoặc cùng đỏ hoặc cùng xanh).<br/>- Số cách lấy 2 bóng đỏ: <i>C</i><sub>6</sub><sup>2</sup> = 15.<br/>- Số cách lấy 2 bóng xanh: <i>C</i><sub>4</sub><sup>2</sup> = 6.<br/>Số kết quả thuận lợi cho biến cố <i>X</i> là: <i>n</i>(<i>X</i>) = 15 + 6 = 21.<br/>Xác suất cần tìm là: <i>P</i>(<i>X</i>) = 21/45 = 7/15. Chọn A.'
+    },
+    {
+      id: 'QM6',
+      subject: 'Math',
+      type: 'tf',
+      question: 'Cho hàm số <i>y</i> = <i>f</i>(<i>x</i>) = <i>x</i><sup>3</sup> - 3<i>x</i><sup>2</sup> + 2. Xét tính Đúng hoặc Sai của các mệnh đề sau:',
+      statements: [
+        { id: 'a', text: 'Hàm số <i>y</i> = <i>f</i>(<i>x</i>) đồng biến trên khoảng (2, +&infin;).', correct: true },
+        { id: 'b', text: 'Giá trị cực đại của hàm số là <i>y</i><sub>CĐ</sub> = 2.', correct: true },
+        { id: 'c', text: 'Điểm cực tiểu của đồ thị hàm số là <i>M</i>(0, 2).', correct: false },
+        { id: 'd', text: 'Đồ thị hàm số cắt trục hoành tại 3 điểm phân biệt.', correct: true }
+      ],
+      explanation: 'Đạo hàm: <i>y</i>\' = 3<i>x</i><sup>2</sup> - 6<i>x</i> = 3<i>x</i>(<i>x</i> - 2). Cho <i>y</i>\' = 0 &hArr; <i>x</i> = 0 hoặc <i>x</i> = 2.<br/>- a) Đúng: Trên (2, +&infin;), <i>y</i>\' > 0 nên hàm số đồng biến.<br/>- b) Đúng: Với <i>x</i> = 0 &rArr; <i>y</i><sub>CĐ</sub> = 2.<br/>- c) Sai: Điểm cực tiểu của đồ thị hàm số là <i>N</i>(2, -2).<br/>- d) Đúng: Phương trình <i>x</i><sup>3</sup> - 3<i>x</i><sup>2</sup> + 2 = 0 có 3 nghiệm thực phân biệt.'
+    },
+    {
+      id: 'QM7',
+      subject: 'Math',
+      type: 'short',
+      question: 'Cho khối chóp <i>S.ABC</i> có đáy <i>ABC</i> là tam giác vuông cân tại <i>B</i>, <i>AB</i> = 2 cm. Cạnh bên <i>SA</i> vuông góc với mặt phẳng đáy và <i>SA</i> = 3 cm. Tính thể tích <i>V</i> của khối chóp <i>S.ABC</i> theo cm<sup>3</sup>. (Nhập đáp số là số nguyên)',
+      correctAnswer: '2',
+      explanation: 'Diện tích đáy: <i>S</i><sub>&Delta;ABC</sub> = (1/2) &middot; <i>AB</i> &middot; <i>BC</i> = (1/2) &middot; 2 &middot; 2 = 2 cm<sup>2</sup>.<br/>Thể tích khối chóp: <i>V</i> = (1/3) &middot; <i>S</i><sub>&Delta;ABC</sub> &middot; <i>SA</i> = (1/3) &middot; 2 &middot; 3 = 2 cm<sup>3</sup>.<br/>Đáp số cần điền: 2.'
     }
   ],
   Physics: [
@@ -151,6 +172,27 @@ export const QUESTIONS = {
       ],
       correctKey: 'A',
       explanation: 'Công thức khoảng vân giao thoa: <i>i</i> = &lambda;<i>D</i> / <i>a</i>.<br/>Đổi đơn vị: &lambda; = 0,5 &mu;m = 0,5 &middot; 10<sup>-3</sup> mm; <i>D</i> = 2 m = 2000 mm; <i>a</i> = 1 mm.<br/>Tính toán: <i>i</i> = (0,5 &middot; 10<sup>-3</sup> &middot; 2000) / 1 = 1 mm. Chọn A.'
+    },
+    {
+      id: 'QP6',
+      subject: 'Physics',
+      type: 'tf',
+      question: 'Xét hiện tượng cộng hưởng điện trong mạch RLC nối tiếp khi tần số góc &omega; thay đổi. Đánh giá tính Đúng hoặc Sai của các phát biểu:',
+      statements: [
+        { id: 'a', text: 'Khi xảy ra cộng hưởng điện, tổng trở mạch đạt giá trị nhỏ nhất <i>Z</i><sub>min</sub> = <i>R</i>.', correct: true },
+        { id: 'b', text: 'Cường độ dòng điện hiệu dụng trong mạch đạt giá trị lớn nhất <i>I</i><sub>max</sub> = <i>U</i> / <i>R</i>.', correct: true },
+        { id: 'c', text: 'Điện áp giữa hai đầu đoạn mạch trễ pha &pi;/2 so với dòng điện.', correct: false },
+        { id: 'd', text: 'Hệ số công suất của đoạn mạch đạt giá trị cực đại cos&phi; = 1.', correct: true }
+      ],
+      explanation: 'Khi <i>Z</i><sub>L</sub> = <i>Z</i><sub>C</sub> &hArr; &omega;<i>L</i> = 1/(&omega;<i>C</i>):<br/>- a) Đúng: <i>Z</i> = &radic;[<i>R</i><sup>2</sup> + (<i>Z</i><sub>L</sub> - <i>Z</i><sub>C</sub>)<sup>2</sup>] = <i>R</i>.<br/>- b) Đúng: <i>I</i> = <i>U</i> / <i>R</i>.<br/>- c) Sai: Khi cộng hưởng, điện áp <i>u</i> cùng pha với <i>i</i> (&phi; = 0).<br/>- d) Đúng: cos&phi; = <i>R</i> / <i>Z</i> = 1.'
+    },
+    {
+      id: 'QP7',
+      subject: 'Physics',
+      type: 'short',
+      question: 'Một sóng cơ truyền với tần số <i>f</i> = 50 Hz và tốc độ <i>v</i> = 10 m/s. Tính bước sóng &lambda; của sóng theo đơn vị cm. (Nhập số nguyên)',
+      correctAnswer: '20',
+      explanation: 'Bước sóng &lambda; = <i>v</i> / <i>f</i> = 10 / 50 = 0,2 m = 20 cm.<br/>Đáp số cần điền: 20.'
     }
   ],
   Chemistry: [

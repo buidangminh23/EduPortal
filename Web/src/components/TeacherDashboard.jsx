@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import TeacherOverview from './dash/TeacherOverview';
 import AiLessonPlannerTab from './teacher/AiLessonPlannerTab';
+import AiTutorTrainerTab from './teacher/AiTutorTrainerTab';
 
 
 export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
@@ -883,6 +884,10 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
       {activeTab === 'ai_planner' && (
         <AiLessonPlannerTab />
+      )}
+
+      {activeTab === 'ai_tutor_trainer' && (
+        <AiTutorTrainerTab />
       )}
 
       {activeTab === 'conduct' && (

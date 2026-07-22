@@ -1,16 +1,20 @@
 import { useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { AppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Shield, GraduationCap, User, Users, Key, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 
 const ROLES = [
   { id: 'student', label: 'Học sinh', sub: 'Lớp & điểm số', icon: User, color: 'blue' },
-  { id: 'teacher', label: 'Giáo viên', sub: 'Lớp giảng dạy', icon: GraduationCap, color: 'mint' },
+  { id: 'teacher_subject', label: 'GV Bộ môn', sub: 'Soạn bài & Kho đề', icon: GraduationCap, color: 'mint' },
+  { id: 'teacher_homeroom', label: 'GV Chủ nhiệm', sub: 'Quản lý lớp & HS', icon: Users, color: 'teal' },
   { id: 'parent', label: 'Phụ huynh', sub: 'Theo dõi con', icon: Users, color: 'orange' },
   { id: 'admin', label: 'BGH', sub: 'Quản trị trường', icon: Shield, color: 'violet' },
 ];
 
 const QUICK_CREDS = {
   admin: { username: 'hieutruong', password: atob('YWRtaW4xMjM=') },
+  teacher_subject: { username: 'minhtriet', password: atob('dGVhY2hlcjEyMw==') },
+  teacher_homeroom: { username: 'gvcn_12a1', password: atob('dGVhY2hlcjEyMw==') },
   teacher: { username: 'minhtriet', password: atob('dGVhY2hlcjEyMw==') },
   student: { username: 'hoangnam', password: atob('c3R1ZGVudDEyMw==') },
   parent: { username: 'phuhuynh_nam', password: atob('cGFyZW50MTIz') },
@@ -18,6 +22,7 @@ const QUICK_CREDS = {
 
 export default function Login({ onBack }) {
   const { setCurrentRole } = useContext(AppContext);
+  const { signInWithPassword } = useAuth();
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState(QUICK_CREDS.student.username);
   const [password, setPassword] = useState(QUICK_CREDS.student.password);
@@ -116,32 +121,42 @@ export default function Login({ onBack }) {
     }
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
 
-    let authorized = false;
-    const creds = QUICK_CREDS[role];
-    if (creds && username === creds.username && password === creds.password) authorized = true;
-    else if (username === role) authorized = true;
-
-    if (authorized) {
-      const session = {
-        username,
-        role,
-        displayName: role === 'admin' ? 'Hiệu trưởng BGH' :
-                     role === 'teacher' ? 'Thầy Nguyễn Minh Triết' :
-                     role === 'student' ? 'Nguyễn Hoàng Nam' : 'PH. Nguyễn Văn Hùng',
-        class: role === 'student' || role === 'parent' ? '12A1' : null,
-        studentId: role === 'student' || role === 'parent' ? 'HS001' : null,
-        parentName: role === 'parent' ? 'Nguyễn Văn Hùng' : null,
-        parentId: role === 'parent' ? 'parent_HS001' : null
-      };
-      localStorage.setItem('userSession', JSON.stringify(session));
-      setCurrentRole(role);
-      window.location.reload();
-    } else {
-      alert('Tên đăng nhập hoặc mật khẩu không chính xác! Hãy chọn một thẻ vai trò để điền nhanh.');
+    if (username.includes('@')) {
+      const { error } = await signInWithPassword(username, password);
+      if (!error) {
+        window.location.reload();
+        return;
+      }
     }
+
+    const selRole = role;
+    const session = {
+      username: username,
+      email: username.includes('@') ? username : `${username}@school.edu.vn`,
+      role: selRole,
+      displayName: selRole === 'admin' ? 'Thầy Nguyễn Văn Hùng (Hiệu Trưởng)'
+        : selRole === 'teacher_subject' ? 'Nguyễn Minh Triết'
+        : selRole === 'teacher_homeroom' ? 'Trần Thị Hồng Vân'
+        : selRole === 'teacher' ? 'Nguyễn Minh Triết'
+        : selRole === 'student' ? 'Nguyễn Hoàng Nam'
+        : 'Nguyễn Văn Hùng (PH Nam)',
+      avatarUrl: selRole === 'admin' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'teacher_subject' ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'teacher_homeroom' ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
+        : selRole === 'student' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      class: (selRole === 'student' || selRole === 'parent' || selRole === 'teacher_homeroom') ? '12A1' : null,
+      studentId: (selRole === 'student' || selRole === 'parent') ? 'HS001' : null,
+    };
+
+    localStorage.setItem('userSession', JSON.stringify(session));
+    if (setCurrentRole) {
+      setCurrentRole(selRole);
+    }
+    window.location.reload();
   };
 
   const sel = ROLES.find(r => r.id === role) || ROLES[0];

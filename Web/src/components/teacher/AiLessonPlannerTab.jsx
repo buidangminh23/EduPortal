@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import { 
   Sparkles, 
   Send, 
@@ -495,7 +496,7 @@ export default function AiLessonPlannerTab() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {generatedDoc.questions.map((q, idx) => (
                       <div key={q.id} style={{ borderBottom: '1px solid var(--border-card)', paddingBottom: '16px' }}>
-                        <p style={{ fontWeight: 700, marginBottom: '10px' }}>Câu {idx + 1}: {q.question}</p>
+                        <p style={{ fontWeight: 700, marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: `Câu ${idx + 1}: ${decodeHtmlEntities(q.question)}` }} />
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingLeft: '12px', marginBottom: '10px' }}>
                           {q.options.map(opt => {
@@ -512,7 +513,7 @@ export default function AiLessonPlannerTab() {
                                   fontSize: '0.82rem'
                                 }}
                               >
-                                <strong>{opt.key}.</strong> {opt.text} {isCorrect && '✓'}
+                                <strong>{opt.key}.</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(opt.text) }} /> {isCorrect && '✓'}
                               </div>
                             );
                           })}
@@ -520,7 +521,7 @@ export default function AiLessonPlannerTab() {
 
                         {/* Explanation block */}
                         <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.02)', borderLeft: '3px solid #cbd5e1', fontSize: '0.78rem', marginTop: '10px', color: 'var(--text-secondary)' }}>
-                          <strong>Giải thích đáp án:</strong> {q.explanation}
+                          <strong>Giải thích đáp án:</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.explanation) }} />
                         </div>
                       </div>
                     ))}
@@ -539,15 +540,38 @@ export default function AiLessonPlannerTab() {
 }
 
 const detectSubject = (text) => {
-  const t = text.toLowerCase();
-  const litKeywords = ['chí phèo', 'vợ nhặt', 'tây tiến', 'sóng', 'người lái đò', 'vợ chồng a phủ', 'văn học', 'bài thơ', 'tác phẩm', 'quang dũng', 'kim lân', 'nguyễn tuân', 'xuân quỳnh', 'nam cao', 'ngữ văn', 'văn'];
-  const mathKeywords = ['py-ta-go', 'pythagoras', 'tích phân', 'đạo hàm', 'số mũ', 'hình học', 'giới hạn', 'toán học', 'đại số', 'khảo sát hàm số', 'nguyên hàm', 'toán', 'logarit'];
-  const physicsKeywords = ['sóng âm', 'dao động', 'điện xoay chiều', 'vật lý', 'lực', 'quang hình', 'ánh sáng', 'từ trường', 'lý'];
-  const englishKeywords = ['tiếng anh', 'english', 'tenses', 'grammar', 'ngữ pháp', 'từ vựng', 'vocabulary', 'pronunciation'];
+  if (!text) return null;
+  const t = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  if (litKeywords.some(kw => t.includes(kw))) return 'Ngữ văn';
+  const mathKeywords = [
+    'pitago', 'pytago', 'pythagoras', 'py ta go', 'pi ta go',
+    'tich phan', 'dao ham', 'nguyen ham', 'logarit', 'hinh hoc', 'dai so',
+    'vecto', 'phuong trinh', 'bat phuong trinh', 'cuc tri', 'ham so', 'oxyz',
+    'xac suat', 'thong ke', 'cap so cong', 'cap so nhan', 'so phuc', 'tam giac',
+    'duong tron', 'ma tran', 'he phuong trinh', 'toan hoc', 'toan'
+  ];
+
+  const physicsKeywords = [
+    'vat ly', 'vat li', 'mon ly', 'mon li', 'song am', 'dao dong',
+    'dien xoay chieu', 'mach rlc', 'quang hinh', 'giao thoa', 'thau kinh',
+    'hat nhan', 'dong luc hoc', 'newton', 'tu truong', 'dien truong', 'buc xa', 'quang dien'
+  ];
+
+  const litKeywords = [
+    'chi pheo', 'vo nhat', 'lao hac', 'tay tien', 'song', 'nguoi lai do',
+    'vo chong a phu', 'chiec thuyen ngoai xa', 'nhung ngoi sao xa xoi', 'truyen kieu', 'tat den',
+    'van hoc', 'bai tho', 'tac pham', 'quang dung', 'kim lan', 'nguyen tuan',
+    'xuan quynh', 'nam cao', 'ngu van', 'van'
+  ];
+
+  const englishKeywords = [
+    'tieng anh', 'english', 'grammar', 'vocabulary', 'pronunciation',
+    'tense', 'passive voice', 'present perfect', 'relative clause', 'conditional'
+  ];
+
   if (mathKeywords.some(kw => t.includes(kw))) return 'Toán học';
   if (physicsKeywords.some(kw => t.includes(kw))) return 'Vật lý';
+  if (litKeywords.some(kw => t.includes(kw))) return 'Ngữ văn';
   if (englishKeywords.some(kw => t.includes(kw))) return 'Tiếng Anh';
   return null;
 };

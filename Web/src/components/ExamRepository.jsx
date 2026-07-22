@@ -2,6 +2,7 @@ import { useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES } from '../data/mockExamsData';
+import { decodeHtmlEntities } from '../lib/tutor/formatText';
 import {
   BookOpen,
   ThumbsUp,
@@ -370,7 +371,7 @@ export default function ExamRepository() {
                 return (
                   <div key={question.id} style={{ border: '1px solid #e5e7eb', borderRadius: 14, padding: 14, background: '#fff' }}>
                     <div style={{ fontWeight: 800, color: '#111827', marginBottom: 10, lineHeight: 1.5 }}>
-                      Câu {question.displayNumber}: <span dangerouslySetInnerHTML={{ __html: question.question }} />
+                      Câu {question.displayNumber}: <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(question.question) }} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       {question.options.map(option => {
@@ -395,7 +396,7 @@ export default function ExamRepository() {
                               lineHeight: 1.45,
                             }}
                           >
-                            <strong>{option.key}.</strong> <span dangerouslySetInnerHTML={{ __html: option.text }} />
+                            <strong>{option.key}.</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
                           </button>
                         );
                       })}
@@ -408,7 +409,7 @@ export default function ExamRepository() {
                             {' '}({isCorrect ? 'Bạn trả lời đúng' : `Bạn chọn ${answered || 'chưa chọn'}`})
                           </span>
                         )}
-                        <div style={{ marginTop: 5 }} dangerouslySetInnerHTML={{ __html: question.explanation }} />
+                        <div style={{ marginTop: 5 }} dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(question.explanation) }} />
                       </div>
                     )}
                   </div>
