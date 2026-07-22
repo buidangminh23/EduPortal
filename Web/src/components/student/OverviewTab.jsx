@@ -101,7 +101,7 @@ function loadStudentNotes(studentId) {
 }
 
 export default function OverviewTab({ student, setActiveTab }) {
-  const { attendanceLogs, conductLogs, deadlines, bulletins, setStudentSubTab } = useContext(AppContext);
+  const { attendanceLogs, conductLogs, deadlines, bulletins, setStudentSubTab, t } = useContext(AppContext);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [notes, setNotes] = useState(() => loadStudentNotes(student?.id));
@@ -117,7 +117,7 @@ export default function OverviewTab({ student, setActiveTab }) {
 
   const studentConductLogs = conductLogs ? conductLogs.filter(l => l.studentId === student.id) : [];
   const conductScore = 100 + studentConductLogs.reduce((acc, c) => acc + c.points, 0);
-  const conductGrade = conductScore >= 90 ? 'Tốt' : conductScore >= 70 ? 'Khá' : conductScore >= 50 ? 'TB' : 'Yếu';
+  const conductGrade = conductScore >= 90 ? t('Tốt', 'Good') : conductScore >= 70 ? t('Khá', 'Fair') : conductScore >= 50 ? t('TB', 'Average') : t('Yếu', 'Poor');
 
   const myDeadlines = (deadlines || [])
     .filter(d => !d.done && (d.classTarget === student.class || d.classTarget === 'personal'))
@@ -157,28 +157,28 @@ export default function OverviewTab({ student, setActiveTab }) {
     <div>
       <div className="page-head">
         <div>
-          <h2 className="page-title">Chào {firstName}, sẵn sàng học chưa? 🚀</h2>
+          <h2 className="page-title">{t(`Chào ${firstName}, sẵn sàng học chưa? 🚀`, `Hello ${firstName}, ready to learn? 🚀`)}</h2>
           <p className="page-sub">
-            Hôm nay bạn có <b style={{ color: 'var(--accent-ink)' }}>{myDeadlines.length} bài tập</b> đến hạn và <b style={{ color: 'var(--accent-ink)' }}>{PERIODS.length} tiết học</b>.
+            {t('Hôm nay bạn có ', 'Today you have ')}<b style={{ color: 'var(--accent-ink)' }}>{myDeadlines.length} {t('bài tập', 'assignments')}</b> {t('đến hạn và ', 'due and ')}<b style={{ color: 'var(--accent-ink)' }}>{PERIODS.length} {t('tiết học', 'periods')}</b>.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowNoteModal(true)}><Plus size={18} /> Ghi chú mới</button>
+        <button className="btn btn-primary" onClick={() => setShowNoteModal(true)}><Plus size={18} /> {t('Ghi chú mới', 'New Note')}</button>
       </div>
 
       {/* Stats */}
       <div className="ds-grid cols-4" style={{ marginBottom: 20 }}>
-        <Stat icon={Star} color="blue" val={gpa} label="Điểm trung bình" sub="Học kỳ này" trend={0.3} delay="d1" />
-        <Stat icon={Trophy} color="amber" val="#3" label="Hạng trong lớp" sub="trên 42 bạn" trend={1} delay="d2" />
-        <Stat icon={CheckCircle} color="mint" val={`${attendancePct}%`} label="Chuyên cần" sub="Tuyệt vời!" delay="d3" />
-        <Stat icon={Heart} color="pink" val={conductGrade} label="Hạnh kiểm" sub="Học kỳ II" delay="d4" />
+        <Stat icon={Star} color="blue" val={gpa} label={t('Điểm trung bình', 'GPA Score')} sub={t('Học kỳ này', 'This Semester')} trend={0.3} delay="d1" />
+        <Stat icon={Trophy} color="amber" val="#3" label={t('Hạng trong lớp', 'Class Rank')} sub={t('trên 42 bạn', 'out of 42')} trend={1} delay="d2" />
+        <Stat icon={CheckCircle} color="mint" val={`${attendancePct}%`} label={t('Chuyên cần', 'Attendance')} sub={t('Tuyệt vời!', 'Great!')} delay="d3" />
+        <Stat icon={Heart} color="pink" val={conductGrade} label={t('Hạnh kiểm', 'Conduct')} sub={t('Học kỳ II', 'Semester II')} delay="d4" />
       </div>
 
       <div className="ds-grid" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
         {/* Left */}
         <div className="col" style={{ gap: 20 }}>
           {/* Timetable */}
-          <SectionCard title="Lịch học hôm nay" icon={Calendar} delay="d3"
-            action={<button className="btn btn-soft btn-sm" onClick={() => setActiveTab && setActiveTab('calendar')}>Cả tuần <ChevronRight size={15} /></button>}>
+          <SectionCard title={t('Lịch học hôm nay', 'Today Schedule')} icon={Calendar} delay="d3"
+            action={<button className="btn btn-soft btn-sm" onClick={() => setActiveTab && setActiveTab('calendar')}>{t('Cả tuần', 'Full Week')} <ChevronRight size={15} /></button>}>
             <div className="col" style={{ gap: 9 }}>
               {PERIODS.map((p, i) => (
                 <div className="tt-period" key={i} style={{ borderLeftColor: `var(--${p.color})` }}>
@@ -188,15 +188,15 @@ export default function OverviewTab({ student, setActiveTab }) {
                     <div style={{ fontWeight: 700 }}>{p.subject}</div>
                     <div className="muted" style={{ fontSize: '0.8rem' }}>{p.room}</div>
                   </div>
-                  {i === 1 && <Pill color="blue" dot>Sắp tới</Pill>}
+                  {i === 1 && <Pill color="blue" dot>{t('Sắp tới', 'Upcoming')}</Pill>}
                 </div>
               ))}
             </div>
           </SectionCard>
 
           {/* Subject grades */}
-          <SectionCard title="Điểm các môn" icon={BarChart3} delay="d4"
-            action={<button className="btn btn-soft btn-sm" onClick={() => openStudentSubTab('competency_heatmap')}>Chi tiết</button>}>
+          <SectionCard title={t('Điểm các môn', 'Subject Grades')} icon={BarChart3} delay="d4"
+            action={<button className="btn btn-soft btn-sm" onClick={() => openStudentSubTab('competency_heatmap')}>{t('Chi tiết', 'Details')}</button>}>
             <div className="ds-grid cols-2" style={{ gap: 14 }}>
               {SUBJECT_KEYS.filter(k => typeof grades[k] === 'number').map((k) => {
                 const m = SUBJECT_META[k];
@@ -221,7 +221,7 @@ export default function OverviewTab({ student, setActiveTab }) {
         <div className="col" style={{ gap: 20 }}>
           <StreakWidget />
           {notes.length > 0 && (
-            <SectionCard title="Ghi chú học tập" icon={Plus} delay="d2">
+            <SectionCard title={t('Ghi chú học tập', 'Study Notes')} icon={Plus} delay="d2">
               <div className="col" style={{ gap: 8 }}>
                 {notes.slice(0, 3).map(note => (
                   <div key={note.id} className="row" style={{ alignItems: 'flex-start', padding: 10, border: '1px solid var(--line)', borderRadius: 'var(--r-md)' }}>
@@ -236,9 +236,9 @@ export default function OverviewTab({ student, setActiveTab }) {
             </SectionCard>
           )}
           {/* Assignments */}
-          <SectionCard title="Bài tập sắp đến hạn" icon={ClipboardList} delay="d3">
+          <SectionCard title={t('Bài tập sắp đến hạn', 'Upcoming Assignments')} icon={ClipboardList} delay="d3">
             <div className="col" style={{ gap: 8 }}>
-              {myDeadlines.length === 0 && <div className="muted" style={{ fontSize: '0.85rem', padding: '8px 2px' }}>Không có bài tập nào sắp đến hạn 🎉</div>}
+              {myDeadlines.length === 0 && <div className="muted" style={{ fontSize: '0.85rem', padding: '8px 2px' }}>{t('Không có bài tập nào sắp đến hạn 🎉', 'No upcoming assignments 🎉')}</div>}
               {myDeadlines.map((a, i) => {
                 const due = formatDue(a.date);
                 const color = ['blue', 'amber', 'mint', 'orange'][i % 4];
@@ -255,11 +255,11 @@ export default function OverviewTab({ student, setActiveTab }) {
                 );
               })}
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => openStudentSubTab('assignments')}>Xem tất cả bài tập</button>
+            <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 12 }} onClick={() => openStudentSubTab('assignments')}>{t('Xem tất cả bài tập', 'View All Assignments')}</button>
           </SectionCard>
 
           {/* Badges */}
-          <SectionCard title="Huy hiệu" icon={Trophy} delay="d4">
+          <SectionCard title={t('Huy hiệu', 'Badges')} icon={Trophy} delay="d4">
             <div className="ds-grid cols-3" style={{ gap: 10 }}>
               {BADGES.map((b, i) => (
                 <div className={`badge-tile bg-${b.color} ${b.got ? '' : 'locked'}`} key={i}>
@@ -271,9 +271,9 @@ export default function OverviewTab({ student, setActiveTab }) {
           </SectionCard>
 
           {/* Announcements */}
-          <SectionCard title="Bảng tin" icon={Bell} delay="d5">
+          <SectionCard title={t('Bảng tin', 'Bulletin News')} icon={Bell} delay="d5">
             <div className="col" style={{ gap: 12 }}>
-              {news.length === 0 && <div className="muted" style={{ fontSize: '0.85rem' }}>Chưa có thông báo mới.</div>}
+              {news.length === 0 && <div className="muted" style={{ fontSize: '0.85rem' }}>{t('Chưa có thông báo mới.', 'No new announcements.')}</div>}
               {news.map((a, i) => {
                 const tag = bulletinTag(a);
                 return (
@@ -295,25 +295,25 @@ export default function OverviewTab({ student, setActiveTab }) {
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 460 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>Ghi chú học tập mới</h3>
+              <h3 style={{ margin: 0 }}>{t('Ghi chú học tập mới', 'New Study Note')}</h3>
               <button className="icon-btn" onClick={() => setShowNoteModal(false)} aria-label="Đóng"><X size={18} /></button>
             </div>
             <form onSubmit={saveQuickNote}>
               <div className="form-group">
-                <label className="form-label">Nội dung ghi chú</label>
+                <label className="form-label">{t('Nội dung ghi chú', 'Note Content')}</label>
                 <textarea
                   className="form-control"
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}
-                  placeholder="Ví dụ: Ôn lại giao thoa sóng trước tiết Vật lý..."
+                  placeholder={t('Ví dụ: Ôn lại giao thoa sóng trước tiết Vật lý...', 'e.g. Review wave interference before Physics class...')}
                   rows={4}
                   required
                   style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1', resize: 'vertical' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowNoteModal(false)} style={{ flex: 1 }}>Hủy</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Lưu ghi chú</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowNoteModal(false)} style={{ flex: 1 }}>{t('Hủy', 'Cancel')}</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>{t('Lưu ghi chú', 'Save Note')}</button>
               </div>
             </form>
           </div>

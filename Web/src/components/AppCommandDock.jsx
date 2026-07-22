@@ -13,6 +13,25 @@ import {
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
+const DOCK_LABELS_EN = {
+  dashboard: 'Overview',
+  calendar: 'Calendar',
+  bulletin: 'School News',
+  students: 'Students',
+  timetable_generator: 'Timetable',
+  ai_risk: 'AI Risk',
+  exam_repository: 'Exams',
+  essay_grader: 'Grading',
+  meet: 'EduMeet',
+  seating_chart: 'Seating Chart',
+  journal: 'Class Journal',
+  duty_schedule: 'Duty Schedule',
+  tutor: 'AI Tutor',
+  study_group: 'Study Group',
+  chat: 'Teacher Chat',
+  meeting_booking: 'Appointments',
+};
+
 const COMMON_ACTIONS = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
   { id: 'calendar', label: 'Lịch', icon: CalendarDays },
@@ -53,7 +72,7 @@ const ROLE_ACTIONS = {
 };
 
 export default function AppCommandDock({ activeTab, setActiveTab }) {
-  const { currentRole, notifications } = useContext(AppContext);
+  const { currentRole, notifications, t } = useContext(AppContext);
 
   const actions = useMemo(() => {
     const merged = [...COMMON_ACTIONS, ...(ROLE_ACTIONS[currentRole] ?? [])];
@@ -62,26 +81,24 @@ export default function AppCommandDock({ activeTab, setActiveTab }) {
     return [...unique.values()].slice(0, 6);
   }, [currentRole]);
 
-  const unread = notifications
-    ? notifications.filter(n => !n.read && (n.targetRole === 'all' || n.targetRole === currentRole)).length
-    : 0;
-
   return (
     <div className="app-command-dock no-print" aria-label="Điều hướng nhanh">
       {actions.map(action => {
         const Icon = action.icon;
         const active = activeTab === action.id;
+        const displayLabel = t(action.label, DOCK_LABELS_EN[action.id] || action.label);
+
         return (
           <button
             key={action.id}
             type="button"
             className={`dock-action ${active ? 'active' : ''}`}
             onClick={() => setActiveTab(action.id)}
-            title={action.label}
-            aria-label={action.label}
+            title={displayLabel}
+            aria-label={displayLabel}
           >
             <Icon size={18} />
-            <span>{action.label}</span>
+            <span>{displayLabel}</span>
           </button>
         );
       })}

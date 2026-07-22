@@ -110,6 +110,97 @@ const PARENT_SUB_ITEMS = [
   { id: 'ai_guidance',         label: 'Định Hướng AI',         icon: Sparkles },
 ];
 
+const DICT_EN = {
+  // Student sub-tabs
+  'Tổng Quan Học Tập': 'Academic Overview',
+  'Deadline & Lịch Thi': 'Deadlines & Exams',
+  'Bài Tập Về Nhà': 'Homework & Assignments',
+  'Học Liệu & Flashcards': 'Materials & Flashcards',
+  'Thi Thử Đại Học': 'Mock University Entrance Exam',
+  'Kế Hoạch Ôn Thi AI': 'AI Study Plan',
+  'Bàn Đồ Năng Lực AI': 'AI Competency Heatmap',
+  'Điểm Danh Chuyên Cần': 'Attendance Tracking',
+  'Rèn Luyện': 'Conduct & Behavior',
+  'Chat Nhóm Lớp': 'Class Group Chat',
+  'Cuộc Thi Thách Đấu': 'Challenge Competitions',
+  'Câu Lạc Bộ': 'Student Clubs',
+  'Tư Vấn & Hướng Nghiệp': 'Counseling & Career',
+  'Định Hướng Đại Học AI': 'AI University Matchmaker',
+  'Bán Trú & Dinh Dưỡng': 'Boarding & Meals',
+  'Thẻ HS & Ví Điện Tử': 'Student ID & Wallet',
+
+  // Main menu items
+  'Bảng Học Tập': 'Learning Dashboard',
+  'Video bài giảng': 'Video Lectures',
+  'Thư viện số': 'Digital Library',
+  'Phòng Thí Nghiệm ảo': 'Virtual Lab',
+  'Học nhóm & Gia sư': 'Study Group & Tutor',
+  'Thi thử & Bài tập': 'Exams & Homework',
+
+  // Teacher sub-tabs
+  'Học Liệu Bài Giảng': 'Lecture Materials',
+  'Kế Hoạch Giáo Án': 'Lesson Plans',
+  'Trợ Lý Soạn Bài AI': 'AI Lesson Assistant',
+  'Huấn Luyện Gia Sư AI': 'AI Tutor Trainer',
+  'Giao Bài Tập Về Nhà': 'Assign Homework',
+  'Giao Bài Tập': 'Assign Homework',
+  'Điểm Thi Thử Môn': 'Subject Mock Exam Scores',
+  'Điểm Thi Thử Lớp': 'Class Mock Exam Scores',
+  'Nghỉ Phép & Dạy Thay': 'Leaves & Substitutions',
+  'Học Sinh & Điểm 12A1': 'Students & Grades 12A1',
+  'Điểm Danh Lớp 12A1': 'Class 12A1 Attendance',
+  'Điểm Rèn Luyện 12A1': 'Class 12A1 Conduct',
+  'Hỏi Đáp Phụ Huynh': 'Parent Q&A',
+  'Duyệt Nghỉ Phép 12A1': 'Approve Leaves 12A1',
+  'Học Sinh & Điểm Số': 'Students & Grades',
+  'Điểm Danh Lớp': 'Class Attendance',
+  'Điểm Rèn Luyện Lớp': 'Class Conduct',
+  'Duyệt Nghỉ Phép': 'Approve Leaves',
+
+  // Parent sub-tabs
+  'Bảng Điểm & Ký Nhận': 'Report Card & Signature',
+  'Chuyên Cần Của Con': 'Child Attendance',
+  'Xem Bài Tập': 'View Assignments',
+  'Học Phí & Đóng Tiền': 'Tuition & Payments',
+  'Bán Trú Con': 'Child Boarding',
+  'Ví Điện Tử Con': 'Child Wallet',
+  'Hỏi Đáp Chủ Nhiệm': 'Homeroom Teacher Q&A',
+  'Xin Nghỉ Phép': 'Request Leave',
+  'Đánh Giá Giáo Viên': 'Teacher Evaluations',
+  'Định Hướng AI': 'AI Guidance',
+  'Bảng điểm của con': 'Child Report Card',
+
+  // Admin / BGH items
+  'Tổng quan BGH': 'Board Overview',
+  'Quản lý Giáo viên': 'Teacher Management',
+  'Quản lý Học sinh': 'Student Management',
+  'Học Bạ Số & CV': 'Digital Portfolio & CV',
+  'Xếp TKB Thông Minh': 'Smart Timetable Generator',
+  'Sổ đầu bài': 'Class Journal',
+  'Sơ Đồ Chỗ Ngồi Lớp': 'Seating Chart',
+  'Bầu Chọn Ban Cán Sự': 'Class Officer Voting',
+  'Kho Đề Thi': 'Exam Repository',
+  'Phân Tích Nguy Cơ AI': 'AI Risk Analysis',
+  'So Sánh Các Lớp': 'Class Comparison',
+  'Theo Dõi Xe Buýt': 'Bus Tracking',
+  'Bộ Ảnh Nhà Trường': 'School Gallery',
+  'Tài Sản & Thiết Bị': 'Assets & Equipment',
+  'Chấm Công Giáo Viên': 'Teacher Timekeeping',
+  'Lịch Trực Tuần': 'Weekly Duty Schedule',
+  'Học Liệu & Bài Giảng': 'Learning Materials',
+  'Cộng Đồng Kho Đề': 'Community Exams',
+  'Đặt Lịch Họp BGH': 'Book BGH Meeting',
+  'Phòng Họp Online': 'Online EduMeet',
+  'Tin Tức & Bảng Tin': 'News & Bulletins',
+  'Lịch Trường & Sự Kiện': 'School Calendar',
+  'Nhắn Tin Giáo Viên': 'Message Teachers',
+  'Đặt Lịch Gặp Mặt': 'Book Meeting',
+  'Bảng Tin Trường': 'School Bulletin',
+  'Album Sự Kiện Trường': 'School Event Album',
+  'Xe Bus Học Đường': 'School Bus Tracker',
+  'Thời khóa biểu': 'Timetable'
+};
+
 export default function Sidebar({ activeTab, setActiveTab }) {
   const {
     currentRole,
@@ -130,7 +221,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     parentQAs,
     leaveRequests,
     teacherLeaveRequests,
-    lessonPlans
+    lessonPlans,
+    t
   } = useContext(AppContext);
 
   const isStudent = currentRole === 'student';
@@ -344,7 +436,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 style={{ marginBottom: '2px' }}
               >
                 <LayoutDashboard size={18} />
-                <span>Bảng Học Tập</span>
+                <span>{t('Bảng Học Tập', 'Learning Dashboard')}</span>
               </button>
 
               {/* Sub-items — always visible for student */}
@@ -361,6 +453,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   const Icon = item.icon;
                   const isActive = activeTab === 'dashboard' && studentSubTab === item.id;
                   const badge = getBadge(item.id);
+                  const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
+
                   return (
                     <button
                       key={item.id}
@@ -399,7 +493,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     >
                       <Icon size={15} style={{ flexShrink: 0 }} />
                       <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.label}
+                        {displayLabel}
                       </span>
                       {badge !== null && (
                         <span style={{
@@ -441,7 +535,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 style={{ marginBottom: '2px' }}
               >
                 <LayoutDashboard size={18} />
-                <span>{isTeacherSubject ? 'Tổng quan Bộ Môn' : isTeacherHomeroom ? 'Tổng quan Lớp 12A1' : 'Tổng quan lớp học'}</span>
+                <span>{isTeacherSubject ? t('Tổng quan Bộ Môn', 'Subject Overview') : isTeacherHomeroom ? t('Tổng quan Lớp 12A1', 'Class 12A1 Overview') : t('Tổng quan lớp học', 'Class Overview')}</span>
               </button>
 
               {/* Sub-items — always visible for teacher */}
@@ -458,6 +552,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   const Icon = item.icon;
                   const isActive = activeTab === 'dashboard' && teacherSubTab === item.id;
                   const badge = getBadge(item.id);
+                  const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
+
                   return (
                     <button
                       key={item.id}
@@ -496,7 +592,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     >
                       <Icon size={15} style={{ flexShrink: 0 }} />
                       <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.label}
+                        {displayLabel}
                       </span>
                       {badge !== null && (
                         <span style={{
@@ -538,7 +634,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 style={{ marginBottom: '2px' }}
               >
                 <Award size={18} />
-                <span>Bảng điểm của con</span>
+                <span>{t('Bảng điểm của con', 'Child Report Card')}</span>
               </button>
 
               {/* Sub-items — always visible for parent */}
@@ -555,6 +651,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   const Icon = item.icon;
                   const isActive = activeTab === 'dashboard' && parentSubTab === item.id;
                   const badge = getBadge(item.id);
+                  const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
+
                   return (
                     <button
                       key={item.id}
@@ -593,7 +691,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     >
                       <Icon size={15} style={{ flexShrink: 0 }} />
                       <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.label}
+                        {displayLabel}
                       </span>
                       {badge !== null && (
                         <span style={{
@@ -628,6 +726,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           {/* Other nav items (non-dashboard pages) */}
           {navItems.map(item => {
             const Icon = item.icon;
+            const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
+
             return (
               <button
                 key={item.id}
@@ -635,7 +735,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
               >
                 <Icon size={18} />
-                <span>{item.label}</span>
+                <span>{displayLabel}</span>
               </button>
             );
           })}
