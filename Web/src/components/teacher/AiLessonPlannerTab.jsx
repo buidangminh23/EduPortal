@@ -540,15 +540,38 @@ export default function AiLessonPlannerTab() {
 }
 
 const detectSubject = (text) => {
-  const t = text.toLowerCase();
-  const litKeywords = ['chí phèo', 'vợ nhặt', 'tây tiến', 'sóng', 'người lái đò', 'vợ chồng a phủ', 'văn học', 'bài thơ', 'tác phẩm', 'quang dũng', 'kim lân', 'nguyễn tuân', 'xuân quỳnh', 'nam cao', 'ngữ văn', 'văn'];
-  const mathKeywords = ['py-ta-go', 'pythagoras', 'tích phân', 'đạo hàm', 'số mũ', 'hình học', 'giới hạn', 'toán học', 'đại số', 'khảo sát hàm số', 'nguyên hàm', 'toán', 'logarit'];
-  const physicsKeywords = ['sóng âm', 'dao động', 'điện xoay chiều', 'vật lý', 'lực', 'quang hình', 'ánh sáng', 'từ trường', 'lý'];
-  const englishKeywords = ['tiếng anh', 'english', 'tenses', 'grammar', 'ngữ pháp', 'từ vựng', 'vocabulary', 'pronunciation'];
+  if (!text) return null;
+  const t = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  if (litKeywords.some(kw => t.includes(kw))) return 'Ngữ văn';
+  const mathKeywords = [
+    'pitago', 'pytago', 'pythagoras', 'py ta go', 'pi ta go',
+    'tich phan', 'dao ham', 'nguyen ham', 'logarit', 'hinh hoc', 'dai so',
+    'vecto', 'phuong trinh', 'bat phuong trinh', 'cuc tri', 'ham so', 'oxyz',
+    'xac suat', 'thong ke', 'cap so cong', 'cap so nhan', 'so phuc', 'tam giac',
+    'duong tron', 'ma tran', 'he phuong trinh', 'toan hoc', 'toan'
+  ];
+
+  const physicsKeywords = [
+    'vat ly', 'vat li', 'mon ly', 'mon li', 'song am', 'dao dong',
+    'dien xoay chieu', 'mach rlc', 'quang hinh', 'giao thoa', 'thau kinh',
+    'hat nhan', 'dong luc hoc', 'newton', 'tu truong', 'dien truong', 'buc xa', 'quang dien'
+  ];
+
+  const litKeywords = [
+    'chi pheo', 'vo nhat', 'lao hac', 'tay tien', 'song', 'nguoi lai do',
+    'vo chong a phu', 'chiec thuyen ngoai xa', 'nhung ngoi sao xa xoi', 'truyen kieu', 'tat den',
+    'van hoc', 'bai tho', 'tac pham', 'quang dung', 'kim lan', 'nguyen tuan',
+    'xuan quynh', 'nam cao', 'ngu van', 'van'
+  ];
+
+  const englishKeywords = [
+    'tieng anh', 'english', 'grammar', 'vocabulary', 'pronunciation',
+    'tense', 'passive voice', 'present perfect', 'relative clause', 'conditional'
+  ];
+
   if (mathKeywords.some(kw => t.includes(kw))) return 'Toán học';
   if (physicsKeywords.some(kw => t.includes(kw))) return 'Vật lý';
+  if (litKeywords.some(kw => t.includes(kw))) return 'Ngữ văn';
   if (englishKeywords.some(kw => t.includes(kw))) return 'Tiếng Anh';
   return null;
 };
