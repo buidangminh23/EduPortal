@@ -1,6 +1,6 @@
 export function decodeHtmlEntities(str) {
   if (!str) return '';
-  return String(str)
+  let res = String(str)
     .replace(/&pi;/gi, 'π')
     .replace(/&lambda;/gi, 'λ')
     .replace(/&radic;/gi, '√')
@@ -28,6 +28,13 @@ export function decodeHtmlEntities(str) {
     .replace(/&infin;/gi, '∞')
     .replace(/&#8407;/gi, '⃗')
     .replace(/&nbsp;/gi, ' ');
+
+  // Automatic spacing fix between <i> tags and adjacent words (e.g. <i>P</i>để -> <i>P</i> để, <i>X</i>là -> <i>X</i> là)
+  res = res
+    .replace(/<\/i>([a-zA-Zàáảãạăắtằẳẵặâấầnẩẫậèéẻẽẹêếềểễệđìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ])/gi, '</i> $1')
+    .replace(/([a-zA-Zàáảãạăắtằẳẵặâấầnẩẫậèéẻẽẹêếềểễệđìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ])<i>/gi, '$1 <i>');
+
+  return res;
 }
 
 export function latexToHtml(latex) {

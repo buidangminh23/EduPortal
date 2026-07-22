@@ -709,3 +709,24 @@
   overflow-y: auto;
 }
 
+/* Math & Exam Question Typography Formatting */
+i {
+  font-style: italic;
+  margin: 0 0.12em;
+  padding-right: 1px;
+}
+sub {
+  font-size: 0.75em;
+  vertical-align: -0.2em;
+  line-height: 0;
+}
+sup {
+  font-size: 0.75em;
+  vertical-align: 0.35em;
+  line-height: 0;
+}
+sub + sup, sup + sub {
+  margin-left: -0.05em;
+}
+
+
