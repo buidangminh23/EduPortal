@@ -59,8 +59,27 @@ const STUDENT_SUB_ITEMS = [
   { id: 'wallet_id',           label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard },
 ];
 
-// Sub-nav items for teacher dashboard
-// Nhóm: Học sinh & Điểm → Điểm danh → Rèn luyện → Học liệu & Giáo án → Trợ lý AI → Bài tập → Thi thử → Phụ huynh & Nghỉ phép
+// Sub-nav items for subject teacher
+const TEACHER_SUBJECT_SUB_ITEMS = [
+  { id: 'resources',           label: 'Học Liệu Bài Giảng',     icon: BookOpen },
+  { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
+  { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
+  { id: 'ai_tutor_trainer',    label: 'Huấn Luyện Gia Sư AI',  icon: Compass },
+  { id: 'assignments',         label: 'Giao Bài Tập Về Nhà',   icon: CheckSquare },
+  { id: 'mock_exams',          label: 'Điểm Thi Thử Môn',      icon: ClipboardList },
+  { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
+];
+
+// Sub-nav items for homeroom teacher
+const TEACHER_HOMEROOM_SUB_ITEMS = [
+  { id: 'students',            label: 'Học Sinh & Điểm 12A1',  icon: Users },
+  { id: 'attendance',          label: 'Điểm Danh Lớp 12A1',     icon: ClipboardCheck },
+  { id: 'conduct',             label: 'Điểm Rèn Luyện 12A1',    icon: Award },
+  { id: 'qa',                  label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare },
+  { id: 'leaves',              label: 'Duyệt Nghỉ Phép 12A1',   icon: Calendar },
+  { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
+];
+
 const TEACHER_SUB_ITEMS = [
   { id: 'students',            label: 'Học Sinh & Điểm Số',    icon: Users },
   { id: 'attendance',          label: 'Điểm Danh Lớp',         icon: ClipboardCheck },
@@ -114,10 +133,17 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     lessonPlans
   } = useContext(AppContext);
 
-  const activeStudent = students.find(s => s.id === selectedStudentId) || students[0];
   const isStudent = currentRole === 'student';
-  const isTeacher = currentRole === 'teacher';
+  const isTeacherSubject = currentRole === 'teacher_subject';
+  const isTeacherHomeroom = currentRole === 'teacher_homeroom';
+  const isTeacher = currentRole === 'teacher' || isTeacherSubject || isTeacherHomeroom;
   const isParent = currentRole === 'parent';
+
+  const teacherSubItemsList = isTeacherSubject 
+    ? TEACHER_SUBJECT_SUB_ITEMS 
+    : isTeacherHomeroom 
+    ? TEACHER_HOMEROOM_SUB_ITEMS 
+    : TEACHER_SUB_ITEMS;
 
   // Badge counts for student sub-items
   const studentConductLogs = conductLogs ? conductLogs.filter(l => l.studentId === activeStudent?.id) : [];
@@ -404,14 +430,14 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           {/* ── Teacher: "Tổng quan lớp học" section as main dashboard entry ── */}
           {isTeacher && (
             <>
-              {/* Dashboard button that just returns to students overview */}
+              {/* Dashboard button that just returns to teacher overview */}
               <button
-                onClick={() => { setActiveTab('dashboard'); setTeacherSubTab('students'); }}
+                onClick={() => { setActiveTab('dashboard'); setTeacherSubTab(isTeacherSubject ? 'resources' : 'students'); }}
                 className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
                 style={{ marginBottom: '2px' }}
               >
                 <LayoutDashboard size={18} />
-                <span>Tổng quan lớp học</span>
+                <span>{isTeacherSubject ? 'Tổng quan Bộ Môn' : isTeacherHomeroom ? 'Tổng quan Lớp 12A1' : 'Tổng quan lớp học'}</span>
               </button>
 
               {/* Sub-items — always visible for teacher */}
@@ -424,7 +450,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 flexDirection: 'column',
                 gap: '1px'
               }}>
-                {TEACHER_SUB_ITEMS.map(item => {
+                {teacherSubItemsList.map(item => {
                   const Icon = item.icon;
                   const isActive = activeTab === 'dashboard' && teacherSubTab === item.id;
                   const badge = getBadge(item.id);

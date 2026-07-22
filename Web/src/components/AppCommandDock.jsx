@@ -25,6 +25,16 @@ const ROLE_ACTIONS = {
     { id: 'timetable_generator', label: 'Xếp TKB', icon: CalendarDays },
     { id: 'ai_risk', label: 'AI Risk', icon: Sparkles },
   ],
+  teacher_subject: [
+    { id: 'exam_repository', label: 'Kho đề', icon: BookOpen },
+    { id: 'essay_grader', label: 'Chấm bài', icon: ClipboardList },
+    { id: 'meet', label: 'EduMeet', icon: Video },
+  ],
+  teacher_homeroom: [
+    { id: 'seating_chart', label: 'Sơ đồ', icon: Layers },
+    { id: 'journal', label: 'Sổ đầu bài', icon: BookOpen },
+    { id: 'duty_schedule', label: 'Lịch trực', icon: CalendarDays },
+  ],
   teacher: [
     { id: 'seating_chart', label: 'Sơ đồ', icon: Layers },
     { id: 'exam_repository', label: 'Kho đề', icon: BookOpen },

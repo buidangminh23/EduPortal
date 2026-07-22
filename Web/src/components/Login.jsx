@@ -5,13 +5,16 @@ import { Shield, GraduationCap, User, Users, Key, ArrowRight, ArrowLeft, Setting
 
 const ROLES = [
   { id: 'student', label: 'Học sinh', sub: 'Lớp & điểm số', icon: User, color: 'blue' },
-  { id: 'teacher', label: 'Giáo viên', sub: 'Lớp giảng dạy', icon: GraduationCap, color: 'mint' },
+  { id: 'teacher_subject', label: 'GV Bộ môn', sub: 'Soạn bài & Kho đề', icon: GraduationCap, color: 'mint' },
+  { id: 'teacher_homeroom', label: 'GV Chủ nhiệm', sub: 'Quản lý lớp & HS', icon: Users, color: 'teal' },
   { id: 'parent', label: 'Phụ huynh', sub: 'Theo dõi con', icon: Users, color: 'orange' },
   { id: 'admin', label: 'BGH', sub: 'Quản trị trường', icon: Shield, color: 'violet' },
 ];
 
 const QUICK_CREDS = {
   admin: { username: 'hieutruong', password: atob('YWRtaW4xMjM=') },
+  teacher_subject: { username: 'minhtriet', password: atob('dGVhY2hlcjEyMw==') },
+  teacher_homeroom: { username: 'gvcn_12a1', password: atob('dGVhY2hlcjEyMw==') },
   teacher: { username: 'minhtriet', password: atob('dGVhY2hlcjEyMw==') },
   student: { username: 'hoangnam', password: atob('c3R1ZGVudDEyMw==') },
   parent: { username: 'phuhuynh_nam', password: atob('cGFyZW50MTIz') },

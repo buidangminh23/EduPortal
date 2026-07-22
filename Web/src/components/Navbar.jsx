@@ -44,6 +44,8 @@ export default function Navbar({ setActiveTab }) {
   const getRoleIcon = () => {
     switch (currentRole) {
       case 'admin': return <Shield size={16} color="var(--accent-primary)" />;
+      case 'teacher_subject': return <BookOpen size={16} color="var(--accent-secondary)" />;
+      case 'teacher_homeroom': return <GraduationCap size={16} color="var(--accent-secondary)" />;
       case 'teacher': return <GraduationCap size={16} color="var(--accent-secondary)" />;
       case 'student': return <UserCheck size={16} color="var(--accent-info)" />;
       case 'parent': return <Users size={16} color="var(--accent-warning)" />;
@@ -53,6 +55,8 @@ export default function Navbar({ setActiveTab }) {
 
   const getRoleLabel = () => {
     if (currentRole === 'admin') return 'Ban Giám Hiệu';
+    if (currentRole === 'teacher_subject') return 'Giáo Viên Bộ Môn';
+    if (currentRole === 'teacher_homeroom') return 'Giáo Viên Chủ Nhiệm';
     if (currentRole === 'teacher') return 'Giáo Viên Bộ Môn';
     if (currentRole === 'student') return 'Cổng Học Sinh';
     if (currentRole === 'parent') return 'Cổng Phụ Huynh';
@@ -61,6 +65,8 @@ export default function Navbar({ setActiveTab }) {
 
   const getGreeting = () => {
     if (currentRole === 'admin') return 'Trung tâm điều hành nhà trường';
+    if (currentRole === 'teacher_subject') return 'Không gian giảng dạy & soạn giáo án';
+    if (currentRole === 'teacher_homeroom') return 'Quản lý nề nếp & đồng hành cùng lớp';
     if (currentRole === 'teacher') return 'Không gian nghiệp vụ giáo viên';
     if (currentRole === 'student') return 'Không gian học tập cá nhân';
     if (currentRole === 'parent') return 'Theo dõi và đồng hành cùng con';
@@ -174,7 +180,7 @@ export default function Navbar({ setActiveTab }) {
                 <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--line, #f1f5f9)', marginBottom: '4px' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)' }}>Vai trò</div>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>
-                    {currentRole === 'admin' ? 'Ban Giám Hiệu' : currentRole === 'teacher' ? 'Giáo Viên' : currentRole === 'student' ? 'Học Sinh' : 'Phụ Huynh'}
+                    {currentRole === 'admin' ? 'Ban Giám Hiệu' : currentRole === 'teacher_subject' ? 'GV Bộ Môn' : currentRole === 'teacher_homeroom' ? 'GV Chủ Nhiệm' : currentRole === 'teacher' ? 'Giáo Viên' : currentRole === 'student' ? 'Học Sinh' : 'Phụ Huynh'}
                   </div>
                 </div>
                 <button
