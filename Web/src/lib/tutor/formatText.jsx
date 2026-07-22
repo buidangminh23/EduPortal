@@ -1,6 +1,13 @@
 export function decodeHtmlEntities(str) {
   if (!str) return '';
-  let res = String(str)
+  let res = String(str);
+
+  // Parse inline LaTeX math delimited by $$...$$ or $...$
+  res = res
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => `<span style="font-family:'Cambria Math','Times New Roman',serif;font-style:italic;margin:0 2px">${latexToHtml(math)}</span>`)
+    .replace(/\$([^$\n]+?)\$/g, (_, math) => `<span style="font-family:'Cambria Math','Times New Roman',serif;font-style:italic;margin:0 2px">${latexToHtml(math)}</span>`);
+
+  res = res
     .replace(/&pi;/gi, 'π')
     .replace(/&lambda;/gi, 'λ')
     .replace(/&radic;/gi, '√')

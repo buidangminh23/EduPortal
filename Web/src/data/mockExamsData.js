@@ -179,20 +179,20 @@ export const QUESTIONS = {
       type: 'tf',
       question: 'Xét hiện tượng cộng hưởng điện trong mạch RLC nối tiếp khi tần số góc &omega; thay đổi. Đánh giá tính Đúng hoặc Sai của các phát biểu:',
       statements: [
-        { id: 'a', text: 'Khi xảy ra cộng hưởng điện, tổng trở mạch đạt giá trị nhỏ nhất Z_min = R.', correct: true },
-        { id: 'b', text: 'Cường độ dòng điện hiệu dụng trong mạch đạt giá trị lớn nhất I_max = U / R.', correct: true },
+        { id: 'a', text: 'Khi xảy ra cộng hưởng điện, tổng trở mạch đạt giá trị nhỏ nhất <i>Z</i><sub>min</sub> = <i>R</i>.', correct: true },
+        { id: 'b', text: 'Cường độ dòng điện hiệu dụng trong mạch đạt giá trị lớn nhất <i>I</i><sub>max</sub> = <i>U</i> / <i>R</i>.', correct: true },
         { id: 'c', text: 'Điện áp giữa hai đầu đoạn mạch trễ pha &pi;/2 so với dòng điện.', correct: false },
         { id: 'd', text: 'Hệ số công suất của đoạn mạch đạt giá trị cực đại cos&phi; = 1.', correct: true }
       ],
-      explanation: 'Khi $Z_L = Z_C \\Leftrightarrow \\omega L = \\frac{1}{\\omega C}$:\n- a) Đúng: $Z = \\sqrt{R^2 + (Z_L-Z_C)^2} = R$.\n- b) Đúng: $I = \\frac{U}{R}$.\n- c) Sai: Khi cộng hưởng, điện áp $u$ cùng pha với $i$ ($\\phi = 0$).\n- d) Đúng: $\\cos\\phi = \\frac{R}{Z} = 1$.'
+      explanation: 'Khi <i>Z</i><sub>L</sub> = <i>Z</i><sub>C</sub> &hArr; &omega;<i>L</i> = 1/(&omega;<i>C</i>):<br/>- a) Đúng: <i>Z</i> = &radic;[<i>R</i><sup>2</sup> + (<i>Z</i><sub>L</sub> - <i>Z</i><sub>C</sub>)<sup>2</sup>] = <i>R</i>.<br/>- b) Đúng: <i>I</i> = <i>U</i> / <i>R</i>.<br/>- c) Sai: Khi cộng hưởng, điện áp <i>u</i> cùng pha với <i>i</i> (&phi; = 0).<br/>- d) Đúng: cos&phi; = <i>R</i> / <i>Z</i> = 1.'
     },
     {
       id: 'QP7',
       subject: 'Physics',
       type: 'short',
-      question: 'Một sóng cơ truyền với tần số $f = 50\\text{ Hz}$ và tốc độ $v = 10\\text{ m/s}$. Tính bước sóng $\\lambda$ của sóng theo đơn vị cm. (Nhập số nguyên)',
+      question: 'Một sóng cơ truyền với tần số <i>f</i> = 50 Hz và tốc độ <i>v</i> = 10 m/s. Tính bước sóng &lambda; của sóng theo đơn vị cm. (Nhập số nguyên)',
       correctAnswer: '20',
-      explanation: 'Bước sóng $\\lambda = \\frac{v}{f} = \\frac{10}{50} = 0.2\\text{ m} = 20\\text{ cm}$. Đáp số cần điền: 20.'
+      explanation: 'Bước sóng &lambda; = <i>v</i> / <i>f</i> = 10 / 50 = 0,2 m = 20 cm.<br/>Đáp số cần điền: 20.'
     }
   ],
   Chemistry: [
