@@ -1364,7 +1364,17 @@ export const AppProvider = ({ children }) => {
 
   // Actions
   const logout = async () => {
-    await authSignOut();
+    try {
+      localStorage.removeItem('userSession');
+      setMockSession(null);
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      await authSignOut();
+    } catch (e) {
+      console.error(e);
+    }
     window.location.reload();
   };
 

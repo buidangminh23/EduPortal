@@ -226,6 +226,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
         ];
       case 'teacher':
+      case 'teacher_subject':
+      case 'teacher_homeroom':
         // Nhóm: Tổng quan → Nghiệp vụ dạy & Quản lý lớp → Công cụ & Đánh giá → Liên lạc PH → Tiện ích trường → Lịch
         return [
           { id: 'dashboard',           label: 'Tổng quan lớp học',    icon: LayoutDashboard },
