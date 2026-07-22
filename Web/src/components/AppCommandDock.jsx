@@ -58,11 +58,6 @@ export default function AppCommandDock({ activeTab, setActiveTab }) {
 
   return (
     <div className="app-command-dock no-print" aria-label="Điều hướng nhanh">
-      <div className="dock-status">
-        <span className="dock-pulse" />
-        <span>{unread > 0 ? `${unread} mới` : 'Online'}</span>
-      </div>
-
       {actions.map(action => {
         const Icon = action.icon;
         const active = activeTab === action.id;
