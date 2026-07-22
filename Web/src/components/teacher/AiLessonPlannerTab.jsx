@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import { 
   Sparkles, 
   Send, 
@@ -495,7 +496,7 @@ export default function AiLessonPlannerTab() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {generatedDoc.questions.map((q, idx) => (
                       <div key={q.id} style={{ borderBottom: '1px solid var(--border-card)', paddingBottom: '16px' }}>
-                        <p style={{ fontWeight: 700, marginBottom: '10px' }}>Câu {idx + 1}: {q.question}</p>
+                        <p style={{ fontWeight: 700, marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: `Câu ${idx + 1}: ${decodeHtmlEntities(q.question)}` }} />
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingLeft: '12px', marginBottom: '10px' }}>
                           {q.options.map(opt => {
@@ -512,7 +513,7 @@ export default function AiLessonPlannerTab() {
                                   fontSize: '0.82rem'
                                 }}
                               >
-                                <strong>{opt.key}.</strong> {opt.text} {isCorrect && '✓'}
+                                <strong>{opt.key}.</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(opt.text) }} /> {isCorrect && '✓'}
                               </div>
                             );
                           })}
@@ -520,7 +521,7 @@ export default function AiLessonPlannerTab() {
 
                         {/* Explanation block */}
                         <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.02)', borderLeft: '3px solid #cbd5e1', fontSize: '0.78rem', marginTop: '10px', color: 'var(--text-secondary)' }}>
-                          <strong>Giải thích đáp án:</strong> {q.explanation}
+                          <strong>Giải thích đáp án:</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.explanation) }} />
                         </div>
                       </div>
                     ))}
