@@ -272,6 +272,28 @@ export default function MockExamTab({ student }) {
     return true;
   };
 
+  const [selectionTab, setSelectionTab] = useState('subject'); // 'subject' | 'block'
+
+  const ALL_SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Literature', 'History', 'Geography'];
+
+  const handleStartSubjectExam = (subjectKey) => {
+    const subjQuestions = QUESTIONS[subjectKey] || [];
+    const mockExamObj = {
+      id: `SYS_SUBJ_${subjectKey}`,
+      block: 'SINGLE',
+      title: `Đề thi thử Tốt nghiệp THPT Môn ${SUBJECT_NAMES[subjectKey] || subjectKey}`,
+      duration: 50,
+      questions: subjQuestions
+    };
+    setActiveExam(mockExamObj);
+    setSelectedSubjectTab(subjectKey);
+    setExamMode('taking');
+    setExamAnswers({});
+    setExamSecondsLeft(50 * 60);
+    setCurrentQuestionIndex(0);
+    setReviewingPastAttempt(null);
+  };
+
   const currentSubjectQuestions = activeExam?.questions?.filter(q => q.subject === selectedSubjectTab) || [];
   const currentQuestion = currentSubjectQuestions[currentQuestionIndex] || currentSubjectQuestions[0];
 
@@ -281,107 +303,180 @@ export default function MockExamTab({ student }) {
       {examMode === null && (
         <div>
           {/* Header Card */}
-          <div className="glass-panel" style={{ padding: '28px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.55))' }}>
+          <div className="glass-panel" style={{ padding: '28px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.6))' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ClipboardList size={28} color="var(--accent-primary)" /> Thi Thử Đại Học THPT Quốc Gia (Format Bộ GD&ĐT 2025+)
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '6px' }}>
-                  Chọn thi riêng lẻ từng <strong>Môn học</strong> (50 phút) hoặc thi toàn bộ <strong>Tổ hợp Khối thi</strong> (Toán - Lý - Hóa, Văn - Sử - Địa...).
+                  Lựa chọn thi riêng lẻ từng <strong>Môn học</strong> (50 phút) hoặc luyện tập <strong>Tổ hợp Khối thi liên môn</strong> (Toán - Lý - Hóa, Văn - Sử - Địa...).
                 </p>
               </div>
 
-              {/* Selector Bar 1: Block Selector */}
-              <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Award size={14} color="var(--accent-primary)" /> 1. Chọn Tổ hợp Khối thi Đại Học:
-                </div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {Object.keys(BLOCKS).map(blockKey => (
-                    <button
-                      key={blockKey}
-                      onClick={() => setSelectedBlockKey(blockKey)}
-                      className={`btn ${selectedBlockKey === blockKey ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{
-                        padding: '10px 18px',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        borderRadius: '12px',
-                        border: selectedBlockKey === blockKey ? 'none' : '1px solid #cbd5e1',
-                        background: selectedBlockKey === blockKey ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
-                        color: selectedBlockKey === blockKey ? 'white' : '#4f46e5'
-                      }}
-                    >
-                      {BLOCKS[blockKey].name}
-                    </button>
-                  ))}
-                </div>
+              {/* Mode Switcher Tabs */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setSelectionTab('subject')}
+                  className={`btn ${selectionTab === 'subject' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{
+                    padding: '12px 24px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    border: selectionTab === 'subject' ? 'none' : '1px solid #cbd5e1',
+                    background: selectionTab === 'subject' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
+                    color: selectionTab === 'subject' ? 'white' : '#475569'
+                  }}
+                >
+                  <BookOpen size={18} /> 📐 THI THEO MÔN HỌC ĐỘC LẬP (8 MÔN)
+                </button>
+
+                <button
+                  onClick={() => setSelectionTab('block')}
+                  className={`btn ${selectionTab === 'block' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{
+                    padding: '12px 24px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    border: selectionTab === 'block' ? 'none' : '1px solid #cbd5e1',
+                    background: selectionTab === 'block' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
+                    color: selectionTab === 'block' ? 'white' : '#475569'
+                  }}
+                >
+                  <Award size={18} /> 🏆 THI THEO TỔ HỢP KHỐI (A00, A01, B00...)
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Integrated System Exam Cards & Single Subject Selection */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen size={20} color="var(--accent-primary)" /> Danh sách Môn thi & Đề thi THPT Quốc Gia ({BLOCKS[selectedBlockKey].name})
-            </h3>
+          {/* ─── TAB 1: SINGLE SUBJECT EXAMS GRID ───────────────────────────── */}
+          {selectionTab === 'subject' && (
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BookOpen size={20} color="var(--accent-primary)" /> Danh sách 8 Môn thi THPT Quốc Gia độc lập
+              </h3>
 
-            {(() => {
-              const systemExam = SYSTEM_BLOCK_EXAMS.find(ex => ex.block === selectedBlockKey);
-              if (!systemExam) return <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Chưa có đề thi hệ thống cho khối này.</p>;
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                {ALL_SUBJECTS.map(subjKey => {
+                  const qCount = (QUESTIONS[subjKey] || []).length;
+                  return (
+                    <div
+                      key={subjKey}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px',
+                        borderRadius: '16px',
+                        background: 'white',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justify: 'space-between',
+                        gap: '16px',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '2rem' }}>{SUBJECT_ICONS[subjKey]}</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '99px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5' }}>
+                            Thang điểm 10.0đ
+                          </span>
+                        </div>
 
-              const subjects = Array.from(new Set(systemExam.questions.map(q => q.subject)));
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '6px' }}>
+                          Môn {SUBJECT_NAMES[subjKey]}
+                        </h4>
+                        <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                          Thời gian: <strong>50 phút</strong> | Cấu trúc: <strong>{qCount} câu hỏi</strong> (Trắc nghiệm 4 lựa chọn, Đúng/Sai, Điền số)
+                        </p>
+                      </div>
 
-              return (
-                <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(255, 255, 255, 0.9))', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div>
+                      <button
+                        onClick={() => handleStartSubjectExam(subjKey)}
+                        className="btn btn-primary"
+                        style={{
+                          width: '100%',
+                          justify: 'center',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          fontWeight: 700,
+                          fontSize: '0.9rem',
+                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                        }}
+                      >
+                        Bắt đầu thi Môn {SUBJECT_NAMES[subjKey]} <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB 2: BLOCK COMBINATION EXAMS ────────────────────────────── */}
+          {selectionTab === 'block' && (
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                {Object.keys(BLOCKS).map(blockKey => (
+                  <button
+                    key={blockKey}
+                    onClick={() => setSelectedBlockKey(blockKey)}
+                    className={`btn ${selectedBlockKey === blockKey ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{
+                      padding: '10px 18px',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      borderRadius: '12px',
+                      border: selectedBlockKey === blockKey ? 'none' : '1px solid #cbd5e1',
+                      background: selectedBlockKey === blockKey ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'white',
+                      color: selectedBlockKey === blockKey ? 'white' : '#4f46e5'
+                    }}
+                  >
+                    {BLOCKS[blockKey].name}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const systemExam = SYSTEM_BLOCK_EXAMS.find(ex => ex.block === selectedBlockKey);
+                if (!systemExam) return <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Chưa có đề thi hệ thống cho khối này.</p>;
+
+                const subjects = Array.from(new Set(systemExam.questions.map(q => q.subject)));
+
+                return (
+                  <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px', background: 'white', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                    <div style={{ marginBottom: '16px' }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-primary)', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '99px' }}>
-                        Đề thi THPT Quốc gia Chính thức
+                        Đề thi THPT Quốc gia Tổ hợp {BLOCKS[selectedBlockKey].name}
                       </span>
                       <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', marginTop: '8px' }}>
                         {systemExam.title}
                       </h4>
-                    </div>
-                  </div>
-
-                  {/* Explicit Subject Selection Options */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>
-                      👉 Vui lòng chọn phương thức làm bài thi bên dưới:
+                      <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
+                        Thời gian: <strong>{systemExam.duration} phút</strong> | Thang điểm: <strong>30.0 điểm</strong> | Các môn: <strong>{subjects.map(s => SUBJECT_NAMES[s]).join(', ')}</strong>
+                      </p>
                     </div>
 
-                    {/* Option 1: Full Block Multi-Subject Exam */}
-                    <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '2px solid #6366f1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <div style={{ fontWeight: 800, color: '#4338ca', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          🚀 Thi toàn bộ Tổ hợp {BLOCKS[selectedBlockKey].name} ({subjects.map(s => SUBJECT_NAMES[s]).join(' - ')})
-                        </div>
-                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>
-                          Thời gian: <strong>{systemExam.duration} phút</strong> | Thang điểm xét tuyển: <strong>30.0 điểm</strong> (3 Môn liên tiếp)
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleStartExam(systemExam, null)}
-                        className="btn btn-primary"
-                        style={{
-                          width: '100%',
-                          borderRadius: '10px',
-                          padding: '10px',
-                          fontSize: '0.85rem',
-                          fontWeight: 600,
-                          background: 'linear-gradient(135deg, #6366f1, #3b82f6)'
-                        }}
-                      >
-                        <span>Bắt đầu làm bài</span>
-                        <ArrowRight size={14} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleStartExam(systemExam, null)}
+                      className="btn btn-primary"
+                      style={{ padding: '12px 24px', fontWeight: 700, fontSize: '0.95rem', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}
+                    >
+                      🚀 Bắt đầu làm bài thi Tổ hợp Khối {BLOCKS[selectedBlockKey].name} ({systemExam.questions.length} câu) <ArrowRight size={16} />
+                    </button>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
+            </div>
+          )}
 
             {/* Teacher created exams */}
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginTop: '32px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -462,7 +557,6 @@ export default function MockExamTab({ student }) {
                 </div>
               );
             })()}
-          </div>
 
           {/* Attempt History */}
           <div className="glass-panel">
