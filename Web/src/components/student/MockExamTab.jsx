@@ -906,31 +906,31 @@ export default function MockExamTab({ student }) {
                 <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginTop: '6px' }}>{activeExam.title}</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>
                   Khối thi: <strong style={{ color: 'var(--accent-primary)' }}>{reviewingPastAttempt?.block}</strong> •
-                  Thời gian hoàn thành: <strong>{reviewingPastAttempt?.timeSpent}</strong> •
-                  Ngày thi: <strong>{reviewingPastAttempt?.date?.split('-').reverse().join('/')}</strong>
+                  Thời gian làm: <strong>{reviewingPastAttempt?.timeSpent || '30:00'}</strong> •
+                  Ngày thi: <strong>{reviewingPastAttempt?.date || 'Hôm nay'}</strong>
                 </p>
               </div>
 
               {/* Big score box */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Điểm Số</span>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: reviewingPastAttempt?.score >= 8 ? '#10b981' : reviewingPastAttempt?.score >= 5 ? '#f59e0b' : '#ef4444' }}>
-                    {reviewingPastAttempt?.score?.toFixed(1)}<span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>/10.0</span>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: reviewingPastAttempt?.score >= 24 || reviewingPastAttempt?.score >= 8 ? '#10b981' : reviewingPastAttempt?.score >= 18 || reviewingPastAttempt?.score >= 5 ? '#f59e0b' : '#ef4444' }}>
+                    {reviewingPastAttempt?.score?.toFixed(1)}<span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>/{reviewingPastAttempt?.block === 'SINGLE' ? '10.0' : '30.0'}</span>
                   </div>
                 </div>
 
                 <div style={{ borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <div>Tổng câu đúng: <strong style={{ color: '#10b981' }}>{reviewingPastAttempt?.correctAnswers}/{reviewingPastAttempt?.totalQuestions}</strong></div>
-                  <div style={{ marginTop: '4px' }}>Đánh giá: <strong>{reviewingPastAttempt?.score >= 8 ? 'Xuất sắc! 🎉' : reviewingPastAttempt?.score >= 6.5 ? 'Khá tốt! 👍' : 'Cần cố gắng thêm! 💪'}</strong></div>
+                  <div>Tổng số câu: <strong style={{ color: '#10b981' }}>{reviewingPastAttempt?.totalQuestions || activeExam.questions.length} câu</strong></div>
+                  <div style={{ marginTop: '4px' }}>Đánh giá: <strong>{(reviewingPastAttempt?.score >= 24 || reviewingPastAttempt?.score >= 8) ? 'Xuất sắc! 🎉' : (reviewingPastAttempt?.score >= 18 || reviewingPastAttempt?.score >= 6.5) ? 'Khá tốt! 👍' : 'Cần cố gắng thêm! 💪'}</strong></div>
                 </div>
 
                 {reviewingPastAttempt?.subjectBreakdown && (
                   <div style={{ borderLeft: '1px solid rgba(0,0,0,0.08)', paddingLeft: '20px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    <strong style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>MÔN HỌC CHI TIẾT:</strong>
+                    <strong style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>KẾT QUẢ MÔN HỌC:</strong>
                     {Object.entries(reviewingPastAttempt.subjectBreakdown).map(([subKey, data]) => (
                       <div key={subKey} style={{ fontSize: '0.82rem', marginBottom: '2px' }}>
-                        {SUBJECT_NAMES[subKey] || subKey}: <strong>{data.correct}/{data.total}</strong>
+                        {SUBJECT_NAMES[subKey] || subKey}: <strong>{data.subjectScore?.toFixed(1)}/10.0 đ</strong>
                       </div>
                     ))}
                   </div>
@@ -939,7 +939,7 @@ export default function MockExamTab({ student }) {
                 <button
                   onClick={handleExitExam}
                   className="btn btn-secondary"
-                  style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}
+                  style={{ padding: '10px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', fontWeight: 700 }}
                 >
                   Quay lại đề thi
                 </button>
@@ -955,25 +955,37 @@ export default function MockExamTab({ student }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {activeExam.questions.map((q, idx) => {
-                const studentAns = getSelectedAnswerKey(q, reviewingPastAttempt);
-                const isCorrect = studentAns === q.correctKey;
+                const userAns = reviewingPastAttempt?.selectedAnswers?.[q.id];
+                const qType = q.type || 'single';
+                let isCorrect = false;
+
+                if (qType === 'single') {
+                  isCorrect = userAns === q.correctKey;
+                } else if (qType === 'short') {
+                  isCorrect = userAns && String(userAns).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
+                } else if (qType === 'tf') {
+                  let correctSts = 0;
+                  q.statements?.forEach(st => {
+                    if (userAns && userAns[st.id] === st.correct) correctSts++;
+                  });
+                  isCorrect = correctSts === 4;
+                }
 
                 return (
                   <div key={q.id} className="glass-panel" style={{ borderLeft: isCorrect ? '4px solid #10b981' : '4px solid #ef4444', padding: '24px' }}>
-
-                    {/* Question title */}
+                    {/* Question header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '14px' }}>
                       <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        Câu {idx + 1}:
+                        Câu {idx + 1} ({SUBJECT_NAMES[q.subject] || q.subject}):
                       </span>
 
                       {isCorrect ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: 600, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-                          <Check size={12} /> Trả lời đúng
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '6px' }}>
+                          <Check size={14} /> Đúng 100%
                         </span>
                       ) : (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontWeight: 600, fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
-                          <X size={12} /> Trả lời sai (hoặc chưa làm)
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontWeight: 700, fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', padding: '4px 10px', borderRadius: '6px' }}>
+                          <X size={14} /> Chưa chính xác / Chưa làm
                         </span>
                       )}
                     </div>
@@ -983,71 +995,116 @@ export default function MockExamTab({ student }) {
                       dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.question) }}
                     />
 
-                    {/* Options show */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-                      {q.options.map(option => {
-                        const isCorrectOption = option.key === q.correctKey;
-                        const isStudentOption = option.key === studentAns;
+                    {/* Question Type 1: Single Choice */}
+                    {qType === 'single' && q.options && (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+                        {q.options.map(option => {
+                          const isCorrectOption = option.key === q.correctKey;
+                          const isStudentOption = option.key === userAns;
 
-                        let optBg = 'white';
-                        let optBorder = '1px solid #e2e8f0';
-                        let optColor = '#1e293b';
+                          let optBg = 'white';
+                          let optBorder = '1px solid #e2e8f0';
+                          let optColor = '#1e293b';
 
-                        if (isCorrectOption) {
-                          optBg = 'rgba(16, 185, 129, 0.08)';
-                          optBorder = '1px solid #10b981';
-                          optColor = '#065f46';
-                        } else if (isStudentOption && !isCorrect) {
-                          optBg = 'rgba(239, 68, 68, 0.08)';
-                          optBorder = '1px solid #ef4444';
-                          optColor = '#991b1b';
-                        }
+                          if (isCorrectOption) {
+                            optBg = '#ecfdf5';
+                            optBorder = '2px solid #10b981';
+                            optColor = '#065f46';
+                          } else if (isStudentOption && !isCorrectOption) {
+                            optBg = '#fef2f2';
+                            optBorder = '2px solid #ef4444';
+                            optColor = '#991b1b';
+                          }
 
-                        return (
-                          <div
-                            key={option.key}
-                            style={{
-                              padding: '12px 16px',
-                              borderRadius: '8px',
-                              background: optBg,
-                              border: optBorder,
-                              color: optColor,
-                              fontSize: '0.88rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}
-                          >
-                            <strong style={{
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '50%',
-                              background: isCorrectOption ? '#10b981' : isStudentOption ? '#ef4444' : '#f1f5f9',
-                              color: isCorrectOption || isStudentOption ? 'white' : '#64748b',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem'
-                            }}>
-                              {option.key}
-                            </strong>
-                            <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
-                          </div>
-                        );
-                      })}
-                    </div>
+                          return (
+                            <div
+                              key={option.key}
+                              style={{
+                                padding: '12px 16px',
+                                borderRadius: '10px',
+                                background: optBg,
+                                border: optBorder,
+                                color: optColor,
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                              }}
+                            >
+                              <strong style={{
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                background: isCorrectOption ? '#10b981' : isStudentOption ? '#ef4444' : '#f1f5f9',
+                                color: isCorrectOption || isStudentOption ? 'white' : '#64748b',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.78rem'
+                              }}>
+                                {option.key}
+                              </strong>
+                              <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(option.text) }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Question Type 2: True / False */}
+                    {qType === 'tf' && q.statements && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                          <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Mệnh đề</th>
+                              <th style={{ padding: '8px', width: '110px', textAlign: 'center' }}>Lựa chọn của bạn</th>
+                              <th style={{ padding: '8px', width: '110px', textAlign: 'center' }}>Đáp án đúng</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {q.statements.map(st => {
+                              const stUserVal = userAns?.[st.id];
+                              const isStCorrect = stUserVal === st.correct;
+
+                              return (
+                                <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '10px 8px' }}>
+                                    <strong>{st.id})</strong> <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(st.text) }} />
+                                  </td>
+                                  <td style={{ padding: '8px', textAlign: 'center', color: isStCorrect ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                                    {stUserVal === true ? 'Đúng' : stUserVal === false ? 'Sai' : 'Chưa làm'}
+                                  </td>
+                                  <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: '#10b981' }}>
+                                    {st.correct ? 'Đúng' : 'Sai'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Question Type 3: Short Answer */}
+                    {qType === 'short' && (
+                      <div style={{ marginBottom: '16px', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                        <div>Bạn đã nhập: <strong style={{ color: isCorrect ? '#10b981' : '#ef4444' }}>{userAns || '(Chưa nhập)'}</strong></div>
+                        <div style={{ marginTop: '4px' }}>Đáp án đúng chuẩn: <strong style={{ color: '#10b981' }}>{q.correctAnswer}</strong></div>
+                      </div>
+                    )}
 
                     {/* Explanation Box */}
                     <div style={{
                       padding: '14px 18px',
-                      background: 'rgba(99, 102, 241, 0.04)',
-                      borderRadius: '8px',
-                      border: '1px dashed rgba(99, 102, 241, 0.2)',
-                      fontSize: '0.85rem',
-                      color: '#4f46e5',
-                      lineHeight: 1.5
+                      background: 'rgba(99, 102, 241, 0.05)',
+                      borderRadius: '10px',
+                      border: '1px dashed rgba(99, 102, 241, 0.25)',
+                      fontSize: '0.88rem',
+                      color: '#334155',
+                      lineHeight: 1.6
                     }}>
-                      <strong style={{ display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', color: '#6366f1' }}>LỜI GIẢI CHI TIẾT:</strong>
+                      <strong style={{ display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: '#4f46e5' }}>💡 LỜI GIẢI CHI TIẾT:</strong>
                       <div dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(q.explanation) }} />
                     </div>
                   </div>
