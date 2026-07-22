@@ -639,32 +639,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           })}
         </nav>
       </div>
-
-      <div>
-        {/* Profile widget */}
-        <div className="user-profile-widget">
-          {userSession?.avatarUrl ? (
-            <img 
-              src={userSession.avatarUrl} 
-              alt={getProfileName()} 
-              className="avatar" 
-              style={{ objectFit: 'cover' }} 
-            />
-          ) : (
-            <div className="avatar" style={{ background: 'var(--accent)' }}>
-              {getProfileName().charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {getProfileName()}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              {getProfileSub()}
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
