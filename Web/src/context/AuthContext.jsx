@@ -62,7 +62,6 @@ export function AuthProvider({ children }) {
         setUser(null);
         setProfile(null);
         setRole('');
-        localStorage.removeItem('userSession');
       }
       setLoading(false);
     });
