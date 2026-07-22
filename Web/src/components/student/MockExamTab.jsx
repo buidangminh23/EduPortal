@@ -34,7 +34,7 @@ const SUBJECT_ICONS = {
 };
 
 export default function MockExamTab({ student }) {
-  const { customExams, mockExamHistory, saveMockExamResult } = useContext(AppContext);
+  const { customExams, mockExamHistory, saveMockExamResult, t, language } = useContext(AppContext);
 
   const [selectedBlockKey, setSelectedBlockKey] = useState('A00');
   const [activeExam, setActiveExam] = useState(null);

@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut, BookOpen } from 'lucide-react';
+import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut, BookOpen, Languages } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 
@@ -16,6 +16,9 @@ export default function Navbar({ setActiveTab }) {
     teacherLeaveRequests,
     leaveRequests,
     logout,
+    language,
+    toggleLanguage,
+    t
   } = useContext(AppContext);
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -36,12 +39,12 @@ export default function Navbar({ setActiveTab }) {
   }, []);
 
   const todayLabel = useMemo(() => (
-    new Date().toLocaleDateString('vi-VN', {
+    new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN', {
       weekday: 'short',
       day: '2-digit',
       month: '2-digit',
     })
-  ), []);
+  ), [language]);
 
   const getRoleIcon = () => {
     switch (currentRole) {
@@ -56,32 +59,32 @@ export default function Navbar({ setActiveTab }) {
   };
 
   const getRoleLabel = () => {
-    if (currentRole === 'admin') return 'Ban Giám Hiệu';
-    if (currentRole === 'teacher_subject') return 'Giáo Viên Bộ Môn';
-    if (currentRole === 'teacher_homeroom') return 'Giáo Viên Chủ Nhiệm';
-    if (currentRole === 'teacher') return 'Giáo Viên Bộ Môn';
-    if (currentRole === 'student') return 'Cổng Học Sinh';
-    if (currentRole === 'parent') return 'Cổng Phụ Huynh';
+    if (currentRole === 'admin') return t('Ban Giám Hiệu', 'School Board');
+    if (currentRole === 'teacher_subject') return t('Giáo Viên Bộ Môn', 'Subject Teacher');
+    if (currentRole === 'teacher_homeroom') return t('Giáo Viên Chủ Nhiệm', 'Homeroom Teacher');
+    if (currentRole === 'teacher') return t('Giáo Viên Bộ Môn', 'Subject Teacher');
+    if (currentRole === 'student') return t('Cổng Học Sinh', 'Student Portal');
+    if (currentRole === 'parent') return t('Cổng Phụ Huynh', 'Parent Portal');
     return '';
   };
 
   const getProfileSub = () => {
-    if (currentRole === 'admin') return 'Ban Giám Hiệu';
-    if (currentRole === 'teacher_subject') return 'Môn Toán - Khối 12';
-    if (currentRole === 'teacher_homeroom') return 'Môn Toán - Lớp 12A1';
-    if (currentRole === 'teacher') return 'Môn Toán - Lớp 12A1';
-    if (currentRole === 'student') return `Học sinh - Lớp ${activeStudent?.class || '12A1'}`;
-    if (currentRole === 'parent') return `Phụ huynh lớp ${activeStudent?.class || '12A1'}`;
+    if (currentRole === 'admin') return t('Ban Giám Hiệu', 'School Board');
+    if (currentRole === 'teacher_subject') return t('Môn Toán - Khối 12', 'Math Teacher - Grade 12');
+    if (currentRole === 'teacher_homeroom') return t('Môn Toán - Lớp 12A1', 'Math Teacher - Class 12A1');
+    if (currentRole === 'teacher') return t('Môn Toán - Lớp 12A1', 'Math Teacher - Class 12A1');
+    if (currentRole === 'student') return t(`Học sinh - Lớp ${activeStudent?.class || '12A1'}`, `Student - Class ${activeStudent?.class || '12A1'}`);
+    if (currentRole === 'parent') return t(`Phụ huynh lớp ${activeStudent?.class || '12A1'}`, `Parent of Class ${activeStudent?.class || '12A1'}`);
     return 'EduPortal';
   };
 
   const getGreeting = () => {
-    if (currentRole === 'admin') return 'Trung tâm điều hành nhà trường';
-    if (currentRole === 'teacher_subject') return 'Không gian giảng dạy & soạn giáo án';
-    if (currentRole === 'teacher_homeroom') return 'Quản lý nề nếp & đồng hành cùng lớp';
-    if (currentRole === 'teacher') return 'Không gian nghiệp vụ giáo viên';
-    if (currentRole === 'student') return 'Không gian học tập cá nhân';
-    if (currentRole === 'parent') return 'Theo dõi và đồng hành cùng con';
+    if (currentRole === 'admin') return t('Trung tâm điều hành nhà trường', 'School Management Center');
+    if (currentRole === 'teacher_subject') return t('Không gian giảng dạy & soạn giáo án', 'Teaching & Lesson Planning Workspace');
+    if (currentRole === 'teacher_homeroom') return t('Quản lý nề nếp & đồng hành cùng lớp', 'Homeroom Management Workspace');
+    if (currentRole === 'teacher') return t('Không gian nghiệp vụ giáo viên', 'Teacher Professional Workspace');
+    if (currentRole === 'student') return t('Không gian học tập cá nhân', 'Personal Learning Workspace');
+    if (currentRole === 'parent') return t('Theo dõi và đồng hành cùng con', 'Parent Monitoring Portal');
     return 'EduPortal';
   };
 
@@ -123,11 +126,11 @@ export default function Navbar({ setActiveTab }) {
         </div>
         <div className="nav-metric">
           <Activity size={14} />
-          <span>{pendingWork} việc</span>
+          <span>{pendingWork} {t('việc', 'tasks')}</span>
         </div>
         <div className="nav-metric">
           <Sparkles size={14} />
-          <span>{unread} mới</span>
+          <span>{unread} {t('mới', 'new')}</span>
         </div>
       </div>
 
@@ -135,11 +138,35 @@ export default function Navbar({ setActiveTab }) {
         {/* Global Search */}
         <GlobalSearch onNavigate={setActiveTab} />
 
+        {/* Language Switcher Toggle */}
+        <button
+          onClick={toggleLanguage}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            border: '1px solid #cbd5e1',
+            background: 'white',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            color: '#334155',
+            transition: 'all 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+          }}
+          title={language === 'vi' ? 'Chuyển sang Tiếng Anh' : 'Switch to Vietnamese'}
+        >
+          <Languages size={16} color="var(--accent-primary, #6366f1)" />
+          <span>{language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}</span>
+        </button>
+
         {/* Parent accounts are locked to their linked child profile. */}
         {currentRole === 'parent' && (
           <div className="parent-student-switcher parent-student-lock" title="Tài khoản phụ huynh chỉ xem được hồ sơ con mình">
-            <span>Con đang theo dõi:</span>
-            <strong>{activeStudent?.name || 'Chưa liên kết'}</strong>
+            <span>{t('Con đang theo dõi:', 'Child:')}</span>
+            <strong>{activeStudent?.name || t('Chưa liên kết', 'Unlinked')}</strong>
             {activeStudent?.class && <small>{activeStudent.class}</small>}
           </div>
         )}

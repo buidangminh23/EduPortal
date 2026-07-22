@@ -753,6 +753,22 @@ export const AppProvider = ({ children }) => {
 
   const [theme] = useState('light');
   
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('edu_portal_lang') || 'vi';
+  });
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage(prev => {
+      const next = prev === 'vi' ? 'en' : 'vi';
+      localStorage.setItem('edu_portal_lang', next);
+      return next;
+    });
+  }, []);
+
+  const t = useCallback((viStr, enStr) => {
+    return language === 'en' ? enStr : viStr;
+  }, [language]);
+
   const { profile, signOut: authSignOut } = useAuth();
 
   const [mockSession, setMockSession] = useState(() => {
@@ -2899,6 +2915,7 @@ export const AppProvider = ({ children }) => {
       globalSearch,
       reviewQueue, setReviewQueue,
       groupEntries, setGroupEntries,
+      language, setLanguage, toggleLanguage, t
     }}>
       {children}
     </AppContext.Provider>
