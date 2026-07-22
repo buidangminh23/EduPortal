@@ -78,16 +78,16 @@ function App() {
     }
 
     // Role-dependent premium pages
-    if (activeTab === 'essay_grader' && (currentRole === 'student' || currentRole === 'teacher' || currentRole === 'admin')) {
+    if (activeTab === 'essay_grader' && (currentRole === 'student' || currentRole?.startsWith('teacher') || currentRole === 'admin')) {
       return <EssayGrader />;
     }
-    if (activeTab === 'bus_tracker' && (currentRole === 'student' || currentRole === 'parent' || currentRole === 'admin' || currentRole === 'teacher')) {
+    if (activeTab === 'bus_tracker' && (currentRole === 'student' || currentRole === 'parent' || currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
       return <BusTracker />;
     }
-    if (activeTab === 'portfolio' && (currentRole === 'student' || currentRole === 'admin' || currentRole === 'teacher')) {
+    if (activeTab === 'portfolio' && (currentRole === 'student' || currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
       return <PortfolioBuilder />;
     }
-    if (activeTab === 'timetable_generator' && (currentRole === 'admin' || currentRole === 'teacher')) {
+    if (activeTab === 'timetable_generator' && (currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
       return <TimetableGenerator />;
     }
 
@@ -127,7 +127,7 @@ function App() {
     }
     
     // 2. GIÁO VIÊN
-    if (currentRole === 'teacher') {
+    if (currentRole === 'teacher' || currentRole?.startsWith('teacher')) {
       switch (activeTab) {
         case 'dashboard':
           return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;

@@ -89,7 +89,7 @@ export default function Navbar({ setActiveTab }) {
     ? notifications.filter(n => !n.read && (n.targetRole === 'all' || n.targetRole === currentRole)).length
     : 0;
   const pendingWork = useMemo(() => {
-    if (currentRole === 'teacher') {
+    if (currentRole?.startsWith('teacher')) {
       return (assignments?.filter(a => a.teacherId === 'T01').length ?? 0)
         + (leaveRequests?.filter(l => l.status === 'pending').length ?? 0);
     }
