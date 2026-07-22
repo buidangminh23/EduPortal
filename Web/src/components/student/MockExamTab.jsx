@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES } from '../../data/mockExamsData';
+import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES, QUESTIONS } from '../../data/mockExamsData';
 import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
   Award,
@@ -44,6 +44,7 @@ export default function MockExamTab({ student }) {
   const [examSecondsLeft, setExamSecondsLeft] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [reviewingPastAttempt, setReviewingPastAttempt] = useState(null);
+  const [selectionTab, setSelectionTab] = useState('subject'); // 'subject' | 'block'
 
   // Helper to get list of unique subjects in current active exam
   const getExamSubjects = useCallback((exam) => {
@@ -271,8 +272,6 @@ export default function MockExamTab({ student }) {
     }
     return true;
   };
-
-  const [selectionTab, setSelectionTab] = useState('subject'); // 'subject' | 'block'
 
   const ALL_SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Literature', 'History', 'Geography'];
 
