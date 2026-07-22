@@ -139,6 +139,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const isTeacher = currentRole === 'teacher' || isTeacherSubject || isTeacherHomeroom;
   const isParent = currentRole === 'parent';
 
+  const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
+
   const teacherSubItemsList = isTeacherSubject 
     ? TEACHER_SUBJECT_SUB_ITEMS 
     : isTeacherHomeroom 
