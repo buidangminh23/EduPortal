@@ -15,28 +15,107 @@ import {
   Check,
   X,
   ClipboardList,
+  BookOpen,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  BarChart2
 } from 'lucide-react';
+
+const SUBJECT_ICONS = {
+  Math: '📐',
+  Physics: '⚛️',
+  Chemistry: '🧪',
+  Biology: '🧬',
+  English: '🇬🇧',
+  History: '📜',
+  Geography: '🗺️',
+  Literature: '📖'
+};
 
 export default function MockExamTab({ student }) {
   const { customExams, mockExamHistory, saveMockExamResult } = useContext(AppContext);
 
   const [selectedBlockKey, setSelectedBlockKey] = useState('A00');
   const [activeExam, setActiveExam] = useState(null);
-  const [examMode, setExamMode] = useState(null);
+  const [examMode, setExamMode] = useState(null); // null | 'taking' | 'reviewing'
+  const [selectedSubjectTab, setSelectedSubjectTab] = useState('');
   const [examAnswers, setExamAnswers] = useState({});
   const [examSecondsLeft, setExamSecondsLeft] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [reviewingPastAttempt, setReviewingPastAttempt] = useState(null);
 
-  const calculateExamScore = useCallback((exam, answers) => {
-    let correctCount = 0;
+  // Helper to get list of unique subjects in current active exam
+  const getExamSubjects = useCallback((exam) => {
+    if (!exam || !exam.questions) return [];
+    const set = new Set();
     exam.questions.forEach(q => {
-      if (answers[q.id] === q.correctKey) {
-        correctCount++;
-      }
+      if (q.subject) set.add(q.subject);
     });
-    const score = (correctCount / exam.questions.length) * 10;
-    return { score, correctCount };
+    return Array.from(set);
+  }, []);
+
+  // Calculate official MoET National High School exam score
+  const calculateExamScore = useCallback((exam, answers) => {
+    if (!exam || !exam.questions) return { score: 0, totalQuestions: 0, subjectBreakdown: {} };
+
+    const subjectBreakdown = {};
+    const subjects = Array.from(new Set(exam.questions.map(q => q.subject)));
+
+    subjects.forEach(subj => {
+      const subjQuestions = exam.questions.filter(q => q.subject === subj);
+      let rawPoints = 0;
+      let totalRawMax = 0;
+
+      subjQuestions.forEach(q => {
+        const qType = q.type || 'single';
+        const userAns = answers[q.id];
+
+        if (qType === 'single') {
+          totalRawMax += 1;
+          if (userAns === q.correctKey) {
+            rawPoints += 1;
+          }
+        } else if (qType === 'tf') {
+          totalRawMax += 1;
+          if (userAns && typeof userAns === 'object') {
+            let numCorrect = 0;
+            q.statements?.forEach(st => {
+              if (userAns[st.id] === st.correct) {
+                numCorrect++;
+              }
+            });
+            // MoET official True/False scoring scale: 1 -> 0.1, 2 -> 0.25, 3 -> 0.5, 4 -> 1.0
+            if (numCorrect === 1) rawPoints += 0.1;
+            else if (numCorrect === 2) rawPoints += 0.25;
+            else if (numCorrect === 3) rawPoints += 0.5;
+            else if (numCorrect === 4) rawPoints += 1.0;
+          }
+        } else if (qType === 'short') {
+          totalRawMax += 1;
+          if (userAns && String(userAns).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase()) {
+            rawPoints += 1;
+          }
+        }
+      });
+
+      const scaledSubjectScore = totalRawMax > 0 ? (rawPoints / totalRawMax) * 10.0 : 0;
+      subjectBreakdown[subj] = {
+        rawPoints,
+        totalRawMax,
+        subjectScore: Math.round(scaledSubjectScore * 100) / 100,
+        total: subjQuestions.length
+      };
+    });
+
+    const totalBlockScore = Object.values(subjectBreakdown).reduce((sum, item) => sum + item.subjectScore, 0);
+    const roundedBlockScore = Math.round(totalBlockScore * 100) / 100;
+
+    return {
+      score: roundedBlockScore, // Total out of 30.0 points
+      totalQuestions: exam.questions.length,
+      subjectBreakdown
+    };
   }, []);
 
   const submitExam = useCallback(() => {
@@ -47,18 +126,7 @@ export default function MockExamTab({ student }) {
     const secondsUsed = durationUsed % 60;
     const timeSpentStr = `${String(minutesUsed).padStart(2, '0')}:${String(secondsUsed).padStart(2, '0')}`;
 
-    const { score, correctCount } = calculateExamScore(activeExam, examAnswers);
-
-    const subjectBreakdown = {};
-    activeExam.questions.forEach(q => {
-      if (!subjectBreakdown[q.subject]) {
-        subjectBreakdown[q.subject] = { correct: 0, total: 0 };
-      }
-      subjectBreakdown[q.subject].total++;
-      if (examAnswers[q.id] === q.correctKey) {
-        subjectBreakdown[q.subject].correct++;
-      }
-    });
+    const { score, totalQuestions, subjectBreakdown } = calculateExamScore(activeExam, examAnswers);
 
     const newResult = {
       studentId: student?.id,
@@ -68,29 +136,26 @@ export default function MockExamTab({ student }) {
       examId: activeExam.id,
       title: activeExam.title,
       score: score,
-      totalQuestions: activeExam.questions.length,
-      correctAnswers: correctCount,
+      totalQuestions: totalQuestions,
       timeSpent: timeSpentStr,
       selectedAnswers: examAnswers,
-      subjectBreakdown: subjectBreakdown
+      subjectBreakdown: subjectBreakdown,
+      date: new Date().toISOString().split('T')[0]
     };
 
     saveMockExamResult(newResult);
     setExamMode('reviewing');
-    setReviewingPastAttempt({
-      ...newResult,
-      date: new Date().toISOString().split('T')[0]
-    });
+    setReviewingPastAttempt(newResult);
   }, [activeExam, examAnswers, examSecondsLeft, student, selectedBlockKey, saveMockExamResult, calculateExamScore]);
 
   const handleAutoSubmit = useCallback(() => {
-    alert('Hết giờ làm bài! Hệ thống tự động nộp bài.');
+    alert('⏰ Hết giờ làm bài! Hệ thống đang nộp bài thi của bạn.');
     submitExam();
   }, [submitExam]);
 
   const handleFinishExam = useCallback(() => {
     if (!activeExam) return;
-    if (window.confirm('Bạn có chắc chắn muốn nộp bài thi?')) {
+    if (window.confirm('Bạn có chắc chắn muốn nộp bài thi THPT Quốc gia này?')) {
       submitExam();
     }
   }, [activeExam, submitExam]);
@@ -116,6 +181,8 @@ export default function MockExamTab({ student }) {
 
   const handleStartExam = (exam) => {
     setActiveExam(exam);
+    const subjects = getExamSubjects(exam);
+    setSelectedSubjectTab(subjects[0] || 'Math');
     setExamMode('taking');
     setExamAnswers({});
     setExamSecondsLeft(exam.duration * 60);
@@ -123,10 +190,30 @@ export default function MockExamTab({ student }) {
     setReviewingPastAttempt(null);
   };
 
-  const handleSelectOption = (questionId, optionKey) => {
+  const handleSelectOptionSingle = (questionId, optionKey) => {
     setExamAnswers(prev => ({
       ...prev,
       [questionId]: optionKey
+    }));
+  };
+
+  const handleSelectOptionTF = (questionId, statementId, val) => {
+    setExamAnswers(prev => {
+      const existing = prev[questionId] || {};
+      return {
+        ...prev,
+        [questionId]: {
+          ...existing,
+          [statementId]: val
+        }
+      };
+    });
+  };
+
+  const handleSelectOptionShort = (questionId, textVal) => {
+    setExamAnswers(prev => ({
+      ...prev,
+      [questionId]: textVal
     }));
   };
 
@@ -144,6 +231,8 @@ export default function MockExamTab({ student }) {
 
     if (exam) {
       setActiveExam(exam);
+      const subjects = getExamSubjects(exam);
+      setSelectedSubjectTab(subjects[0] || 'Math');
       setExamAnswers(attempt.selectedAnswers || {});
       setExamMode('reviewing');
       setReviewingPastAttempt(attempt);
@@ -159,37 +248,38 @@ export default function MockExamTab({ student }) {
     setReviewingPastAttempt(null);
   };
 
-  const getSelectedAnswerKey = (q, attempt) => {
-    if (attempt && attempt.selectedAnswers && attempt.selectedAnswers[q.id]) {
-      return attempt.selectedAnswers[q.id];
+  const isQuestionAnswered = (q) => {
+    const ans = examAnswers[q.id];
+    if (!ans) return false;
+    if (q.type === 'tf') {
+      return typeof ans === 'object' && Object.keys(ans).length > 0;
     }
-    if (!attempt) return null;
-    const qIndex = activeExam?.questions?.findIndex(question => question.id === q.id) ?? 0;
-    if (qIndex < attempt.correctAnswers) {
-      return q.correctKey;
+    if (q.type === 'short') {
+      return String(ans).trim().length > 0;
     }
-    const wrongKeys = q.options.map(o => o.key).filter(k => k !== q.correctKey);
-    return wrongKeys[0] || 'A';
+    return true;
   };
+
+  const currentSubjectQuestions = activeExam?.questions?.filter(q => q.subject === selectedSubjectTab) || [];
+  const currentQuestion = currentSubjectQuestions[currentQuestionIndex] || currentSubjectQuestions[0];
 
   return (
     <div className="animate-fade">
-
-      {/* Main selection view */}
+      {/* ─── 1. SELECTION & OVERVIEW VIEW ────────────────────────────────────── */}
       {examMode === null && (
         <div>
-          {/* Header card with glassmorphism */}
-          <div className="glass-panel" style={{ padding: '30px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.45))' }}>
+          {/* Header Card */}
+          <div className="glass-panel" style={{ padding: '28px', marginBottom: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <ClipboardList size={28} color="var(--accent-primary)" /> Thi Thử Đại Học THPT Quốc Gia
+                  <ClipboardList size={28} color="var(--accent-primary)" /> Thi Thử Đại Học THPT Quốc Gia (Format Bộ GD&ĐT 2025+)
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '6px' }}>
-                  Rèn luyện kiến thức thực tế với đề thi thử chuẩn cấu trúc đề của Bộ Giáo dục và Đào tạo.
+                  Hệ thống phân chia theo các môn thi độc lập, hỗ trợ 3 dạng trắc nghiệm mới (4 lựa chọn, Đúng/Sai, Điền số) và tính điểm chuẩn 30.0đ.
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {Object.keys(BLOCKS).map(blockKey => (
                   <button
                     key={blockKey}
@@ -212,52 +302,34 @@ export default function MockExamTab({ student }) {
             </div>
           </div>
 
-          {/* Grid of Integrated Block Exams */}
+          {/* Integrated System Exam Cards */}
           <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Award size={18} color="var(--accent-secondary)" /> Đề thi thử hệ thống của {BLOCKS[selectedBlockKey].name}
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Award size={20} color="var(--accent-primary)" /> Đề thi THPT Quốc gia theo Môn học của {BLOCKS[selectedBlockKey].name}
             </h3>
 
             {(() => {
               const systemExam = SYSTEM_BLOCK_EXAMS.find(ex => ex.block === selectedBlockKey);
               if (!systemExam) return <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Chưa có đề thi hệ thống cho khối này.</p>;
 
-              const counts = {};
-              systemExam.questions.forEach(q => {
-                counts[q.subject] = (counts[q.subject] || 0) + 1;
-              });
-              const structureDesc = Object.entries(counts)
-                .map(([sub, count]) => `${count} ${SUBJECT_NAMES[sub] || sub}`)
-                .join(', ');
+              const subjects = Array.from(new Set(systemExam.questions.map(q => q.subject)));
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '180px', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(255, 255, 255, 0.8))' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '200px', border: '1px solid rgba(99, 102, 241, 0.2)', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(255, 255, 255, 0.85))' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          color: 'var(--accent-primary)',
-                          background: 'var(--accent-primary-glow)',
-                          padding: '4px 10px',
-                          borderRadius: '99px'
-                        }}>
-                          Đề thi Hệ thống
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', background: 'rgba(99,102,241,0.1)', padding: '4px 10px', borderRadius: '99px' }}>
+                          Đề thi THPT Quốc gia Chính thức
                         </span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={12} /> {systemExam.duration} phút
+                          <Clock size={14} /> {systemExam.duration} phút
                         </span>
                       </div>
-                      <h4 style={{ fontSize: '1rem', fontWeight: 850, color: '#1e293b', lineHeight: 1.4, margin: '6px 0' }}>
+
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', marginBottom: '10px' }}>
                         {systemExam.title}
                       </h4>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                        <strong>Cấu trúc liên môn:</strong> {structureDesc}
-                      </p>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Trải nghiệm thi thử liên môn tuần tự theo đúng quy chế thi thật của Bộ GD&ĐT.
-                      </p>
                     </div>
 
                     <div style={{ marginTop: '20px' }}>
