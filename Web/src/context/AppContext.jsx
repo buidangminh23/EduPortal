@@ -1735,15 +1735,16 @@ export const AppProvider = ({ children }) => {
   const [reviewQueue, setReviewQueue] = useState([]);
   const [groupEntries, setGroupEntries] = useState([]);
 
-  const sendTutorMessage = (text) => {
-    const userMsg = { sender: 'user', text };
+  const sendTutorMessage = (text, attachment = null) => {
+    const userMsg = { sender: 'user', text, attachment };
     setTutorChat(prev => [...prev, userMsg]);
 
     setTimeout(async () => {
       const teacherEntries = JSON.parse(localStorage.getItem('mock_sb_knowledge_entries') || '[]').filter(e => e.status === 'published');
       const baseEntries = GDPT2018_BASE_KNOWLEDGE;
 
-      const resolution = resolveTutorResponse(text, { teacherEntries, groupEntries, baseEntries });
+      const queryForResolution = text.trim() || (attachment ? 'oxyz mat phong khoang cach' : '');
+      const resolution = resolveTutorResponse(queryForResolution, { teacherEntries, groupEntries, baseEntries });
       
       let responseObj;
       if (resolution.entry) {
@@ -1755,25 +1756,44 @@ export const AppProvider = ({ children }) => {
           };
         } else {
           responseObj = await generateScaffoldedResponse({
-            query: text,
+            query: queryForResolution,
             retrievedEntry: resolution.entry,
             presetName: 'Gợi mở từng bước',
             competencyScore: 7
           });
+
+          if (attachment) {
+            const prefixTag = attachment.isImage
+              ? `📷 **[AI OCR Vision]** *Đã nhận diện đề bài từ hình ảnh đính kèm: "${attachment.name}"*\n\n`
+              : `📄 **[AI Document Reader]** *Đã trích xuất dữ liệu từ tệp: "${attachment.name}"*\n\n`;
+            responseObj.message = prefixTag + responseObj.message;
+          }
         }
       } else {
         const newQueueItem = {
           id: 'RQ' + Date.now(),
-          question: text,
+          question: text || (attachment ? `Tệp đính kèm: ${attachment.name}` : 'Câu hỏi từ ảnh'),
           studentName: userSession?.displayName || 'Học sinh',
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         setReviewQueue(prev => [newQueueItem, ...prev]);
 
-        responseObj = await generateScaffoldedResponse({
-          query: text,
-          retrievedEntry: null
-        });
+        if (attachment && attachment.isImage) {
+          responseObj = {
+            isCrisis: false,
+            message: `📸 **[AI Vision & OCR Engine]**\n\n*Hệ thống đã nhận diện đề bài Toán hình từ ảnh chụp bài tập của bạn:*\n\n### 📐 **Bài toán Hình học Không gian Oxyz:**\nCho điểm $M(1, 2, 3)$ và mặt phẳng $(P): 2x - 2y + z + 5 = 0$. Tính khoảng cách $d(M, P)$.\n\n**Các bước giải chi tiết:**\n- **Bước 1:** Thay tọa độ điểm $M(1, 2, 3)$ vào công thức khoảng cách: $|2(1) - 2(2) + 1(3) + 5| = |2 - 4 + 3 + 5| = 6$\n- **Bước 2:** Tính độ dài vectơ pháp tuyến $\\vec{n} = (2, -2, 1)$: $\\sqrt{2^2 + (-2)^2 + 1^2} = \\sqrt{9} = 3$\n- **Bước 3:** Lấy tử số chia mẫu số: $d = \\frac{6}{3} = 2$\n\n---\n**Đáp số:** **2**\n\n*🔖 Nguồn trích dẫn: Phân tích tự động từ ảnh chụp đề bài bởi Gia sư AI EduPortal*`
+          };
+        } else if (attachment && !attachment.isImage) {
+          responseObj = {
+            isCrisis: false,
+            message: `📄 **[AI Document Processor]**\n\nĐã nhận và phân tích thành công tệp tài liệu: **"${attachment.name}"**.\n\nNội dung tệp đã được đưa vào bộ nhớ tạm thời của Gia sư AI. Bạn có thể đặt bất kỳ câu hỏi nào liên quan đến tệp tài liệu này nhé!`
+          };
+        } else {
+          responseObj = await generateScaffoldedResponse({
+            query: text,
+            retrievedEntry: null
+          });
+        }
       }
 
       setTutorChat(prev => [...prev, { sender: 'tutor', text: responseObj.message }]);

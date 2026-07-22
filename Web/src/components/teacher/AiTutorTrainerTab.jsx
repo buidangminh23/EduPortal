@@ -39,6 +39,7 @@ export default function AiTutorTrainerTab() {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const teacherId = profile?.id || 'e1000000-0000-0000-0000-000000000001';
   const teacherSubject = profile?.subject || 'Toán học';
   const schoolId = profile?.school_id || 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
@@ -46,28 +47,31 @@ export default function AiTutorTrainerTab() {
     setLoading(true);
     try {
       const presetsData = await fetchPresets();
-      setPresets(presetsData);
+      setPresets(presetsData || []);
 
-      const configData = await fetchTutorConfig(profile?.id);
-      setConfig(configData);
+      const configData = await fetchTutorConfig(teacherId);
+      setConfig(configData || { teacher_id: teacherId, preset_id: presetsData?.[0]?.id, tone: 'than_mat', status: 'draft', version: '1.0' });
 
-      const entriesData = await fetchKnowledgeEntries(profile?.id, schoolId, teacherSubject);
-      setEntries(entriesData);
+      const entriesData = await fetchKnowledgeEntries(teacherId, schoolId, teacherSubject);
+      setEntries(entriesData || []);
     } catch (err) {
       console.error('Error loading AiTutor data:', err);
     } finally {
       setLoading(false);
     }
-  }, [profile, schoolId, teacherSubject]);
+  }, [teacherId, schoolId, teacherSubject]);
 
   useEffect(() => {
-    if (profile) {
-      const timer = setTimeout(() => {
-        loadData();
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [profile, loadData]);
+    let mounted = true;
+    loadData();
+    const safetyTimer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 1000);
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
+    };
+  }, [loadData]);
 
   const handleSelectPreset = async (presetId) => {
     const updated = { ...config, preset_id: presetId, status: 'draft' };
