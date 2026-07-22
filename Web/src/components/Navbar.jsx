@@ -63,6 +63,16 @@ export default function Navbar({ setActiveTab }) {
     return '';
   };
 
+  const getProfileSub = () => {
+    if (currentRole === 'admin') return 'Ban Giám Hiệu';
+    if (currentRole === 'teacher_subject') return 'Môn Toán - Khối 12';
+    if (currentRole === 'teacher_homeroom') return 'Môn Toán - Lớp 12A1';
+    if (currentRole === 'teacher') return 'Môn Toán - Lớp 12A1';
+    if (currentRole === 'student') return `Học sinh - Lớp ${activeStudent?.class || '12A1'}`;
+    if (currentRole === 'parent') return `Phụ huynh lớp ${activeStudent?.class || '12A1'}`;
+    return 'EduPortal';
+  };
+
   const getGreeting = () => {
     if (currentRole === 'admin') return 'Trung tâm điều hành nhà trường';
     if (currentRole === 'teacher_subject') return 'Không gian giảng dạy & soạn giáo án';
@@ -140,12 +150,19 @@ export default function Navbar({ setActiveTab }) {
           <div ref={dropdownRef} style={{ position: 'relative' }}>
             <button 
               onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className="account-chip"
               style={{
                 cursor: 'pointer',
-                border: showUserDropdown ? '1px solid var(--accent)' : '1px solid var(--line)',
-                boxShadow: showUserDropdown ? '0 0 0 2px rgba(79, 70, 229, 0.15)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '5px 14px 5px 6px',
+                borderRadius: '24px',
+                background: 'rgba(241, 245, 249, 0.85)',
+                border: showUserDropdown ? '1.5px solid var(--accent)' : '1px solid rgba(203, 213, 225, 0.6)',
+                boxShadow: showUserDropdown ? '0 0 0 3px rgba(79, 70, 229, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
                 fontFamily: 'inherit',
+                transition: 'all 0.2s',
+                textAlign: 'left',
               }}
               title="Tài khoản cá nhân"
             >
@@ -153,12 +170,21 @@ export default function Navbar({ setActiveTab }) {
                 <img 
                   src={userSession.avatarUrl} 
                   alt={userSession.displayName || userSession.username}
-                  style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }}
+                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                 />
               ) : (
-                <UserCheck size={14} />
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
+                  {(userSession.displayName || userSession.username).charAt(0).toUpperCase()}
+                </div>
               )}
-              <span>{userSession.displayName || userSession.username}</span>
+              <div style={{ overflow: 'hidden', lineHeight: 1.25 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary, #1e293b)', whiteSpace: 'nowrap' }}>
+                  {userSession.displayName || userSession.username}
+                </div>
+                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>
+                  {getProfileSub()}
+                </div>
+              </div>
             </button>
             {showUserDropdown && (
               <div 
