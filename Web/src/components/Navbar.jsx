@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut } from 'lucide-react';
+import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut, BookOpen } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 
@@ -20,6 +20,8 @@ export default function Navbar({ setActiveTab }) {
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownRef = useRef(null);
+
+  const activeStudent = students?.find(s => s.id === selectedStudentId) || students?.[0];
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -83,7 +85,6 @@ export default function Navbar({ setActiveTab }) {
     return 'EduPortal';
   };
 
-  const activeStudent = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const unread = notifications
     ? notifications.filter(n => !n.read && (n.targetRole === 'all' || n.targetRole === currentRole)).length
     : 0;
