@@ -557,9 +557,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           return (
             <span>
               {before ? renderNaturalMath(before) : null}
-              <span className="casio-sqrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>√</span>
-                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+              <span className="casio-sqrt">
+                <span className="casio-sqrt-sym">√</span>
+                <span className="casio-sqrt-body">
                   ({inner ? renderNaturalMath(inner) : null})
                 </span>
               </span>
@@ -570,9 +570,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           return (
             <span>
               {before ? renderNaturalMath(before) : null}
-              <span className="casio-sqrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>√</span>
-                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+              <span className="casio-sqrt">
+                <span className="casio-sqrt-sym">√</span>
+                <span className="casio-sqrt-body">
                   ({renderNaturalMath(rest)}
                 </span>
               </span>
@@ -606,9 +606,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           return (
             <span>
               {before ? renderNaturalMath(before) : null}
-              <span className="casio-cbrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>∛</span>
-                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+              <span className="casio-cbrt">
+                <span className="casio-cbrt-sym">∛</span>
+                <span className="casio-cbrt-body">
                   ({inner ? renderNaturalMath(inner) : null})
                 </span>
               </span>
@@ -619,9 +619,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           return (
             <span>
               {before ? renderNaturalMath(before) : null}
-              <span className="casio-cbrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>∛</span>
-                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+              <span className="casio-cbrt">
+                <span className="casio-cbrt-sym">∛</span>
+                <span className="casio-cbrt-body">
                   ({renderNaturalMath(rest)}
                 </span>
               </span>

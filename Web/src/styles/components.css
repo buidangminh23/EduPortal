@@ -1222,6 +1222,34 @@ sub + sup, sup + sub {
   pointer-events: none;
 }
 
+/* Casio LCD Square & Cube Root Formatting - Seamless Continuous Line */
+.casio-sqrt, .casio-cbrt {
+  display: inline-flex !important;
+  align-items: flex-start !important;
+  vertical-align: baseline;
+  position: relative;
+  line-height: 1;
+}
+
+.casio-sqrt-sym, .casio-cbrt-sym {
+  font-weight: 900;
+  font-size: 1.12em;
+  line-height: 1;
+  position: relative;
+  top: -1px;
+  z-index: 2;
+}
+
+.casio-sqrt-body, .casio-cbrt-body {
+  border-top: 2px solid #122115;
+  margin-left: -5px;
+  padding-top: 1px;
+  padding-left: 5px;
+  padding-right: 2px;
+  display: inline-block;
+  z-index: 1;
+}
+
 /* Casio LCD Stacked Fraction & Math Formatting */
 .casio-frac {
   display: inline-flex;
