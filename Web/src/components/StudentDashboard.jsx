@@ -18,6 +18,7 @@ import MiniTournament from './MiniTournament';
 import OverviewTab from './student/OverviewTab';
 import CounselingTab from './student/CounselingTab';
 import UniversityMatchmakerTab from './student/UniversityMatchmakerTab';
+import CasioFX580 from './CasioFX580';
 
 export default function StudentDashboard({ setActiveTab }) {
   const { currentRole, studentSubTab, setStudentSubTab, selectedStudentId, students } = useContext(AppContext);
@@ -56,6 +57,7 @@ export default function StudentDashboard({ setActiveTab }) {
       {subTab === 'cafeteria' && <CafeteriaTab student={student} />}
       {subTab === 'competency_heatmap' && <CompetencyHeatmapTab setSubTab={setSubTab} />}
       {subTab === 'wallet_id' && <WalletIdTab student={student} />}
+      {subTab === 'casio580' && <CasioFX580 />}
     </div>
   );
 }
