@@ -91,11 +91,25 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [displayExpr, setDisplayExpr] = useState('');
   const [cursorPos, setCursorPos] = useState(0);
 
-  // Interactive Fraction State
-  const [inFrac, setInFrac] = useState(false);
+  // Interactive Natural V.P.A.M. Template States
+  const [activeTemplate, setActiveTemplate] = useState('NONE'); // 'NONE' | 'FRAC' | 'INTEGRAL' | 'LOGBASE' | 'POWER'
+  const [activeBox, setActiveBox] = useState('main');
+
+  // Fraction fields
   const [fracNum, setFracNum] = useState('');
   const [fracDen, setFracDen] = useState('');
-  const [activeBox, setActiveBox] = useState('num'); // 'num' | 'den' | 'none'
+
+  // Definite Integral fields
+  const [integBody, setIntegBody] = useState('');
+  const [integLower, setIntegLower] = useState('');
+  const [integUpper, setIntegUpper] = useState('');
+
+  // Log base fields
+  const [logBase, setLogBase] = useState('');
+  const [logArg, setLogArg] = useState('');
+
+  // Power field
+  const [powerExp, setPowerExp] = useState('');
   const [resultText, setResultText] = useState('0');
   const [history, setHistory] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -466,16 +480,33 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'e': token = 'e'; break;
         case 'Ans': token = 'Ans'; break;
         case 'a/b':
-          setInFrac(true);
+          setActiveTemplate('FRAC');
           setActiveBox('num');
           setFracNum('');
           setFracDen('');
+          return;
+        case '∫dx':
+          setActiveTemplate('INTEGRAL');
+          setActiveBox('body');
+          setIntegBody('');
+          setIntegLower('');
+          setIntegUpper('');
+          return;
+        case 'log':
+          setActiveTemplate('LOGBASE');
+          setActiveBox('base');
+          setLogBase('');
+          setLogArg('');
+          return;
+        case 'xⁿ':
+          setActiveTemplate('POWER');
+          setActiveBox('exp');
+          setPowerExp('');
           return;
         case 'i': token = 'i'; break;
         case 'Pol': token = 'Pol('; break;
         case 'Rec': token = 'Rec('; break;
         case 'd/dx': token = 'd/dx('; break;
-        case '∫dx': token = '∫('; break;
         case 'STO': setStoMode(true); return;
         case 'RCL': setRclMode(true); return;
         case 'OPTN': setShowOptnMenu(true); return;
@@ -483,12 +514,21 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
     }
 
-    if (inFrac && activeBox !== 'none') {
-      if (activeBox === 'num') {
-        setFracNum(prev => prev + token);
-      } else if (activeBox === 'den') {
-        setFracDen(prev => prev + token);
-      }
+    if (activeTemplate === 'FRAC' && activeBox !== 'none') {
+      if (activeBox === 'num') setFracNum(prev => prev + token);
+      else if (activeBox === 'den') setFracDen(prev => prev + token);
+      return;
+    } else if (activeTemplate === 'INTEGRAL' && activeBox !== 'none') {
+      if (activeBox === 'body') setIntegBody(prev => prev + token);
+      else if (activeBox === 'lower') setIntegLower(prev => prev + token);
+      else if (activeBox === 'upper') setIntegUpper(prev => prev + token);
+      return;
+    } else if (activeTemplate === 'LOGBASE' && activeBox !== 'none') {
+      if (activeBox === 'base') setLogBase(prev => prev + token);
+      else if (activeBox === 'arg') setLogArg(prev => prev + token);
+      return;
+    } else if (activeTemplate === 'POWER' && activeBox !== 'none') {
+      if (activeBox === 'exp') setPowerExp(prev => prev + token);
       return;
     }
 
@@ -505,10 +545,16 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     playKeySound();
     setDisplayExpr('');
     setCursorPos(0);
-    setInFrac(false);
+    setActiveTemplate('NONE');
+    setActiveBox('main');
     setFracNum('');
     setFracDen('');
-    setActiveBox('num');
+    setIntegBody('');
+    setIntegLower('');
+    setIntegUpper('');
+    setLogBase('');
+    setLogArg('');
+    setPowerExp('');
     setResultText('0');
     setNumericValue(0);
     setShift(false);
@@ -519,14 +565,39 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
   const handleDel = () => {
     playKeySound();
-    if (inFrac && activeBox !== 'none') {
+    if (activeTemplate === 'FRAC' && activeBox !== 'none') {
       if (activeBox === 'num') {
         if (fracNum.length > 0) setFracNum(prev => prev.slice(0, -1));
-        else setInFrac(false);
+        else setActiveTemplate('NONE');
       } else if (activeBox === 'den') {
         if (fracDen.length > 0) setFracDen(prev => prev.slice(0, -1));
         else setActiveBox('num');
       }
+      return;
+    } else if (activeTemplate === 'INTEGRAL' && activeBox !== 'none') {
+      if (activeBox === 'body') {
+        if (integBody.length > 0) setIntegBody(prev => prev.slice(0, -1));
+        else setActiveTemplate('NONE');
+      } else if (activeBox === 'lower') {
+        if (integLower.length > 0) setIntegLower(prev => prev.slice(0, -1));
+        else setActiveBox('body');
+      } else if (activeBox === 'upper') {
+        if (integUpper.length > 0) setIntegUpper(prev => prev.slice(0, -1));
+        else setActiveBox('lower');
+      }
+      return;
+    } else if (activeTemplate === 'LOGBASE' && activeBox !== 'none') {
+      if (activeBox === 'base') {
+        if (logBase.length > 0) setLogBase(prev => prev.slice(0, -1));
+        else setActiveTemplate('NONE');
+      } else if (activeBox === 'arg') {
+        if (logArg.length > 0) setLogArg(prev => prev.slice(0, -1));
+        else setActiveBox('base');
+      }
+      return;
+    } else if (activeTemplate === 'POWER' && activeBox !== 'none') {
+      if (powerExp.length > 0) setPowerExp(prev => prev.slice(0, -1));
+      else setActiveTemplate('NONE');
       return;
     }
 
@@ -645,16 +716,52 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
   };
 
+  const evalDefiniteIntegral = (bodyStr, lowVal, upVal) => {
+    const N = 100;
+    const h = (upVal - lowVal) / N;
+    let sum = evaluateExpression(bodyStr, { X: lowVal }) + evaluateExpression(bodyStr, { X: upVal });
+    for (let i = 1; i < N; i++) {
+      const xVal = lowVal + i * h;
+      sum += (i % 2 === 0 ? 2 : 4) * evaluateExpression(bodyStr, { X: xVal });
+    }
+    return (h / 3) * sum;
+  };
+
   const handleCalculate = () => {
     playKeySound();
-    if (!displayExpr) return;
+
+    let mainVal = displayExpr ? evaluateExpression(displayExpr) : 0;
+    let finalVal = mainVal;
+    let histLabel = displayExpr || '0';
 
     try {
-      const val = evaluateExpression(displayExpr);
-      if (isNaN(val) || !isFinite(val)) {
+      if (activeTemplate === 'FRAC') {
+        const nVal = evaluateExpression(fracNum || '0');
+        const dVal = evaluateExpression(fracDen || '1');
+        finalVal = (displayExpr ? mainVal : 0) + (nVal / dVal);
+        histLabel = `${displayExpr} (${fracNum || 0})/(${fracDen || 1})`;
+      } else if (activeTemplate === 'INTEGRAL') {
+        const lowVal = evaluateExpression(integLower || '0');
+        const upVal = evaluateExpression(integUpper || '1');
+        const bodyRes = evalDefiniteIntegral(integBody || 'X', lowVal, upVal);
+        finalVal = (displayExpr ? mainVal : 0) + bodyRes;
+        histLabel = `∫_${integLower}^${integUpper} (${integBody}) dx`;
+      } else if (activeTemplate === 'LOGBASE') {
+        const bVal = evaluateExpression(logBase || '10');
+        const aVal = evaluateExpression(logArg || '1');
+        const logRes = Math.log(aVal) / Math.log(bVal);
+        finalVal = (displayExpr ? mainVal : 0) + logRes;
+        histLabel = `log_${logBase}(${logArg})`;
+      } else if (activeTemplate === 'POWER') {
+        const pVal = evaluateExpression(powerExp || '1');
+        finalVal = Math.pow(mainVal, pVal);
+        histLabel = `${displayExpr}^(${powerExp})`;
+      }
+
+      if (isNaN(finalVal) || !isFinite(finalVal)) {
         setResultText('Math ERROR');
       } else {
-        const rounded = Math.abs(val) < 1e-12 ? 0 : Number(val.toFixed(10));
+        const rounded = Math.abs(finalVal) < 1e-12 ? 0 : Number(finalVal.toFixed(10));
         setNumericValue(rounded);
         setResultText(String(rounded));
 
@@ -664,7 +771,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           Ans: rounded
         }));
 
-        setHistory(prev => [{ expr: displayExpr, res: String(rounded) }, ...prev.slice(0, 49)]);
+        setHistory(prev => [{ expr: histLabel, res: String(rounded) }, ...prev.slice(0, 49)]);
       }
     } catch (err) {
       setResultText('Syntax ERROR');
@@ -1014,14 +1121,14 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             <span className="status-math">MATH</span>
           </div>
 
-          {/* Expression Input Area with Natural Display Formatting & Interactive Cursor */}
+          {/* Expression Input Area with Natural Display Formatting & Interactive Templates */}
           <div className="screen-input-area">
             {displayExpr ? renderNaturalMath(displayExpr.slice(0, cursorPos)) : null}
-            {!inFrac && <span className="cursor-blink">|</span>}
+            {activeTemplate === 'NONE' && <span className="cursor-blink">|</span>}
             {displayExpr ? renderNaturalMath(displayExpr.slice(cursorPos)) : null}
 
-            {/* Interactive Stacked Fraction Template */}
-            {inFrac && (
+            {/* 1. Interactive Stacked Fraction Template */}
+            {activeTemplate === 'FRAC' && (
               <span className="casio-frac">
                 <span
                   className={`frac-num ${activeBox === 'num' ? 'active-box' : ''}`}
@@ -1042,7 +1149,76 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               </span>
             )}
 
-            {!displayExpr && !inFrac && <span className="placeholder-text">0</span>}
+            {/* 2. Interactive Definite Integral Template */}
+            {activeTemplate === 'INTEGRAL' && (
+              <span className="casio-integral">
+                <span className="integral-symbol">
+                  <span
+                    className={`integral-upper ${activeBox === 'upper' ? 'active-box' : ''}`}
+                    onClick={() => setActiveBox('upper')}
+                  >
+                    {integUpper}
+                    {activeBox === 'upper' && <span className="cursor-blink">|</span>}
+                    {!integUpper && activeBox !== 'upper' && <span className="frac-box" />}
+                  </span>
+                  <span
+                    className={`integral-lower ${activeBox === 'lower' ? 'active-box' : ''}`}
+                    onClick={() => setActiveBox('lower')}
+                  >
+                    {integLower}
+                    {activeBox === 'lower' && <span className="cursor-blink">|</span>}
+                    {!integLower && activeBox !== 'lower' && <span className="frac-box" />}
+                  </span>
+                </span>
+                <span
+                  className={`integral-body ${activeBox === 'body' ? 'active-box' : ''}`}
+                  onClick={() => setActiveBox('body')}
+                >
+                  {integBody}
+                  {activeBox === 'body' && <span className="cursor-blink">|</span>}
+                  {!integBody && activeBox !== 'body' && <span className="frac-box" />}
+                  <span style={{ fontStyle: 'italic', marginLeft: 3, fontWeight: 700 }}>dx</span>
+                </span>
+              </span>
+            )}
+
+            {/* 3. Interactive Logarithm with Base Template */}
+            {activeTemplate === 'LOGBASE' && (
+              <span className="casio-log">
+                <span className="log-text">log</span>
+                <span
+                  className={`log-base ${activeBox === 'base' ? 'active-box' : ''}`}
+                  onClick={() => setActiveBox('base')}
+                >
+                  {logBase}
+                  {activeBox === 'base' && <span className="cursor-blink">|</span>}
+                  {!logBase && activeBox !== 'base' && <span className="frac-box" />}
+                </span>
+                <span
+                  className={`log-arg ${activeBox === 'arg' ? 'active-box' : ''}`}
+                  onClick={() => setActiveBox('arg')}
+                >
+                  ({logArg}
+                  {activeBox === 'arg' && <span className="cursor-blink">|</span>}
+                  {!logArg && activeBox !== 'arg' && <span className="frac-box" />})
+                </span>
+              </span>
+            )}
+
+            {/* 4. Interactive Power Exponent Template */}
+            {activeTemplate === 'POWER' && (
+              <sup
+                className={`power-exp ${activeBox === 'exp' ? 'active-box' : ''}`}
+                onClick={() => setActiveBox('exp')}
+                style={{ color: '#00e5ff', fontWeight: 900 }}
+              >
+                {powerExp}
+                {activeBox === 'exp' && <span className="cursor-blink">|</span>}
+                {!powerExp && activeBox !== 'exp' && <span className="frac-box" />}
+              </sup>
+            )}
+
+            {!displayExpr && activeTemplate === 'NONE' && <span className="placeholder-text">0</span>}
           </div>
 
           {/* Result Output Area */}
@@ -1422,60 +1598,84 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <button
                 onClick={() => {
                   playKeySound();
-                  if (inFrac) {
+                  if (activeTemplate === 'FRAC') {
                     if (activeBox === 'den') setActiveBox('num');
-                    else if (activeBox === 'num') setCursorPos(prev => Math.max(0, prev - 1));
+                    else setCursorPos(prev => Math.max(0, prev - 1));
+                  } else if (activeTemplate === 'INTEGRAL') {
+                    if (activeBox === 'upper' || activeBox === 'lower') setActiveBox('body');
+                    else setCursorPos(prev => Math.max(0, prev - 1));
+                  } else if (activeTemplate === 'LOGBASE') {
+                    if (activeBox === 'arg') setActiveBox('base');
+                    else setCursorPos(prev => Math.max(0, prev - 1));
                   } else {
                     setCursorPos(prev => Math.max(0, prev - 1));
                   }
                 }}
                 className="dpad-btn left"
-                title="Trái (Sang Tử/Trái)"
+                title="Trái"
               >
                 <ChevronLeft size={12} />
               </button>
+
               <button
                 onClick={() => {
                   playKeySound();
-                  if (inFrac && activeBox === 'den') {
+                  if (activeTemplate === 'FRAC' && activeBox === 'den') {
                     setActiveBox('num');
+                  } else if (activeTemplate === 'INTEGRAL') {
+                    if (activeBox === 'body') setActiveBox('upper');
+                    else if (activeBox === 'lower') setActiveBox('body');
+                  } else if (activeTemplate === 'LOGBASE' && activeBox === 'base') {
+                    setActiveBox('arg');
                   } else if (history.length > 0) {
                     setDisplayExpr(history[0].expr);
                   }
                 }}
                 className="dpad-btn up"
-                title="Lên (Lên Tử số)"
+                title="Lên"
               >
                 <ChevronUp size={12} />
               </button>
+
               <button
                 onClick={() => {
                   playKeySound();
-                  if (inFrac && activeBox === 'num') {
+                  if (activeTemplate === 'FRAC' && activeBox === 'num') {
                     setActiveBox('den');
-                  } else if (inFrac && activeBox === 'den') {
-                    setActiveBox('none');
+                  } else if (activeTemplate === 'INTEGRAL') {
+                    if (activeBox === 'body') setActiveBox('lower');
+                    else if (activeBox === 'upper') setActiveBox('body');
+                  } else if (activeTemplate === 'LOGBASE' && activeBox === 'arg') {
+                    setActiveBox('base');
                   } else {
                     handleAC();
                   }
                 }}
                 className="dpad-btn down"
-                title="Xuống (Xuống Mẫu số)"
+                title="Xuống"
               >
                 <ChevronDown size={12} />
               </button>
+
               <button
                 onClick={() => {
                   playKeySound();
-                  if (inFrac) {
+                  if (activeTemplate === 'FRAC') {
                     if (activeBox === 'num') setActiveBox('den');
                     else if (activeBox === 'den') setActiveBox('none');
+                  } else if (activeTemplate === 'INTEGRAL') {
+                    if (activeBox === 'lower') setActiveBox('body');
+                    else if (activeBox === 'body') setActiveBox('upper');
+                    else setActiveBox('none');
+                  } else if (activeTemplate === 'LOGBASE') {
+                    if (activeBox === 'base') setActiveBox('arg');
+                    else setActiveBox('none');
                   } else {
                     setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
                   }
                 }}
                 className="dpad-btn right"
-                title="Phải (Sang Mẫu/Phải)"
+                title="Phải"
               >
                 <ChevronRight size={12} />
               </button>

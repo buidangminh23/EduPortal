@@ -1259,10 +1259,15 @@ sub + sup, sup + sub {
   cursor: pointer;
 }
 
-.frac-num.active-box, .frac-den.active-box {
+.frac-num.active-box, .frac-den.active-box,
+.integral-upper.active-box, .integral-lower.active-box, .integral-body.active-box,
+.log-base.active-box, .log-arg.active-box, .power-exp.active-box {
   outline: 1.5px solid #122115;
   border-radius: 2px;
   background: rgba(18, 33, 21, 0.15);
+  min-width: 14px;
+  display: inline-block;
+  cursor: pointer;
 }
 
 .frac-box {
