@@ -460,9 +460,30 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       );
     }
 
-    // 3. Fraction '/' (standalone '/', partial '5/', '/2', or '5/2')
+    // 3. Fraction: handle committed format (num)/(den) and simple a/b
     if (str.includes('/')) {
-      const slashIndex = str.lastIndexOf('/');
+      // Try to match committed fraction format: (num)/(den) possibly followed by more expression
+      const commitMatch = str.match(/^(.*?)\(([^()]*)\)\/\(([^()]*)\)(.*)$/);
+      if (commitMatch) {
+        const [, before, num, den, after] = commitMatch;
+        return (
+          <>
+            {before && renderNaturalMath(before)}
+            <span className="casio-frac">
+              <span className="frac-num">
+                {num ? renderNaturalMath(num) : <span className="frac-box"></span>}
+              </span>
+              <span className="frac-den">
+                {den ? renderNaturalMath(den) : <span className="frac-box"></span>}
+              </span>
+            </span>
+            {after && renderNaturalMath(after)}
+          </>
+        );
+      }
+
+      // Fallback: simple fraction with single /
+      const slashIndex = str.indexOf('/');
       const numPart = str.slice(0, slashIndex).trim();
       const denPart = str.slice(slashIndex + 1).trim();
 
