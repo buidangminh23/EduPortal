@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Calculator, X, Maximize2, Minimize2 } from 'lucide-react';
+import { AppContext } from '../context/AppContext';
 import CasioFX580 from './CasioFX580';
 
 export default function CasioFloatingWidget() {
+  const { t } = useContext(AppContext);
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -13,7 +15,7 @@ export default function CasioFloatingWidget() {
         <button
           onClick={() => setIsOpen(true)}
           className="casio-floating-launcher animate-bounce"
-          title="Mở máy tính Casio fx-580VN X"
+          title={t("Mở máy tính Casio fx-580VN X", "Open Casio fx-580VN X Calculator")}
         >
           <Calculator size={22} />
           <span className="launcher-badge">fx-580</span>
@@ -26,20 +28,20 @@ export default function CasioFloatingWidget() {
           <div className="floating-window-header">
             <div className="header-title">
               <Calculator size={16} color="#00e5ff" />
-              <span>Máy tính Casio fx-580VN X</span>
+              <span>{t("Máy tính Casio fx-580VN X", "Casio fx-580VN X Calculator")}</span>
             </div>
             <div className="header-controls">
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="header-btn"
-                title={isMinimized ? 'Mở rộng' : 'Thu nhỏ'}
+                title={isMinimized ? t('Mở rộng', 'Expand') : t('Thu nhỏ', 'Minimize')}
               >
                 {isMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="header-btn close"
-                title="Đóng máy tính"
+                title={t("Đóng máy tính", "Close calculator")}
               >
                 <X size={14} />
               </button>

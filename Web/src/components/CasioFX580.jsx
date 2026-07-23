@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { AppContext } from '../context/AppContext';
 import {
   Calculator,
   HelpCircle,
@@ -28,61 +29,62 @@ import {
 
 // Physical constants (40 constants)
 const PHYSICAL_CONSTANTS = [
-  { id: 'c0', symbol: 'c₀', name: 'Tốc độ ánh sáng chân không', val: 299792458, unit: 'm/s' },
-  { id: 'h', symbol: 'h', name: 'Hằng số Planck', val: 6.62607015e-34, unit: 'J·s' },
-  { id: 'hbar', symbol: 'ℏ', name: 'Hằng số Planck thu gọn', val: 1.054571817e-34, unit: 'J·s' },
-  { id: 'e', symbol: 'e', name: 'Điện tích nguyên tố', val: 1.602176634e-19, unit: 'C' },
-  { id: 'G', symbol: 'G', name: 'Hằng số hấp dẫn', val: 6.67430e-11, unit: 'm³/(kg·s²)' },
-  { id: 'me', symbol: 'mₑ', name: 'Khối lượng Electron', val: 9.1093837015e-31, unit: 'kg' },
-  { id: 'mp', symbol: 'mₚ', name: 'Khối lượng Proton', val: 1.67262192369e-27, unit: 'kg' },
-  { id: 'mn', symbol: 'mₙ', name: 'Khối lượng Neutron', val: 1.67492749804e-27, unit: 'kg' },
-  { id: 'u', symbol: 'u', name: 'Đơn vị khối lượng nguyên tử', val: 1.6605390666e-27, unit: 'kg' },
-  { id: 'NA', symbol: 'N₇', name: 'Hằng số Avogadro', val: 6.02214076e23, unit: 'mol⁻¹' },
-  { id: 'kB', symbol: 'k', name: 'Hằng số Boltzmann', val: 1.380649e-23, unit: 'J/K' },
-  { id: 'R', symbol: 'R', name: 'Hằng số khí lý tưởng', val: 8.314462618, unit: 'J/(mol·K)' },
-  { id: 'eps0', symbol: 'ε₀', name: 'Hằng số điện', val: 8.8541878128e-12, unit: 'F/m' },
-  { id: 'mu0', symbol: 'μ₀', name: 'Hằng số từ', val: 1.25663706212e-6, unit: 'N/A²' },
-  { id: 'F', symbol: 'F', name: 'Hằng số Faraday', val: 96485.33212, unit: 'C/mol' },
-  { id: 'sigma', symbol: 'σ', name: 'Hằng số Stefan-Boltzmann', val: 5.670374419e-8, unit: 'W/(m²·K⁴)' },
-  { id: 'g', symbol: 'g', name: 'Gia tốc trọng trường chuẩn', val: 9.80665, unit: 'm/s²' },
-  { id: 'atm', symbol: '1atm', name: 'Áp suất khí quyển chuẩn', val: 101325, unit: 'Pa' },
-  { id: 'a0', symbol: 'a₀', name: 'Bán kính Bohr', val: 5.29177210903e-11, unit: 'm' },
-  { id: 'muB', symbol: 'μ₈', name: 'Bohr magneton', val: 9.2740100783e-24, unit: 'J/T' },
+  { id: 'c0', symbol: 'c₀', name: 'Tốc độ ánh sáng chân không', nameEn: 'Speed of light in vacuum', val: 299792458, unit: 'm/s' },
+  { id: 'h', symbol: 'h', name: 'Hằng số Planck', nameEn: 'Planck constant', val: 6.62607015e-34, unit: 'J·s' },
+  { id: 'hbar', symbol: 'ℏ', name: 'Hằng số Planck thu gọn', nameEn: 'Reduced Planck constant', val: 1.054571817e-34, unit: 'J·s' },
+  { id: 'e', symbol: 'e', name: 'Điện tích nguyên tố', nameEn: 'Elementary charge', val: 1.602176634e-19, unit: 'C' },
+  { id: 'G', symbol: 'G', name: 'Hằng số hấp dẫn', nameEn: 'Newtonian constant of gravitation', val: 6.67430e-11, unit: 'm³/(kg·s²)' },
+  { id: 'me', symbol: 'mₑ', name: 'Khối lượng Electron', nameEn: 'Electron mass', val: 9.1093837015e-31, unit: 'kg' },
+  { id: 'mp', symbol: 'mₚ', name: 'Khối lượng Proton', nameEn: 'Proton mass', val: 1.67262192369e-27, unit: 'kg' },
+  { id: 'mn', symbol: 'mₙ', name: 'Khối lượng Neutron', nameEn: 'Neutron mass', val: 1.67492749804e-27, unit: 'kg' },
+  { id: 'u', symbol: 'u', name: 'Đơn vị khối lượng nguyên tử', nameEn: 'Atomic mass unit', val: 1.6605390666e-27, unit: 'kg' },
+  { id: 'NA', symbol: 'N₇', name: 'Hằng số Avogadro', nameEn: 'Avogadro constant', val: 6.02214076e23, unit: 'mol⁻¹' },
+  { id: 'kB', symbol: 'k', name: 'Hằng số Boltzmann', nameEn: 'Boltzmann constant', val: 1.380649e-23, unit: 'J/K' },
+  { id: 'R', symbol: 'R', name: 'Hằng số khí lý tưởng', nameEn: 'Molar gas constant', val: 8.314462618, unit: 'J/(mol·K)' },
+  { id: 'eps0', symbol: 'ε₀', name: 'Hằng số điện', nameEn: 'Vacuum electric permittivity', val: 8.8541878128e-12, unit: 'F/m' },
+  { id: 'mu0', symbol: 'μ₀', name: 'Hằng số từ', nameEn: 'Vacuum magnetic permeability', val: 1.25663706212e-6, unit: 'N/A²' },
+  { id: 'F', symbol: 'F', name: 'Hằng số Faraday', nameEn: 'Faraday constant', val: 96485.33212, unit: 'C/mol' },
+  { id: 'sigma', symbol: 'σ', name: 'Hằng số Stefan-Boltzmann', nameEn: 'Stefan-Boltzmann constant', val: 5.670374419e-8, unit: 'W/(m²·K⁴)' },
+  { id: 'g', symbol: 'g', name: 'Gia tốc trọng trường chuẩn', nameEn: 'Standard acceleration of gravity', val: 9.80665, unit: 'm/s²' },
+  { id: 'atm', symbol: '1atm', name: 'Áp suất khí quyển chuẩn', nameEn: 'Standard atmosphere', val: 101325, unit: 'Pa' },
+  { id: 'a0', symbol: 'a₀', name: 'Bán kính Bohr', nameEn: 'Bohr radius', val: 5.29177210903e-11, unit: 'm' },
+  { id: 'muB', symbol: 'μ₈', name: 'Bohr magneton', nameEn: 'Bohr magneton', val: 9.2740100783e-24, unit: 'J/T' },
 ];
 
 // Unit conversions
 const UNIT_CONVERSIONS = [
-  { group: 'Chiều dài', from: 'in', to: 'cm', ratio: 2.54 },
-  { group: 'Chiều dài', from: 'ft', to: 'm', ratio: 0.3048 },
-  { group: 'Chiều dài', from: 'yd', to: 'm', ratio: 0.9144 },
-  { group: 'Chiều dài', from: 'mile', to: 'km', ratio: 1.609344 },
-  { group: 'Vận tốc', from: 'km/h', to: 'm/s', ratio: 1 / 3.6 },
-  { group: 'Vận tốc', from: 'knot', to: 'km/h', ratio: 1.852 },
-  { group: 'Khối lượng', from: 'lb', to: 'kg', ratio: 0.45359237 },
-  { group: 'Khối lượng', from: 'oz', to: 'g', ratio: 28.349523125 },
-  { group: 'Áp suất', from: 'atm', to: 'kPa', ratio: 101.325 },
-  { group: 'Áp suất', from: 'mmHg', to: 'Pa', ratio: 133.322 },
-  { group: 'Năng lượng', from: 'cal', to: 'J', ratio: 4.184 },
-  { group: 'Năng lượng', from: 'kWh', to: 'J', ratio: 3600000 },
-  { group: 'Năng lượng', from: 'eV', to: 'J', ratio: 1.602176634e-19 },
+  { group: 'Chiều dài', groupEn: 'Length', from: 'in', to: 'cm', ratio: 2.54 },
+  { group: 'Chiều dài', groupEn: 'Length', from: 'ft', to: 'm', ratio: 0.3048 },
+  { group: 'Chiều dài', groupEn: 'Length', from: 'yd', to: 'm', ratio: 0.9144 },
+  { group: 'Chiều dài', groupEn: 'Length', from: 'mile', groupEn: 'Length', to: 'km', ratio: 1.609344 },
+  { group: 'Vận tốc', groupEn: 'Velocity', from: 'km/h', to: 'm/s', ratio: 1 / 3.6 },
+  { group: 'Vận tốc', groupEn: 'Velocity', from: 'knot', to: 'km/h', ratio: 1.852 },
+  { group: 'Khối lượng', groupEn: 'Mass', from: 'lb', to: 'kg', ratio: 0.45359237 },
+  { group: 'Khối lượng', groupEn: 'Mass', from: 'oz', to: 'g', ratio: 28.349523125 },
+  { group: 'Áp suất', groupEn: 'Pressure', from: 'atm', to: 'kPa', ratio: 101.325 },
+  { group: 'Áp suất', groupEn: 'Pressure', from: 'mmHg', to: 'Pa', ratio: 133.322 },
+  { group: 'Năng lượng', groupEn: 'Energy', from: 'cal', to: 'J', ratio: 4.184 },
+  { group: 'Năng lượng', groupEn: 'Energy', from: 'kWh', to: 'J', ratio: 3600000 },
+  { group: 'Năng lượng', groupEn: 'Energy', from: 'eV', to: 'J', ratio: 1.602176634e-19 },
 ];
 
 // Modes list
 const MODES = [
-  { id: 1, name: 'COMP', label: '1: Tính toán thường', icon: '🔢', desc: 'Số học, Lượng giác, Mũ, Log, Vi/Tích phân, SOLVE, CALC' },
-  { id: 2, name: 'CMPLX', label: '2: Số phức', icon: '🌀', desc: 'Số phức a+bi, Polar r∠θ, Pha dao động THPT Lý' },
-  { id: 3, name: 'BASE-N', label: '3: Cơ số N', icon: '💻', desc: 'Hệ 2 (BIN), 8 (OCT), 10 (DEC), 16 (HEX) & Phép Bitwise' },
-  { id: 4, name: 'MATRIX', label: '4: Ma trận', icon: '▦', desc: 'Ma trận MatA..D (đến 4x4), Định thức det, Nghịch đảo, Tích' },
-  { id: 5, name: 'VECTOR', label: '5: Véc-tơ', icon: '↗️', desc: 'Véc-tơ 2D & 3D, Tích vô hướng (Dot), Tích có hướng (Cross)' },
-  { id: 6, name: 'STAT', label: '6: Thống kê', icon: '📊', desc: 'Thống kê 1 biến (Trung bình, độ lệch chuẩn), Hồi quy tuyến tính' },
-  { id: 7, name: 'DIST', label: '7: Phân phối', icon: '📈', desc: 'Phân phối xác suất Chuẩn (Normal), Nhị thức (Binomial)' },
-  { id: 8, name: 'TABLE', label: '8: Bảng giá trị', icon: '📋', desc: 'Bảng f(x) & g(x) tìm GTLN/GTNN trên đoạn [a, b]' },
-  { id: 9, name: 'EQN/SOLV', label: '9: Phương trình', icon: '🧮', desc: 'Hệ PT 2,3,4 ẩn & PT bậc 2,3,4, Cực trị Parabol' },
-  { id: 10, name: 'INEQ', label: '10: Bất phương trình', icon: '⚖️', desc: 'Bất phương trình bậc 2, 3, 4' },
-  { id: 11, name: 'RATIO', label: '11: Tỷ lệ thức', icon: '⚖️', desc: 'Giải tỷ lệ A:B = X:D hoặc A:B = C:X' }
+  { id: 1, name: 'COMP', label: '1: Tính toán thường', labelEn: '1: Calculate', icon: '🔢', desc: 'Số học, Lượng giác, Mũ, Log, Vi/Tích phân, SOLVE, CALC', descEn: 'Arithmetic, Trig, Power, Log, Calculus, SOLVE, CALC' },
+  { id: 2, name: 'CMPLX', label: '2: Số phức', labelEn: '2: Complex', icon: '🌀', desc: 'Số phức a+bi, Polar r∠θ, Pha dao động THPT Lý', descEn: 'Complex numbers a+bi, Polar r∠θ, Physics Phase' },
+  { id: 3, name: 'BASE-N', label: '3: Cơ số N', labelEn: '3: Base-N', icon: '💻', desc: 'Hệ 2 (BIN), 8 (OCT), 10 (DEC), 16 (HEX) & Phép Bitwise', descEn: 'Binary, Octal, Decimal, Hexadecimal & Bitwise' },
+  { id: 4, name: 'MATRIX', label: '4: Ma trận', labelEn: '4: Matrix', icon: '▦', desc: 'Ma trận MatA..D (đến 4x4), Định thức det, Nghịch đảo, Tích', descEn: 'Matrices MatA..D (up to 4x4), det, Inverse, Product' },
+  { id: 5, name: 'VECTOR', label: '5: Véc-tơ', labelEn: '5: Vector', icon: '↗️', desc: 'Véc-tơ 2D & 3D, Tích vô hướng (Dot), Tích có hướng (Cross)', descEn: '2D & 3D Vectors, Dot product, Cross product' },
+  { id: 6, name: 'STAT', label: '6: Thống kê', labelEn: '6: Statistics', icon: '📊', desc: 'Thống kê 1 biến (Trung bình, độ lệch chuẩn), Hồi quy tuyến tính', descEn: '1-Variable Statistics (Mean, StdDev), Linear Regression' },
+  { id: 7, name: 'DIST', label: '7: Phân phối', labelEn: '7: Distribution', icon: '📈', desc: 'Phân phối xác suất Chuẩn (Normal), Nhị thức (Binomial)', descEn: 'Normal & Binomial Probability Distribution' },
+  { id: 8, name: 'TABLE', label: '8: Bảng giá trị', labelEn: '8: Value Table', icon: '📋', desc: 'Bảng f(x) & g(x) tìm GTLN/GTNN trên đoạn [a, b]', descEn: 'Function Table f(x) & g(x), Find Max/Min on [a, b]' },
+  { id: 9, name: 'EQN/SOLV', label: '9: Phương trình', labelEn: '9: Equation/Solve', icon: '🧮', desc: 'Hệ PT 2,3,4 ẩn & PT bậc 2,3,4, Cực trị Parabol', descEn: '2,3,4-var Systems & Degree 2,3,4 Equations, Parabola Extremities' },
+  { id: 10, name: 'INEQ', label: '10: Bất phương trình', labelEn: '10: Inequality', icon: '⚖️', desc: 'Bất phương trình bậc 2, 3, 4', descEn: 'Degree 2, 3, 4 Inequalities' },
+  { id: 11, name: 'RATIO', label: '11: Tỷ lệ thức', labelEn: '11: Ratio', icon: '⚖️', desc: 'Giải tỷ lệ A:B = X:D hoặc A:B = C:X', descEn: 'Solve Ratio A:B = X:D or A:B = C:X' }
 ];
 
 export default function CasioFX580({ isFloating = false, onClose = null }) {
+  const { t } = useContext(AppContext);
   // State for Calculator status
   const [mode, setMode] = useState(1); // Mode 1 to 11
   const [shift, setShift] = useState(false);
@@ -1329,34 +1331,34 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="top-btn"
-            title={soundEnabled ? 'Tắt âm thanh phím' : 'Bật âm thanh phím'}
+            title={soundEnabled ? t('Tắt âm thanh phím', 'Mute key sound') : t('Bật âm thanh phím', 'Enable key sound')}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
           <button
             onClick={() => setShowVarsModal(true)}
             className="top-btn"
-            title="Xem giá trị biến nhớ (RECALL)"
+            title={t("Xem giá trị biến nhớ (RECALL)", "View memory variables (RECALL)")}
           >
-            <Database size={15} /> Bảng Biến
+            <Database size={15} /> {t('Bảng Biến', 'Variables')}
           </button>
           <button
             onClick={() => setShowHistoryModal(true)}
             className="top-btn"
-            title="Lịch sử tính toán"
+            title={t("Lịch sử tính toán", "Calculation history")}
           >
-            <History size={16} /> Lịch sử ({history.length})
+            <History size={16} /> {t('Lịch sử', 'History')} ({history.length})
           </button>
           <button
             onClick={() => setShowGuideModal(true)}
             className="top-btn"
-            title="Mẹo thi THPT Quốc Gia"
+            title={t("Mẹo thi THPT Quốc Gia", "National Exam Tips")}
           >
-            <BookOpen size={16} /> Mẹo thi THPT
+            <BookOpen size={16} /> {t('Mẹo thi THPT', 'Exam Tips')}
           </button>
 
           {isFloating && onClose && (
-            <button onClick={onClose} className="top-btn close-btn" title="Đóng máy tính">
+            <button onClick={onClose} className="top-btn close-btn" title={t("Đóng máy tính", "Close calculator")}>
               <X size={18} />
             </button>
           )}
@@ -2076,7 +2078,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModeMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
-              <h3>CHỌN CHẾ ĐỘ (MENU / MODE)</h3>
+              <h3>{t('CHỌN CHẾ ĐỘ (MENU / MODE)', 'SELECT MODE (MENU / MODE)')}</h3>
               <button onClick={() => setShowModeMenu(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="mode-grid">
@@ -2092,8 +2094,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 >
                   <span className="mode-icon">{m.icon}</span>
                   <div className="mode-info">
-                    <strong>{m.label}</strong>
-                    <p>{m.desc}</p>
+                    <strong>{t(m.label, m.labelEn)}</strong>
+                    <p>{t(m.desc, m.descEn)}</p>
                   </div>
                 </button>
               ))}
@@ -2107,7 +2109,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowOptnMenu(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '380px' }}>
             <div className="modal-header">
-              <h3>TÙY CHỌN OPTN (Mode {mode})</h3>
+              <h3>{t('TÙY CHỌN OPTN (Mode ', 'OPTN OPTIONS (Mode ') + mode + ')'}</h3>
               <button onClick={() => setShowOptnMenu(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="const-list">
@@ -2115,15 +2117,15 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 <>
                   <button onClick={() => { setDisplayExpr(p => p + 'sinh('); setShowOptnMenu(false); }} className="const-item">
                     <span className="const-sym">sinh</span>
-                    <span className="const-name">Hàm Hyperbolic sin</span>
+                    <span className="const-name">{t('Hàm Hyperbolic sin', 'Hyperbolic sin')}</span>
                   </button>
                   <button onClick={() => { setDisplayExpr(p => p + 'cosh('); setShowOptnMenu(false); }} className="const-item">
                     <span className="const-sym">cosh</span>
-                    <span className="const-name">Hàm Hyperbolic cos</span>
+                    <span className="const-name">{t('Hàm Hyperbolic cos', 'Hyperbolic cos')}</span>
                   </button>
                   <button onClick={() => { setDisplayExpr(p => p + 'tanh('); setShowOptnMenu(false); }} className="const-item">
                     <span className="const-sym">tanh</span>
-                    <span className="const-name">Hàm Hyperbolic tan</span>
+                    <span className="const-name">{t('Hàm Hyperbolic tan', 'Hyperbolic tan')}</span>
                   </button>
                 </>
               )}
@@ -2132,17 +2134,17 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 <>
                   <button onClick={() => { setDisplayExpr(p => p + 'i'); setShowOptnMenu(false); }} className="const-item">
                     <span className="const-sym">i</span>
-                    <span className="const-name">Đơn vị ảo</span>
+                    <span className="const-name">{t('Đơn vị ảo', 'Imaginary unit')}</span>
                   </button>
                   <button onClick={() => { setDisplayExpr(p => p + '∠'); setShowOptnMenu(false); }} className="const-item">
                     <span className="const-sym">∠</span>
-                    <span className="const-name">Góc Phase</span>
+                    <span className="const-name">{t('Góc Phase', 'Phase angle')}</span>
                   </button>
                 </>
               )}
 
               {(mode !== 1 && mode !== 2) && (
-                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '10px' }}>Chế độ này đã có bảng điều khiển trực quan riêng bên dưới màn hình.</p>
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '10px' }}>{t('Chế độ này đã có bảng điều khiển trực quan riêng bên dưới màn hình.', 'This mode has an interactive panel below the screen.')}</p>
               )}
             </div>
           </div>
@@ -2154,7 +2156,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowVarsModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '420px' }}>
             <div className="modal-header">
-              <h3><Database size={16} /> BẢNG GIÁ TRỊ BIẾN NHỚ (RECALL)</h3>
+              <h3><Database size={16} /> {t('BẢNG GIÁ TRỊ BIẾN NHỚ (RECALL)', 'MEMORY VARIABLE VALUES (RECALL)')}</h3>
               <button onClick={() => setShowVarsModal(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
@@ -2200,7 +2202,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 cursor: 'pointer'
               }}
             >
-              Reset Tất Cả Biến Về 0
+              {t('Reset Tất Cả Biến Về 0', 'Reset All Variables to 0')}
             </button>
           </div>
         </div>
@@ -2211,7 +2213,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowConstMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
-              <h3>HẰNG SỐ VẬT LÝ & HÓA HỌC (CONST)</h3>
+              <h3>{t('HẰNG SỐ VẬT LÝ & HÓA HỌC (CONST)', 'PHYSICAL & CHEMICAL CONSTANTS (CONST)')}</h3>
               <button onClick={() => setShowConstMenu(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="const-list">
@@ -2226,7 +2228,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                   className="const-item"
                 >
                   <span className="const-sym">{c.symbol}</span>
-                  <div className="const-name">{c.name}</div>
+                  <div className="const-name">{t(c.name, c.nameEn)}</div>
                   <span className="const-val">{c.val} {c.unit}</span>
                 </button>
               ))}
@@ -2240,7 +2242,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowConvMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
-              <h3>ĐỔI ĐƠN VỊ ĐO LƯỜNG (CONV)</h3>
+              <h3>{t('ĐỔI ĐƠN VỊ ĐO LƯỜNG (CONV)', 'UNIT CONVERSIONS (CONV)')}</h3>
               <button onClick={() => setShowConvMenu(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="const-list">
@@ -2255,8 +2257,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                   className="const-item"
                 >
                   <span className="const-sym">{c.from} → {c.to}</span>
-                  <div className="const-name">Nhóm: {c.group}</div>
-                  <span className="const-val">Hệ số x{c.ratio}</span>
+                  <div className="const-name">{t('Nhóm: ', 'Category: ') + t(c.group, c.groupEn)}</div>
+                  <span className="const-val">{t('Hệ số x', 'Factor x') + c.ratio}</span>
                 </button>
               ))}
             </div>
@@ -2288,23 +2290,23 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowGuideModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
-              <h3><BookOpen size={18} /> MẸO BẤM MÁY CASIO 580 THI THPT QUỐC GIA</h3>
+              <h3><BookOpen size={18} /> {t('MẸO BẤM MÁY CASIO 580 THI THPT QUỐC GIA', 'CASIO 580 NATIONAL EXAM TIPS')}</h3>
               <button onClick={() => setShowGuideModal(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="guide-content">
               <div className="guide-section">
-                <h4>📐 Môn Toán: Tìm GTLN / GTNN trên đoạn [a, b]</h4>
-                <p>👉 Vào <strong>MENU 8 (TABLE)</strong> ➔ Nhập hàm f(X) ➔ Start: a, End: b, Step: (b - a) / 29 ➔ Xem cột f(X) tìm min/max.</p>
+                <h4>📐 {t('Môn Toán: Tìm GTLN / GTNN trên đoạn [a, b]', 'Math: Find Max / Min on interval [a, b]')}</h4>
+                <p>👉 {t('Vào MENU 8 (TABLE) ➔ Nhập hàm f(X) ➔ Start: a, End: b, Step: (b - a) / 29 ➔ Xem cột f(X) tìm min/max.', 'Go to MENU 8 (TABLE) ➔ Enter f(X) ➔ Start: a, End: b, Step: (b - a) / 29 ➔ Read f(X) column for min/max.')}</p>
               </div>
 
               <div className="guide-section">
-                <h4>⚡ Môn Vật Lý: Tổng hợp Dao động điều hòa & Điện xoay chiều</h4>
-                <p>👉 Vào <strong>MENU 2 (CMPLX)</strong> ➔ Chuyển dạng r∠θ (SHIFT 2 3) ➔ Nhập $A_1 \angle \varphi_1 + A_2 \angle \varphi_2$ ➔ Phím = cho kết quả biên độ A và pha ban đầu φ ngay lập tức!</p>
+                <h4>⚡ {t('Môn Vật Lý: Tổng hợp Dao động điều hòa & Điện xoay chiều', 'Physics: Harmonic Oscillations & AC Circuits')}</h4>
+                <p>👉 {t('Vào MENU 2 (CMPLX) ➔ Chuyển dạng r∠θ (SHIFT 2 3) ➔ Nhập A₁∠φ₁ + A₂∠φ₂ ➔ Phím = cho kết quả biên độ A và pha ban đầu φ ngay lập tức!', 'Go to MENU 2 (CMPLX) ➔ Switch to r∠θ (SHIFT 2 3) ➔ Enter A₁∠φ₁ + A₂∠φ₂ ➔ Press = to get Amplitude A and Phase φ!')}</p>
               </div>
 
               <div className="guide-section">
-                <h4>🧪 Môn Hóa Học: Giải Hệ Phương Trình 3-4 Ẩn (Bảo toàn E, C, H)</h4>
-                <p>👉 Vào <strong>MENU 9 ➔ 1 (Simul Equation)</strong> ➔ Chọn 3 hoặc 4 ẩn ➔ Nhập hệ ma trận hệ số ➔ Phím = cho nghiệm n, m, p, q.</p>
+                <h4>🧪 {t('Môn Hóa Học: Giải Hệ Phương Trình 3-4 Ẩn (Bảo toàn E, C, H)', 'Chemistry: 3-4 Variable Linear System (Conservation of E, C, H)')}</h4>
+                <p>👉 {t('Vào MENU 9 ➔ 1 (Simul Equation) ➔ Chọn 3 hoặc 4 ẩn ➔ Nhập hệ ma trận hệ số ➔ Phím = cho nghiệm n, m, p, q.', 'Go to MENU 9 ➔ 1 (Simul Equation) ➔ Select 3 or 4 variables ➔ Enter matrix ➔ Press = to solve n, m, p, q.')}</p>
               </div>
             </div>
           </div>
@@ -2316,12 +2318,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowHistoryModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3>LỊCH SỬ TÍNH TOÁN ({history.length})</h3>
+              <h3>{t('LỊCH SỬ TÍNH TOÁN (', 'CALCULATION HISTORY (') + history.length + ')'}</h3>
               <button onClick={() => setShowHistoryModal(false)} className="close-btn"><X size={18} /></button>
             </div>
             <div className="history-list">
               {history.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>Chưa có phép tính nào trong lịch sử.</p>
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>{t('Chưa có phép tính nào trong lịch sử.', 'No calculations in history yet.')}</p>
               ) : (
                 history.map((h, i) => (
                   <div

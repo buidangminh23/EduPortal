@@ -120,6 +120,7 @@ const DICT_EN = {
   'Học Liệu & Flashcards': 'Materials & Flashcards',
   'Thi Thử Đại Học': 'Mock University Entrance Exam',
   'Kế Hoạch Ôn Thi AI': 'AI Study Plan',
+  'Bản Đồ Năng Lực AI': 'AI Competency Heatmap',
   'Bàn Đồ Năng Lực AI': 'AI Competency Heatmap',
   'Điểm Danh Chuyên Cần': 'Attendance Tracking',
   'Rèn Luyện': 'Conduct & Behavior',
@@ -130,6 +131,7 @@ const DICT_EN = {
   'Định Hướng Đại Học AI': 'AI University Matchmaker',
   'Bán Trú & Dinh Dưỡng': 'Boarding & Meals',
   'Thẻ HS & Ví Điện Tử': 'Student ID & Wallet',
+  'Máy Tính Casio fx-580': 'Casio fx-580 Calculator',
 
   // Main menu items
   'Bảng Học Tập': 'Learning Dashboard',
