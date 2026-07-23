@@ -1228,6 +1228,85 @@ sub + sup, sup + sub {
   background: rgba(18, 33, 21, 0.08);
 }
 
+/* Definite Integral Styling */
+.casio-integral {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 3px;
+  font-family: inherit;
+}
+
+.casio-integral .integral-symbol {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative;
+  padding-left: 14px;
+  margin-right: 2px;
+  min-height: 38px;
+}
+
+.casio-integral .integral-symbol::before {
+  content: "∫";
+  position: absolute;
+  left: 0;
+  top: -4px;
+  font-size: 2.2em;
+  font-weight: 400;
+  line-height: 1;
+  font-family: serif, Cambria, 'Times New Roman';
+  color: #122115;
+}
+
+.casio-integral .integral-upper {
+  font-size: 0.7em;
+  margin-bottom: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+.casio-integral .integral-lower {
+  font-size: 0.7em;
+  margin-top: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+.casio-integral .integral-body {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 3px;
+  font-weight: 800;
+}
+
+/* Logarithm Base Styling */
+.casio-log {
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: middle;
+  margin: 0 3px;
+  font-family: inherit;
+}
+
+.casio-log .log-text {
+  font-weight: 800;
+  margin-right: 1px;
+}
+
+.casio-log .log-base {
+  font-size: 0.75em;
+  vertical-align: sub;
+  margin-right: 2px;
+}
+
+.casio-log .log-arg {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 800;
+}
+
 .casio-key-frac {
   display: inline-flex;
   flex-direction: column;

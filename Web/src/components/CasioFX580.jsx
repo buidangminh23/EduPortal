@@ -271,12 +271,55 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     return (n < 0 ? '-' : '') + factors.join(' × ');
   };
 
-  // Natural Display Renderer Helper (Formating fractions, superscripts, roots, etc.)
+  // Natural Display Renderer Helper (Formating fractions, integrals, log base, superscripts, roots, etc.)
   const renderNaturalMath = (text) => {
     if (!text) return null;
     const str = String(text);
 
-    // Handle any fraction '/' in expression (standalone '/', partial '5/', '/2', or '5/2')
+    // 1. Integral: ∫(body, lower, upper) or ∫(...) or ∫
+    if (str.includes('∫')) {
+      const match = str.match(/∫\((.*?)\)/);
+      let body = '', lower = '', upper = '';
+      if (match && match[1]) {
+        const parts = match[1].split(',');
+        body = parts[0] || '';
+        lower = parts[1] || '';
+        upper = parts[2] || '';
+      }
+
+      return (
+        <span className="casio-integral">
+          <span className="integral-symbol">
+            <span className="integral-upper">{upper ? renderNaturalMath(upper) : <span className="frac-box"></span>}</span>
+            <span className="integral-lower">{lower ? renderNaturalMath(lower) : <span className="frac-box"></span>}</span>
+          </span>
+          <span className="integral-body">
+            {body ? renderNaturalMath(body) : <span className="frac-box"></span>} <span style={{ fontStyle: 'italic', marginLeft: 2, fontWeight: 700 }}>dx</span>
+          </span>
+        </span>
+      );
+    }
+
+    // 2. Logarithm with Base: log_(base, arg) or log_(...) or log_
+    if (str.includes('log_')) {
+      const match = str.match(/log_\((.*?)\)/);
+      let base = '', arg = '';
+      if (match && match[1]) {
+        const parts = match[1].split(',');
+        base = parts[0] || '';
+        arg = parts[1] || '';
+      }
+
+      return (
+        <span className="casio-log">
+          <span className="log-text">log</span>
+          <span className="log-base">{base ? renderNaturalMath(base) : <span className="frac-box"></span>}</span>
+          <span className="log-arg">({arg ? renderNaturalMath(arg) : <span className="frac-box"></span>})</span>
+        </span>
+      );
+    }
+
+    // 3. Fraction '/' (standalone '/', partial '5/', '/2', or '5/2')
     if (str.includes('/')) {
       const slashIndex = str.lastIndexOf('/');
       const numPart = str.slice(0, slashIndex).trim();
@@ -401,7 +444,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'sin': token = 'sin('; break;
         case 'cos': token = 'cos('; break;
         case 'tan': token = 'tan('; break;
-        case 'log': token = 'log('; break;
+        case 'log': token = 'log_('; break;
         case 'ln': token = 'ln('; break;
         case 'x²': token = '^2'; break;
         case 'x³': token = '^3'; break;
