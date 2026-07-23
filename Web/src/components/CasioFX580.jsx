@@ -230,20 +230,24 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const navigateLeft = () => {
     playKeySound();
     if (activeTemplate === 'FRAC') {
-      if (activeBox === 'den') setActiveBox('num');
-      else if (activeBox === 'num') setActiveBox('none');
+      if (activeBox === 'right' || activeBox === 'none') setActiveBox('den');
+      else if (activeBox === 'den') setActiveBox('num');
+      else if (activeBox === 'num') setActiveBox('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'body') setActiveBox('upper');
+      if (activeBox === 'right' || activeBox === 'none') setActiveBox('body');
+      else if (activeBox === 'body') setActiveBox('upper');
       else if (activeBox === 'upper') setActiveBox('lower');
-      else if (activeBox === 'lower') setActiveBox('none');
+      else if (activeBox === 'lower') setActiveBox('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'arg') setActiveBox('base');
-      else if (activeBox === 'base') setActiveBox('none');
+      if (activeBox === 'right' || activeBox === 'none') setActiveBox('arg');
+      else if (activeBox === 'arg') setActiveBox('base');
+      else if (activeBox === 'base') setActiveBox('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'exp') setActiveBox('none');
+      if (activeBox === 'right' || activeBox === 'none') setActiveBox('exp');
+      else if (activeBox === 'exp') setActiveBox('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else {
       setCursorPos(prev => Math.max(0, prev - 1));
@@ -253,20 +257,24 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const navigateRight = () => {
     playKeySound();
     if (activeTemplate === 'FRAC') {
-      if (activeBox === 'num') setActiveBox('den');
-      else if (activeBox === 'den') setActiveBox('none');
+      if (activeBox === 'left') setActiveBox('num');
+      else if (activeBox === 'num') setActiveBox('den');
+      else if (activeBox === 'den') setActiveBox('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'lower') setActiveBox('upper');
+      if (activeBox === 'left') setActiveBox('lower');
+      else if (activeBox === 'lower') setActiveBox('upper');
       else if (activeBox === 'upper') setActiveBox('body');
-      else if (activeBox === 'body') setActiveBox('none');
+      else if (activeBox === 'body') setActiveBox('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'base') setActiveBox('arg');
-      else if (activeBox === 'arg') setActiveBox('none');
+      if (activeBox === 'left') setActiveBox('base');
+      else if (activeBox === 'base') setActiveBox('arg');
+      else if (activeBox === 'arg') setActiveBox('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'exp') setActiveBox('none');
+      if (activeBox === 'left') setActiveBox('exp');
+      else if (activeBox === 'exp') setActiveBox('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else {
       setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
@@ -1203,8 +1211,13 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
           {/* Expression Input Area with Natural Display Formatting & Interactive Templates */}
           <div className="screen-input-area">
+            {/* Cursor on LEFT of template when user moves left */}
+            {activeTemplate !== 'NONE' && activeBox === 'left' && (
+              <span className="cursor-blink">|</span>
+            )}
+
             {displayExpr ? renderNaturalMath(displayExpr.slice(0, cursorPos)) : null}
-            {(activeTemplate === 'NONE' || activeBox === 'none') && <span className="cursor-blink">|</span>}
+            {activeTemplate === 'NONE' && <span className="cursor-blink">|</span>}
             {displayExpr ? renderNaturalMath(displayExpr.slice(cursorPos)) : null}
 
             {/* 1. Interactive Stacked Fraction Template */}
@@ -1296,6 +1309,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 {activeBox === 'exp' && <span className="cursor-blink">|</span>}
                 {!powerExp && activeBox !== 'exp' && <span className="frac-box" />}
               </sup>
+            )}
+
+            {/* Cursor on RIGHT of template when user moves right */}
+            {activeTemplate !== 'NONE' && (activeBox === 'right' || activeBox === 'none') && (
+              <span className="cursor-blink">|</span>
             )}
 
             {!displayExpr && activeTemplate === 'NONE' && <span className="placeholder-text">0</span>}
