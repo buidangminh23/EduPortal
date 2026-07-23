@@ -35,7 +35,8 @@ import {
   AlertTriangle,
   Camera,
   Sparkles,
-  Compass
+  Compass,
+  Calculator
 } from 'lucide-react';
 
 // Sub-nav items for student dashboard
@@ -57,6 +58,7 @@ const STUDENT_SUB_ITEMS = [
   { id: 'university_matchmaker',  label: 'Định Hướng Đại Học AI', icon: GraduationCap },
   { id: 'cafeteria',           label: 'Bán Trú & Dinh Dưỡng',  icon: UtensilsCrossed },
   { id: 'wallet_id',           label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard },
+  { id: 'casio580',            label: 'Máy Tính Casio fx-580', icon: Calculator },
 ];
 
 // Sub-nav items for subject teacher
@@ -346,6 +348,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           { id: 'lectures',            label: 'Video bài giảng',      icon: FileText },
           { id: 'library_hub',         label: 'Thư viện số',         icon: Library },
           { id: 'weblab',              label: 'Phòng Thí Nghiệm ảo',  icon: FlaskConical },
+          { id: 'casio580',            label: 'Máy Tính Casio fx-580', icon: Calculator },
           { id: 'study_group',         label: 'Học nhóm & Gia sư',    icon: Users },
           { id: 'meet',                label: 'Vào lớp EduMeet',      icon: Video },
           { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },

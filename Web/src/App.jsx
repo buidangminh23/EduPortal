@@ -38,6 +38,8 @@ const DutySchedule = lazy(() => import('./components/DutySchedule'));
 const SeatingChart = lazy(() => import('./components/SeatingChart'));
 const ClassVoting = lazy(() => import('./components/ClassVoting'));
 const AIRiskAnalysis = lazy(() => import('./components/AIRiskAnalysis'));
+const CasioFX580 = lazy(() => import('./components/CasioFX580'));
+const CasioFloatingWidget = lazy(() => import('./components/CasioFloatingWidget'));
 const ClassComparison = lazy(() => import('./components/ClassComparison'));
 const SchoolGallery = lazy(() => import('./components/SchoolGallery'));
 
@@ -66,6 +68,9 @@ function App() {
   const renderTabContent = () => {
     if (activeTab === 'calendar') {
       return <SchoolCalendar />;
+    }
+    if (activeTab === 'casio580') {
+      return <CasioFX580 />;
     }
 
     // Student only tabs
@@ -231,6 +236,11 @@ function App() {
       {/* Floating AI Chat Widget — chỉ hiện với học sinh */}
       <Suspense fallback={null}>
         <FloatingChatWidget />
+      </Suspense>
+
+      {/* Floating Casio fx-580 Emulator Widget */}
+      <Suspense fallback={null}>
+        <CasioFloatingWidget />
       </Suspense>
     </div>
   );

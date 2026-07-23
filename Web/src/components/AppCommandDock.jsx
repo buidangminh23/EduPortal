@@ -10,6 +10,7 @@ import {
   Sparkles,
   ClipboardList,
   Video,
+  Calculator,
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
@@ -28,6 +29,7 @@ const DOCK_LABELS_EN = {
   duty_schedule: 'Duty Schedule',
   tutor: 'AI Tutor',
   study_group: 'Study Group',
+  casio580: 'Casio 580',
   chat: 'Teacher Chat',
   meeting_booking: 'Appointments',
 };
@@ -60,9 +62,9 @@ const ROLE_ACTIONS = {
     { id: 'meet', label: 'EduMeet', icon: Video },
   ],
   student: [
+    { id: 'casio580', label: 'Casio 580', icon: Calculator },
     { id: 'tutor', label: 'AI Tutor', icon: Sparkles },
     { id: 'exam_repository', label: 'Kho đề', icon: ClipboardList },
-    { id: 'study_group', label: 'Học nhóm', icon: Users },
   ],
   parent: [
     { id: 'chat', label: 'Nhắn GV', icon: MessageCircle },

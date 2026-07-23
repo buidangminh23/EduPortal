@@ -729,4 +729,752 @@ sub + sup, sup + sub {
   margin-left: -0.05em;
 }
 
+/* ==========================================================================
+   CASIO FX-580VN X CLASSWIZ EMULATOR STYLING
+   ========================================================================== */
+.casio-container {
+  display: flex;
+  flex-direction: column;
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  user-select: none;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.casio-container.full-page {
+  margin: 10px auto;
+}
+
+.casio-container.floating {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0 0 16px 16px;
+  box-shadow: none;
+}
+
+/* Top bar controls */
+.casio-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.casio-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.casio-brand .brand-icon {
+  color: #00e5ff;
+}
+
+.classwiz-tag {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.casio-quick-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.top-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.top-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.top-btn.close-btn:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+/* Casio Body */
+.casio-body {
+  padding: 16px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Header Panel with Solar Cell */
+.casio-header-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: radial-gradient(circle, #0284c7 0%, #0f172a 100%);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+  border-radius: 10px;
+  padding: 6px 12px;
+}
+
+.solar-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #271406;
+  border: 1px solid #7c2d12;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.solar-grid {
+  width: 10px;
+  height: 12px;
+  background: #451a03;
+  border-right: 1px solid #7c2d12;
+}
+
+.solar-label {
+  font-size: 0.55rem;
+  color: #fb923c;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.model-subtitle {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* LCD Screen Simulation */
+.casio-screen {
+  background: #c5d9c0;
+  color: #122115;
+  border: 4px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  flex-direction: column;
+  min-height: 96px;
+  justify-content: space-between;
+  position: relative;
+}
+
+.screen-status-bar {
+  display: flex;
+  gap: 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  padding-bottom: 2px;
+}
+
+.status-indicator {
+  opacity: 0.2;
+}
+
+.status-indicator.active {
+  opacity: 1;
+}
+
+.status-indicator.shift {
+  color: #ca8a04;
+}
+
+.status-indicator.alpha {
+  color: #db2777;
+}
+
+.status-mode {
+  margin-left: auto;
+  font-weight: 900;
+}
+
+.screen-input-area {
+  font-size: 1.15rem;
+  font-weight: 700;
+  word-break: break-all;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.cursor-blink {
+  animation: blink 1s infinite;
+  margin-left: 1px;
+  font-weight: 900;
+  color: #052e16;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.screen-result-area {
+  font-size: 1.35rem;
+  font-weight: 900;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Mode Bar */
+.casio-mode-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mode-menu-btn, .unit-toggle-btn, .sd-toggle-btn, .solution-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.mode-menu-btn:hover, .unit-toggle-btn:hover, .sd-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.solution-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+  border: none;
+  color: #fff;
+}
+
+/* Dedicated Mode Panel */
+.dedicated-mode-panel {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.mode-panel-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.mode-controls, .coeff-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.coeff-inputs input, .coeff-inputs select {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  width: 54px;
+}
+
+.btn-solve-now {
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.eqn-results-box, .table-result-box {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.85rem;
+}
+
+.table-scroll {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.table-scroll th, .table-scroll td {
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+/* Keypad Grid */
+.casio-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.top-function-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dpad-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #334155;
+  padding: 2px;
+  border-radius: 12px;
+}
+
+.dpad-btn {
+  background: #1e293b;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.scientific-keys-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.number-keys-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+/* Individual Keys */
+.key {
+  position: relative;
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #0f172a, inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.05s;
+  min-height: 38px;
+}
+
+.key:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #0f172a;
+}
+
+.key-shift {
+  background: linear-gradient(180deg, #ca8a04 0%, #a16207 100%);
+  border-color: #eab308;
+  color: #fff;
+  box-shadow: 0 3px 0 #713f12;
+}
+
+.key-shift.active {
+  background: #facc15;
+  color: #000;
+}
+
+.key-alpha {
+  background: linear-gradient(180deg, #db2777 0%, #be185d 100%);
+  border-color: #f472b6;
+  color: #fff;
+  box-shadow: 0 3px 0 #831843;
+}
+
+.key-alpha.active {
+  background: #f472b6;
+  color: #000;
+}
+
+.key-num {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.key-op {
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.key-del, .key-ac {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  border-color: #f87171;
+  color: #fff;
+}
+
+.key-equals {
+  background: linear-gradient(180deg, #0d9488 0%, #0f766e 100%);
+  border-color: #2dd4bf;
+  color: #fff;
+  font-size: 1.2rem;
+}
+
+/* Key Labels */
+.shift-label {
+  position: absolute;
+  top: 1px;
+  font-size: 0.55rem;
+  color: #eab308;
+  font-weight: 800;
+}
+
+.alpha-label {
+  position: absolute;
+  top: 1px;
+  font-size: 0.55rem;
+  color: #f472b6;
+  font-weight: 800;
+}
+
+/* Modals Overlay inside Casio */
+.casio-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.casio-modal {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  color: #fff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.casio-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 10px;
+}
+
+.casio-modal .modal-header h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.mode-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.mode-card:hover, .mode-card.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+}
+
+.mode-card .mode-icon {
+  font-size: 1.2rem;
+}
+
+.mode-card .mode-info strong {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.mode-card .mode-info p {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.mode-card:hover .mode-info p, .mode-card.active .mode-info p {
+  color: #e0f2fe;
+}
+
+.const-list, .history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.const-item, .history-item {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.const-item:hover, .history-item:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+}
+
+.const-sym {
+  font-weight: 800;
+  color: #38bdf8;
+  font-size: 0.9rem;
+}
+
+.const-name {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.const-val {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.solution-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  background: #020617;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+}
+
+.solution-step {
+  color: #38bdf8;
+  line-height: 1.5;
+}
+
+.guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.guide-section {
+  background: #1e293b;
+  border-left: 4px solid #00e5ff;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.guide-section h4 {
+  font-size: 0.9rem;
+  color: #00e5ff;
+  margin-bottom: 4px;
+}
+
+.guide-section p {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   FLOATING CASIO WIDGET STYLING
+   ========================================================================== */
+.casio-floating-launcher {
+  position: fixed;
+  bottom: 24px;
+  right: 88px;
+  z-index: 9990;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #00e5ff;
+  border: 2px solid rgba(0, 229, 255, 0.4);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 229, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.casio-floating-launcher:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 229, 255, 0.4);
+}
+
+.launcher-badge {
+  position: absolute;
+  bottom: -4px;
+  background: #00e5ff;
+  color: #0f172a;
+  font-size: 0.55rem;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.casio-floating-window {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  background: #0f172a;
+  border: 2px solid rgba(0, 229, 255, 0.3);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+.casio-floating-window.minimized {
+  width: 300px;
+}
+
+.floating-window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #090d16;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.floating-window-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+}
+
+.floating-window-header .header-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.floating-window-header .header-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-window-header .header-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.floating-window-header .header-btn.close:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.floating-window-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+  .casio-floating-window {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    bottom: 12px;
+  }
+
+  .casio-floating-launcher {
+    right: 76px;
+    bottom: 16px;
+  }
+}
+
+
 
