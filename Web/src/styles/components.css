@@ -1189,6 +1189,52 @@ sub + sup, sup + sub {
   pointer-events: none;
 }
 
+/* Casio LCD Stacked Fraction & Math Formatting */
+.casio-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  padding: 0 3px;
+  font-size: 0.85em;
+  line-height: 1.1;
+  font-family: inherit;
+}
+
+.casio-frac .frac-num {
+  border-bottom: 2px solid #122115;
+  padding-bottom: 1px;
+  text-align: center;
+  width: 100%;
+  font-weight: 800;
+}
+
+.casio-frac .frac-den {
+  padding-top: 1px;
+  text-align: center;
+  width: 100%;
+  font-weight: 800;
+}
+
+.casio-key-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  line-height: 1;
+  border: 1px dashed rgba(255, 255, 255, 0.6);
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+
+.casio-key-frac span:first-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  width: 100%;
+  text-align: center;
+}
+
 .casio-container {
   display: flex;
   flex-direction: column;

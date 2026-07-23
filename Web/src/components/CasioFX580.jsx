@@ -271,12 +271,25 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     return (n < 0 ? '-' : '') + factors.join(' × ');
   };
 
-  // Natural Display Renderer Helper (Formating superscripts, roots, etc.)
+  // Natural Display Renderer Helper (Formating fractions, superscripts, roots, etc.)
   const renderNaturalMath = (text) => {
     if (!text) return null;
 
+    // Check if text is a fraction string like "3/4" or "(a)/(b)"
+    const fracMatch = String(text).match(/^(\(?[\w\d\.\+\-\*]+\)?)\/(\(?[\w\d\.\+\-\*]+\)?)$/);
+    if (fracMatch) {
+      const num = fracMatch[1].replace(/^\(|\)$/g, '');
+      const den = fracMatch[2].replace(/^\(|\)$/g, '');
+      return (
+        <span className="casio-frac">
+          <span className="frac-num">{num}</span>
+          <span className="frac-den">{den}</span>
+        </span>
+      );
+    }
+
     // Convert string tokens to pretty JSX elements
-    let parts = text.split(/(\^2|\^3|\^[0-9A-Z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\(|d\/dx\()/g);
+    let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\(|d\/dx\()/g);
 
     return parts.map((part, index) => {
       if (part === '^2') return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>2</sup>;
@@ -1288,16 +1301,21 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           </div>
 
           <div className="scientific-keys-grid">
-            <button onClick={() => handleKeyPress('x⁻¹')} className="key">
-              <span className="shift-label">x!</span>
-              x⁻¹
+            {/* Row 1: Fraction, Square Root, x^2, x^n, Log, Ln */}
+            <button onClick={() => handleKeyPress('a/b')} className="key">
+              <span className="shift-label">d/c</span>
+              <span className="casio-key-frac"><span>■</span><span>■</span></span>
+            </button>
+            <button onClick={() => handleKeyPress('√')} className="key">
+              <span className="shift-label">³√</span>
+              √
             </button>
             <button onClick={() => handleKeyPress('x²')} className="key">
               <span className="shift-label">√</span>
               x²
             </button>
             <button onClick={() => handleKeyPress('xⁿ')} className="key">
-              <span className="shift-label">³√</span>
+              <span className="shift-label">x√</span>
               xⁿ
             </button>
             <button onClick={() => handleKeyPress('log')} className="key">
@@ -1308,18 +1326,20 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="shift-label">eⁿ</span>
               ln
             </button>
+
+            {/* Row 2: (-), DEG/MIN/SEC, x^-1, sin, cos, tan */}
             <button onClick={() => handleKeyPress('(-)')} className="key">
               <span className="alpha-label">A</span>
               (-)
             </button>
-
             <button onClick={() => handleKeyPress('°\'"')} className="key">
               <span className="alpha-label">B</span>
-              °' "
+              ° ' "
             </button>
-            <button onClick={() => handleKeyPress('hyp')} className="key">
+            <button onClick={() => handleKeyPress('x⁻¹')} className="key">
+              <span className="shift-label">x!</span>
               <span className="alpha-label">C</span>
-              hyp
+              x⁻¹
             </button>
             <button onClick={() => handleKeyPress('sin')} className="key">
               <span className="shift-label">sin⁻¹</span>
@@ -1336,11 +1356,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="alpha-label">F</span>
               tan
             </button>
+
+            {/* Row 3: STO, ENG, (, ), S<=>D, M+ */}
             <button onClick={() => handleKeyPress('STO')} className="key">
               <span className="shift-label">RCL</span>
               STO
             </button>
-
             <button onClick={() => handleKeyPress('ENG')} className="key">
               <span className="alpha-label">Y</span>
               ENG
@@ -1362,11 +1383,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="alpha-label">M</span>
               M+
             </button>
-            <button onClick={() => handleKeyPress('a/b')} className="key">
-              <span className="shift-label">d/c</span>
-              a/b
-            </button>
 
+            {/* Row 4: CONST, ∫dx, Pol, FACT, i, Ans */}
             <button onClick={() => handleKeyPress('CONST')} className="key">
               <span className="shift-label">CONV</span>
               CONST
