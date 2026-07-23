@@ -20,7 +20,8 @@ import {
   FileText,
   Sliders,
   Maximize,
-  Grid
+  Grid,
+  Database
 } from 'lucide-react';
 
 // Physical constants (40 constants)
@@ -88,10 +89,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [displayExpr, setDisplayExpr] = useState('');
   const [resultText, setResultText] = useState('0');
   const [history, setHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Output format state: 'decimal', 'fraction', 'mixed', 'scientific'
+  // Output format state: 'decimal', 'fraction', 'mixed', 'scientific', 'fact'
   const [displayFormat, setDisplayFormat] = useState('decimal');
   const [numericValue, setNumericValue] = useState(0);
 
@@ -106,6 +106,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [showConstMenu, setShowConstMenu] = useState(false);
   const [showConvMenu, setShowConvMenu] = useState(false);
+  const [showOptnMenu, setShowOptnMenu] = useState(false);
+  const [showVarsModal, setShowVarsModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showStepByStepModal, setShowStepByStepModal] = useState(false);
@@ -115,7 +117,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   // Mode 9: EQN Solver state
   const [eqnType, setEqnType] = useState('poly'); // 'simul' or 'poly'
   const [polyDegree, setPolyDegree] = useState(2); // 2, 3, 4
-  const [simulUnknowns, setSimulUnknowns] = useState(2); // 2, 3, 4
   const [polyCoeffs, setPolyCoeffs] = useState({ a: 1, b: -5, c: 6, d: 0, e: 0 });
   const [simulMatrix, setSimulMatrix] = useState([
     [2, 1, 5],
@@ -140,9 +141,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [vctB, setVctB] = useState([4, 5, 6]);
   const [vectorOpResult, setVectorOpResult] = useState(null);
 
-  // Mode 2: Complex state
-  const [complexForm, setComplexForm] = useState('rectangular'); // 'rectangular' (a+bi) or 'polar' (r∠θ)
-
   // Audio Context ref for keypress sound effect
   const audioCtxRef = useRef(null);
 
@@ -161,9 +159,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         const osc = audioCtxRef.current.createOscillator();
         const gain = audioCtxRef.current.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, audioCtxRef.current.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(300, audioCtxRef.current.currentTime + 0.02);
-        gain.gain.setValueAtTime(0.12, audioCtxRef.current.currentTime);
+        osc.frequency.setValueAtTime(850, audioCtxRef.current.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(320, audioCtxRef.current.currentTime + 0.02);
+        gain.gain.setValueAtTime(0.14, audioCtxRef.current.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtxRef.current.currentTime + 0.02);
         osc.connect(gain);
         gain.connect(audioCtxRef.current.destination);
@@ -175,7 +173,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
   };
 
-  // Keyboard Event Listener
+  // Keyboard Event Listener supporting shortcuts and combinations
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ignore if user typing inside an input box
@@ -217,20 +215,48 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [displayExpr, angleUnit, vars, shift, alpha, mode]);
 
-  // Handle Input Key press
+  // Prime Factorization Helper (FACT)
+  const getPrimeFactorizationStr = (n) => {
+    let num = Math.abs(Math.floor(n));
+    if (num <= 1) return `${n}`;
+    let factors = [];
+    let d = 2;
+    while (num >= 2) {
+      let count = 0;
+      while (num % d === 0) {
+        count++;
+        num /= d;
+      }
+      if (count > 0) {
+        factors.push(count > 1 ? `${d}^${count}` : `${d}`);
+      }
+      d++;
+      if (d * d > num) {
+        if (num > 1) {
+          factors.push(`${num}`);
+          break;
+        }
+      }
+    }
+    return (n < 0 ? '-' : '') + factors.join(' × ');
+  };
+
+  // Handle Input Key press with authentic Casio FX-580 key combination mechanics
   const handleKeyPress = (val) => {
     playKeySound();
 
+    // Memory Store (STO) handling
     if (stoMode) {
       if (['A', 'B', 'C', 'D', 'E', 'F', 'X', 'Y', 'M'].includes(val)) {
         setVars(prev => ({ ...prev, [val]: numericValue }));
-        setResultText(`Gán => ${val} = ${numericValue}`);
+        setResultText(`Ans → ${val} = ${numericValue}`);
         setStoMode(false);
         setShift(false);
         return;
       }
     }
 
+    // Memory Recall (RCL) handling
     if (rclMode) {
       if (['A', 'B', 'C', 'D', 'E', 'F', 'X', 'Y', 'M'].includes(val)) {
         const storedVal = vars[val];
@@ -240,32 +266,55 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
     }
 
-    // Process key input according to SHIFT / ALPHA state
     let token = val;
 
+    // SHIFT KEY COMBINATIONS (Yellow labels)
     if (shift) {
-      setShift(false);
+      setShift(false); // SHIFT clears after next keypress
       switch (val) {
         case 'sin': token = 'sin⁻¹('; break;
         case 'cos': token = 'cos⁻¹('; break;
         case 'tan': token = 'tan⁻¹('; break;
-        case 'log': token = '10^('; break;
-        case 'ln': token = 'e^('; break;
         case 'x²': token = '√('; break;
         case 'xⁿ': token = '³√('; break;
         case 'x⁻¹': token = '!'; break;
-        case '(': token = '³√('; break;
+        case 'log': token = '10^('; break;
+        case 'ln': token = 'e^('; break;
+        case '(': token = '%'; break;
         case ')': token = ','; break;
+        case '+': token = 'nPr'; break;
+        case '-': token = 'nCr'; break;
+        case '.': token = 'Ran#'; break;
+        case '0': token = 'Rnd('; break;
+        case 'Ans': token = 'PreAns'; break;
+        case '=': toggleDisplayFormat(); return;
+        case 'STO': setShowVarsModal(true); return; // SHIFT + STO = RECALL Variables
         case 'CONST': setShowConstMenu(true); return;
         case 'CONV': setShowConvMenu(true); return;
-        case 'STO': setStoMode(true); return;
-        case 'FORMAT': toggleDisplayFormat(); return;
-        case 'SOLVE': handleSolveEquation(); return;
+        case 'S⇔D': toggleDisplayFormat(); return;
+        case 'CALC': handleSolveEquation(); return; // SHIFT + CALC = SOLVE
+        case 'FACT': 
+          if (Number.isInteger(numericValue)) {
+            setResultText(getPrimeFactorizationStr(numericValue));
+          }
+          return;
         default: token = val;
       }
-    } else if (alpha) {
-      setAlpha(false);
+    }
+    // ALPHA KEY COMBINATIONS (Pink labels)
+    else if (alpha) {
+      setAlpha(false); // ALPHA clears after next keypress
       switch (val) {
+        case '(-)': token = 'A'; break;
+        case '°\'"': token = 'B'; break;
+        case 'hyp': token = 'C'; break;
+        case 'sin': token = 'D'; break;
+        case 'cos': token = 'E'; break;
+        case 'tan': token = 'F'; break;
+        case 'ENG': token = 'Y'; break;
+        case 'M+': token = 'M'; break;
+        case ')': token = 'X'; break;
+        case 'S⇔D': token = ':'; break;
         case '7': token = 'A'; break;
         case '8': token = 'B'; break;
         case '9': token = 'C'; break;
@@ -276,11 +325,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case '2': token = 'Y'; break;
         case '0': token = 'M'; break;
         case 'CALC': handleCalcVariable(); return;
-        case ':)': token = ':'; break;
-        case 'i': token = 'i'; break;
         default: token = val;
       }
-    } else {
+    }
+    // NORMAL KEY PRESS
+    else {
       switch (val) {
         case 'sin': token = 'sin('; break;
         case 'cos': token = 'cos('; break;
@@ -301,6 +350,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'Rec': token = 'Rec('; break;
         case 'd/dx': token = 'd/dx('; break;
         case '∫dx': token = '∫('; break;
+        case 'STO': setStoMode(true); return;
+        case 'RCL': setRclMode(true); return;
+        case 'OPTN': setShowOptnMenu(true); return;
         default: token = val;
       }
     }
@@ -386,6 +438,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
     // Substitute constants & variables
     const activeVars = { ...vars, ...customVars };
+    clean = clean.replace(/PreAns/g, activeVars.PreAns || 0);
     clean = clean.replace(/Ans/g, activeVars.Ans || 0);
     clean = clean.replace(/π/g, Math.PI);
     clean = clean.replace(/e/g, Math.E);
@@ -485,9 +538,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   // Complex mode calculator (Mode 2)
   const handleComplexCalculate = () => {
     try {
-      // Parse a + bi or polar form
-      let expr = displayExpr.replace(/i/g, '*I');
-      // For simple demo parsing: z1 + z2
       setResultText('3 + 4i'); // Formatted complex result
       setStepSolution({
         title: 'Tính toán Số Phức (Mode 2)',
@@ -524,7 +574,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
 
     try {
-      // Newton-Raphson iterations
       let x = 1.0;
       const f = (xVal) => evaluateExpression(exprStr, { X: xVal });
       const df = (xVal) => (f(xVal + 1e-6) - f(xVal - 1e-6)) / 2e-6;
@@ -567,9 +616,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   // Mode 9: Polynomial Solver (Quadratic, Cubic, Quartic)
   const solvePolynomial = () => {
     playKeySound();
-    const { a, b, c, d } = polyCoeffs;
+    const { a, b, c } = polyCoeffs;
     if (polyDegree === 2) {
-      // ax² + bx + c = 0
       const delta = b * b - 4 * a * c;
       const xMin = -b / (2 * a);
       const yMin = a * xMin * xMin + b * xMin + c;
@@ -586,8 +634,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             `1. Tính biệt thức Delta (Δ):`,
             `   Δ = b² - 4ac = (${b})² - 4·(${a})·(${c}) = ${delta}`,
             `2. Vì Δ = ${delta} > 0 nên phương trình có 2 nghiệm phân biệt:`,
-            `   x₁ = (-b + √Δ) / 2a = (${-b} + ${Math.sqrt(delta).toFixed(4)}) / ${2 * a} = ${x1.toFixed(4)}`,
-            `   x₂ = (-b - √Δ) / 2a = (${-b} - ${Math.sqrt(delta).toFixed(4)}) / ${2 * a} = ${x2.toFixed(4)}`,
+            `   x₁ = (-b + √Δ) / 2a = ${x1.toFixed(4)}`,
+            `   x₂ = (-b - √Δ) / 2a = ${x2.toFixed(4)}`,
             `3. Đỉnh Parabol (Cực trị hàm số bậc 2):`,
             `   Tọa độ đỉnh I(${xMin.toFixed(4)}, ${yMin.toFixed(4)}) - Gia trị ${a > 0 ? 'Nhỏ Nhất' : 'Lớn Nhất'} = ${yMin.toFixed(4)}`
           ]
@@ -595,39 +643,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       } else if (delta === 0) {
         const x = -b / (2 * a);
         setEqnResults({ x1: x.toFixed(4), x2: x.toFixed(4), delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) });
-        setStepSolution({
-          title: `Giải Phương Trình Bậc 2: ${a}x² + (${b})x + (${c}) = 0`,
-          steps: [
-            `Δ = b² - 4ac = 0`,
-            `Phương trình có nghiệm kép: x₁ = x₂ = -b / 2a = ${x.toFixed(4)}`
-          ]
-        });
       } else {
         const realPart = (-b / (2 * a)).toFixed(4);
         const imagPart = (Math.sqrt(-delta) / (2 * a)).toFixed(4);
         setEqnResults({ x1: `${realPart} + ${imagPart}i`, x2: `${realPart} - ${imagPart}i`, delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) });
-        setStepSolution({
-          title: `Giải Phương Trình Bậc 2 Trên Tập Số Phức: ${a}x² + (${b})x + (${c}) = 0`,
-          steps: [
-            `Δ = b² - 4ac = ${delta} < 0`,
-            `Phương trình có 2 nghiệm phức ảo:`,
-            `x₁ = ${realPart} + ${imagPart}i`,
-            `x₂ = ${realPart} - ${imagPart}i`
-          ]
-        });
       }
-    } else if (polyDegree === 3) {
-      // Cubic equation approximation for display
-      setEqnResults({ x1: '1.0000', x2: '2.0000', x3: '-3.0000' });
-      setStepSolution({
-        title: `Giải Phương Trình Bậc 3: ${a}x³ + (${b})x² + (${c})x + (${d}) = 0`,
-        steps: [
-          `Áp dụng công thức Cardano hoặc phân tích nhân tử:`,
-          `Nghệm x₁ = 1.0000`,
-          `Nghiệm x₂ = 2.0000`,
-          `Nghiệm x₃ = -3.0000`
-        ]
-      });
     }
   };
 
@@ -661,16 +681,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
 
     setTableRows({ rows, minVal, minX, maxVal, maxX });
-
-    setStepSolution({
-      title: `Phân tích Bảng Giá Trị f(X) = ${tableFunc} trên đoạn [${start}, ${end}]`,
-      steps: [
-        `Tập giá trị đã khảo sát với bước nhảy Step = ${step}`,
-        `Giá trị LỚN NHẤT (Max): f(${maxX}) = ${maxVal}`,
-        `Giá trị NHỎ NHẤT (Min): f(${minX}) = ${minVal}`,
-        `Khoảng biến thiên: R = [${minVal}, ${maxVal}]`
-      ]
-    });
   };
 
   return (
@@ -690,6 +700,13 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             title={soundEnabled ? 'Tắt âm thanh phím' : 'Bật âm thanh phím'}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          <button
+            onClick={() => setShowVarsModal(true)}
+            className="top-btn"
+            title="Xem giá trị biến nhớ (RECALL)"
+          >
+            <Database size={15} /> Bảng Biến
           </button>
           <button
             onClick={() => setShowHistoryModal(true)}
@@ -760,7 +777,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             onClick={() => setShowModeMenu(true)}
             className="mode-menu-btn"
           >
-            <Grid size={14} /> MENU / MODE ({mode}: {MODES.find(m => m.id === mode)?.name})
+            <Grid size={14} /> MENU ({mode}: {MODES.find(m => m.id === mode)?.name})
           </button>
 
           <button
@@ -783,7 +800,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               onClick={() => setShowStepByStepModal(true)}
               className="solution-btn"
             >
-              <Sparkles size={12} /> Lời giải chi tiết
+              <Sparkles size={12} /> Lời giải
             </button>
           )}
         </div>
@@ -812,7 +829,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               )}
             </div>
 
-            {/* Coefficients Input */}
             {eqnType === 'poly' && (
               <div className="coeff-inputs">
                 <input
@@ -861,17 +877,17 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </div>
             <div className="coeff-inputs">
               <label>Start:</label>
-              <input type="number" value={tableStart} onChange={(e) => setTableStart(e.target.value)} style={{ width: '60px' }} />
+              <input type="number" value={tableStart} onChange={(e) => setTableStart(e.target.value)} style={{ width: '50px' }} />
               <label>End:</label>
-              <input type="number" value={tableEnd} onChange={(e) => setTableEnd(e.target.value)} style={{ width: '60px' }} />
+              <input type="number" value={tableEnd} onChange={(e) => setTableEnd(e.target.value)} style={{ width: '50px' }} />
               <label>Step:</label>
-              <input type="number" value={tableStep} onChange={(e) => setTableStep(e.target.value)} style={{ width: '60px' }} />
+              <input type="number" value={tableStep} onChange={(e) => setTableStep(e.target.value)} style={{ width: '50px' }} />
               <button onClick={generateTable} className="btn-solve-now">TẠO BẢNG</button>
             </div>
 
             {tableRows && (
               <div className="table-result-box">
-                <div style={{ fontSize: '0.8rem', color: '#00e5ff', marginBottom: 4 }}>
+                <div style={{ fontSize: '0.75rem', color: '#00e5ff', marginBottom: 4 }}>
                   Max f(X) = <strong>{tableRows.maxVal}</strong> tại X = {tableRows.maxX} | Min f(X) = <strong>{tableRows.minVal}</strong> tại X = {tableRows.minX}
                 </div>
                 <div className="table-scroll">
@@ -899,9 +915,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           </div>
         )}
 
-        {/* Calculator Keypad Grid */}
+        {/* Calculator Keypad Grid - Authentic Casio fx-580 Matrix */}
         <div className="casio-keypad">
-          {/* Top Function Keys (OPTN, CALC, SOLVE, Directional D-Pad) */}
+          {/* Top Function Keys (SHIFT, ALPHA, D-PAD, OPTN, CALC) */}
           <div className="top-function-row">
             <button onClick={() => setShift(!shift)} className={`key key-shift ${shift ? 'active' : ''}`}>
               SHIFT
@@ -923,19 +939,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
           </div>
 
-          {/* Scientific Key Rows */}
+          {/* Scientific Key Rows (Matching Physical fx-580 layout) */}
           <div className="scientific-keys-grid">
             <button onClick={() => handleKeyPress('x⁻¹')} className="key">
               <span className="shift-label">x!</span>
               x⁻¹
-            </button>
-            <button onClick={() => handleKeyPress('log')} className="key">
-              <span className="shift-label">10ⁿ</span>
-              log
-            </button>
-            <button onClick={() => handleKeyPress('ln')} className="key">
-              <span className="shift-label">eⁿ</span>
-              ln
             </button>
             <button onClick={() => handleKeyPress('x²')} className="key">
               <span className="shift-label">√</span>
@@ -945,59 +953,96 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="shift-label">³√</span>
               xⁿ
             </button>
-            <button onClick={() => handleKeyPress('√')} className="key">
-              <span className="shift-label">³√</span>
-              √
+            <button onClick={() => handleKeyPress('log')} className="key">
+              <span className="shift-label">10ⁿ</span>
+              log
+            </button>
+            <button onClick={() => handleKeyPress('ln')} className="key">
+              <span className="shift-label">eⁿ</span>
+              ln
+            </button>
+            <button onClick={() => handleKeyPress('(-)')} className="key">
+              <span className="alpha-label">A</span>
+              (-)
             </button>
 
+            <button onClick={() => handleKeyPress('°\'"')} className="key">
+              <span className="alpha-label">B</span>
+              °' "
+            </button>
+            <button onClick={() => handleKeyPress('hyp')} className="key">
+              <span className="alpha-label">C</span>
+              hyp
+            </button>
             <button onClick={() => handleKeyPress('sin')} className="key">
               <span className="shift-label">sin⁻¹</span>
+              <span className="alpha-label">D</span>
               sin
             </button>
             <button onClick={() => handleKeyPress('cos')} className="key">
               <span className="shift-label">cos⁻¹</span>
+              <span className="alpha-label">E</span>
               cos
             </button>
             <button onClick={() => handleKeyPress('tan')} className="key">
               <span className="shift-label">tan⁻¹</span>
+              <span className="alpha-label">F</span>
               tan
             </button>
+            <button onClick={() => handleKeyPress('STO')} className="key">
+              <span className="shift-label">RCL</span>
+              STO
+            </button>
+
+            <button onClick={() => handleKeyPress('ENG')} className="key">
+              <span className="alpha-label">Y</span>
+              ENG
+            </button>
             <button onClick={() => handleKeyPress('(')} className="key">
-              <span className="shift-label">∛</span>
+              <span className="shift-label">%</span>
               (
             </button>
             <button onClick={() => handleKeyPress(')')} className="key">
               <span className="shift-label">,</span>
+              <span className="alpha-label">X</span>
               )
+            </button>
+            <button onClick={() => handleKeyPress('S⇔D')} className="key">
+              <span className="alpha-label">:</span>
+              S⇔D
+            </button>
+            <button onClick={() => handleKeyPress('M+')} className="key">
+              <span className="alpha-label">M</span>
+              M+
             </button>
             <button onClick={() => handleKeyPress('a/b')} className="key">
               <span className="shift-label">d/c</span>
               a/b
             </button>
 
-            <button onClick={() => handleKeyPress('STO')} className="key">
-              <span className="shift-label">RCL</span>
-              STO
-            </button>
-            <button onClick={() => handleKeyPress('i')} className="key">
-              <span className="shift-label">∠</span>
-              i
-            </button>
-            <button onClick={() => handleKeyPress('π')} className="key">
-              <span className="shift-label">e</span>
-              π
-            </button>
-            <button onClick={() => handleKeyPress('FORMAT')} className="key">
-              <span className="shift-label">S⇔D</span>
-              FORMAT
+            <button onClick={() => handleKeyPress('CONST')} className="key">
+              <span className="shift-label">CONV</span>
+              CONST
             </button>
             <button onClick={() => handleKeyPress('∫dx')} className="key">
               <span className="shift-label">d/dx</span>
               ∫dx
             </button>
-            <button onClick={() => handleKeyPress('CONST')} className="key">
-              <span className="shift-label">CONV</span>
-              CONST
+            <button onClick={() => handleKeyPress('Pol')} className="key">
+              <span className="shift-label">Rec</span>
+              Pol
+            </button>
+            <button onClick={() => handleKeyPress('FACT')} className="key">
+              <span className="shift-label">Ran#</span>
+              FACT
+            </button>
+            <button onClick={() => handleKeyPress('i')} className="key">
+              <span className="shift-label">∠</span>
+              i
+            </button>
+            <button onClick={() => handleKeyPress('Ans')} className="key">
+              <span className="shift-label">PreAns</span>
+              Ans
             </button>
           </div>
 
@@ -1030,8 +1075,14 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="alpha-label">F</span>
               6
             </button>
-            <button onClick={() => handleKeyPress('×')} className="key key-op">×</button>
-            <button onClick={() => handleKeyPress('÷')} className="key key-op">÷</button>
+            <button onClick={() => handleKeyPress('×')} className="key key-op">
+              <span className="shift-label">nPr</span>
+              ×
+            </button>
+            <button onClick={() => handleKeyPress('÷')} className="key key-op">
+              <span className="shift-label">nCr</span>
+              ÷
+            </button>
 
             <button onClick={() => handleKeyPress('1')} className="key key-num">
               <span className="alpha-label">X</span>
@@ -1052,9 +1103,18 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               <span className="alpha-label">M</span>
               0
             </button>
-            <button onClick={() => handleKeyPress('.')} className="key key-num">.</button>
-            <button onClick={() => handleKeyPress('×10ⁿ')} className="key key-num">×10ⁿ</button>
-            <button onClick={() => handleKeyPress('Ans')} className="key key-num">Ans</button>
+            <button onClick={() => handleKeyPress('.')} className="key key-num">
+              <span className="shift-label">Ran#</span>
+              .
+            </button>
+            <button onClick={() => handleKeyPress('×10ⁿ')} className="key key-num">
+              <span className="shift-label">π</span>
+              ×10ⁿ
+            </button>
+            <button onClick={() => handleKeyPress('Ans')} className="key key-num">
+              <span className="shift-label">PreAns</span>
+              Ans
+            </button>
             <button onClick={handleCalculate} className="key key-equals">=</button>
           </div>
         </div>
@@ -1087,6 +1147,143 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* OPTN Options Menu Modal */}
+      {showOptnMenu && (
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowOptnMenu(false); }}>
+          <div className="casio-modal animate-pop" style={{ maxWidth: '380px' }}>
+            <div className="modal-header">
+              <h3>TÙY CHỌN OPTN (Mode {mode})</h3>
+              <button onClick={() => setShowOptnMenu(false)} className="close-btn"><X size={18} /></button>
+            </div>
+            <div className="const-list">
+              {mode === 1 && (
+                <>
+                  <button onClick={() => { setDisplayExpr(p => p + 'sinh('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">sinh</span>
+                    <span className="const-name">Hàm Hyperbolic sin</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'cosh('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">cosh</span>
+                    <span className="const-name">Hàm Hyperbolic cos</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'tanh('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">tanh</span>
+                    <span className="const-name">Hàm Hyperbolic tan</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'GCD('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">GCD</span>
+                    <span className="const-name">Ước chung lớn nhất (UCLN)</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'LCM('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">LCM</span>
+                    <span className="const-name">Bội chung nhỏ nhất (BCNN)</span>
+                  </button>
+                </>
+              )}
+
+              {mode === 2 && (
+                <>
+                  <button onClick={() => { setDisplayExpr(p => p + 'i'); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">i</span>
+                    <span className="const-name">Đơn vị ảo</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + '∠'); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">∠</span>
+                    <span className="const-name">Góc Phase</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'Arg('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">Arg</span>
+                    <span className="const-name">Acmăng Arg(z)</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + 'Conjg('); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">Conjg</span>
+                    <span className="const-name">Số phức liên hợp</span>
+                  </button>
+                </>
+              )}
+
+              {mode === 3 && (
+                <>
+                  <button onClick={() => { setDisplayExpr(p => p + ' AND '); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">AND</span>
+                    <span className="const-name">Phép toán Bitwise AND</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + ' OR '); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">OR</span>
+                    <span className="const-name">Phép toán Bitwise OR</span>
+                  </button>
+                  <button onClick={() => { setDisplayExpr(p => p + ' XOR '); setShowOptnMenu(false); }} className="const-item">
+                    <span className="const-sym">XOR</span>
+                    <span className="const-name">Phép toán Bitwise XOR</span>
+                  </button>
+                </>
+              )}
+
+              {(mode !== 1 && mode !== 2 && mode !== 3) && (
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '10px' }}>Không có tùy chọn phụ bổ sung cho chế độ này.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Variables RECALL Modal (SHIFT + STO) */}
+      {showVarsModal && (
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowVarsModal(false); }}>
+          <div className="casio-modal animate-pop" style={{ maxWidth: '420px' }}>
+            <div className="modal-header">
+              <h3><Database size={16} /> BẢNG GIÁ TRỊ BIẾN NHỚ (RECALL)</h3>
+              <button onClick={() => setShowVarsModal(false)} className="close-btn"><X size={18} /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {['A', 'B', 'C', 'D', 'E', 'F', 'X', 'Y', 'M'].map(v => (
+                <button
+                  key={v}
+                  onClick={() => {
+                    setDisplayExpr(p => p + vars[v]);
+                    setShowVarsModal(false);
+                  }}
+                  style={{
+                    background: '#1e293b',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    color: '#fff'
+                  }}
+                >
+                  <div style={{ fontSize: '0.75rem', color: '#f472b6', fontWeight: 800 }}>{v} =</div>
+                  <div style={{ fontSize: '0.9rem', color: '#00e5ff', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {vars[v]}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => {
+                setVars({ A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, X: 0, Y: 0, M: 0, Ans: 0, PreAns: 0 });
+                setShowVarsModal(false);
+              }}
+              style={{
+                width: '100%',
+                marginTop: '12px',
+                background: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Reset Tất Cả Biến Về 0
+            </button>
           </div>
         </div>
       )}

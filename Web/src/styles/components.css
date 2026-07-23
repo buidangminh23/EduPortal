@@ -1168,21 +1168,25 @@ sub + sup, sup + sub {
   font-size: 1.2rem;
 }
 
-/* Key Labels */
+/* Key Labels (Authentic Casio 580 Position) */
 .shift-label {
   position: absolute;
   top: 1px;
-  font-size: 0.55rem;
+  left: 3px;
+  font-size: 0.52rem;
   color: #eab308;
   font-weight: 800;
+  pointer-events: none;
 }
 
 .alpha-label {
   position: absolute;
   top: 1px;
-  font-size: 0.55rem;
+  right: 3px;
+  font-size: 0.52rem;
   color: #f472b6;
   font-weight: 800;
+  pointer-events: none;
 }
 
 .casio-container {
