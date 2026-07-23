@@ -13,6 +13,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Check,
   Cpu,
   Layers,
@@ -87,6 +89,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [alpha, setAlpha] = useState(false);
   const [angleUnit, setAngleUnit] = useState('DEG'); // DEG, RAD, GRAD
   const [displayExpr, setDisplayExpr] = useState('');
+  const [cursorPos, setCursorPos] = useState(0);
   const [resultText, setResultText] = useState('0');
   const [history, setHistory] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -1341,8 +1344,19 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
 
             <div className="dpad-container">
-              <button onClick={() => playKeySound()} className="dpad-btn up"><ChevronUp size={14} /></button>
-              <button onClick={() => playKeySound()} className="dpad-btn down"><ChevronDown size={14} /></button>
+              <button onClick={() => { playKeySound(); setCursorPos(prev => Math.max(0, prev - 1)); }} className="dpad-btn left" title="Trái (Sang Trái)">
+                <ChevronLeft size={12} />
+              </button>
+              <button onClick={() => { playKeySound(); if (history.length > 0) setDisplayExpr(history[0].expr); }} className="dpad-btn up" title="Lên (Lịch sử)">
+                <ChevronUp size={12} />
+              </button>
+              <button onClick={() => { playKeySound(); handleAC(); }} className="dpad-btn down" title="Xuống (Xóa màn hình)">
+                <ChevronDown size={12} />
+              </button>
+              <button onClick={() => { playKeySound(); setCursorPos(prev => Math.min(displayExpr.length, prev + 1)); }} className="dpad-btn right" title="Phải (Sang Phải)">
+                <ChevronRight size={12} />
+              </button>
+              <span className="dpad-center-badge">REPLAY</span>
             </div>
 
             <button onClick={() => handleKeyPress('OPTN')} className="key key-function">OPTN</button>
