@@ -1204,7 +1204,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           {/* Expression Input Area with Natural Display Formatting & Interactive Templates */}
           <div className="screen-input-area">
             {displayExpr ? renderNaturalMath(displayExpr.slice(0, cursorPos)) : null}
-            {activeTemplate === 'NONE' && <span className="cursor-blink">|</span>}
+            {(activeTemplate === 'NONE' || activeBox === 'none') && <span className="cursor-blink">|</span>}
             {displayExpr ? renderNaturalMath(displayExpr.slice(cursorPos)) : null}
 
             {/* 1. Interactive Stacked Fraction Template */}
