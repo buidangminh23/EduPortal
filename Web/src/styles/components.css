@@ -1217,6 +1217,17 @@ sub + sup, sup + sub {
   font-weight: 800;
 }
 
+.frac-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1.5px dashed #122115;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin: 1px 2px;
+  background: rgba(18, 33, 21, 0.08);
+}
+
 .casio-key-frac {
   display: inline-flex;
   flex-direction: column;

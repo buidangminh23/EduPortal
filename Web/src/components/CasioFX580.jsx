@@ -274,16 +274,25 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   // Natural Display Renderer Helper (Formating fractions, superscripts, roots, etc.)
   const renderNaturalMath = (text) => {
     if (!text) return null;
+    const str = String(text);
 
-    // Check if text is a fraction string like "3/4" or "(a)/(b)"
-    const fracMatch = String(text).match(/^(\(?[\w\d\.\+\-\*]+\)?)\/(\(?[\w\d\.\+\-\*]+\)?)$/);
-    if (fracMatch) {
-      const num = fracMatch[1].replace(/^\(|\)$/g, '');
-      const den = fracMatch[2].replace(/^\(|\)$/g, '');
+    // Handle any fraction '/' in expression (standalone '/', partial '5/', '/2', or '5/2')
+    if (str.includes('/')) {
+      const slashIndex = str.lastIndexOf('/');
+      const numPart = str.slice(0, slashIndex).trim();
+      const denPart = str.slice(slashIndex + 1).trim();
+
+      const numClean = numPart.replace(/^\(|\)$/g, '');
+      const denClean = denPart.replace(/^\(|\)$/g, '');
+
       return (
         <span className="casio-frac">
-          <span className="frac-num">{num}</span>
-          <span className="frac-den">{den}</span>
+          <span className="frac-num">
+            {numClean ? renderNaturalMath(numClean) : <span className="frac-box"></span>}
+          </span>
+          <span className="frac-den">
+            {denClean ? renderNaturalMath(denClean) : <span className="frac-box"></span>}
+          </span>
         </span>
       );
     }
