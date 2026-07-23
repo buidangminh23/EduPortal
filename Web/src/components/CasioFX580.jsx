@@ -227,6 +227,80 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     } catch (e) {}
   };
 
+  const navigateLeft = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC') {
+      if (activeBox === 'den') setActiveBox('num');
+      else if (activeBox === 'num') setActiveBox('none');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'body') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('lower');
+      else if (activeBox === 'lower') setActiveBox('none');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'LOGBASE') {
+      if (activeBox === 'arg') setActiveBox('base');
+      else if (activeBox === 'base') setActiveBox('none');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'POWER') {
+      if (activeBox === 'exp') setActiveBox('none');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else {
+      setCursorPos(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const navigateRight = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC') {
+      if (activeBox === 'num') setActiveBox('den');
+      else if (activeBox === 'den') setActiveBox('none');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'lower') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('body');
+      else if (activeBox === 'body') setActiveBox('none');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'LOGBASE') {
+      if (activeBox === 'base') setActiveBox('arg');
+      else if (activeBox === 'arg') setActiveBox('none');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'POWER') {
+      if (activeBox === 'exp') setActiveBox('none');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else {
+      setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    }
+  };
+
+  const navigateUp = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC' && activeBox === 'den') {
+      setActiveBox('num');
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'lower') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('body');
+    } else if (activeTemplate === 'LOGBASE' && activeBox === 'base') {
+      setActiveBox('arg');
+    } else if (history.length > 0) {
+      setDisplayExpr(history[0].expr);
+    }
+  };
+
+  const navigateDown = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC' && activeBox === 'num') {
+      setActiveBox('den');
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'body') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('lower');
+    } else if (activeTemplate === 'LOGBASE' && activeBox === 'arg') {
+      setActiveBox('base');
+    } else {
+      handleAC();
+    }
+  };
+
   // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -259,16 +333,22 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         handleKeyPress('X');
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setCursorPos(prev => Math.max(0, prev - 1));
+        navigateLeft();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+        navigateRight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateUp();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateDown();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayExpr, angleUnit, vars, shift, alpha, mode]);
+  }, [displayExpr, angleUnit, vars, shift, alpha, mode, activeTemplate, activeBox]);
 
   // Prime Factorization Helper (FACT)
   const getPrimeFactorizationStr = (n) => {
@@ -1595,88 +1675,16 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
 
             <div className="dpad-container">
-              <button
-                onClick={() => {
-                  playKeySound();
-                  if (activeTemplate === 'FRAC') {
-                    if (activeBox === 'den') setActiveBox('num');
-                    else setCursorPos(prev => Math.max(0, prev - 1));
-                  } else if (activeTemplate === 'INTEGRAL') {
-                    if (activeBox === 'upper' || activeBox === 'lower') setActiveBox('body');
-                    else setCursorPos(prev => Math.max(0, prev - 1));
-                  } else if (activeTemplate === 'LOGBASE') {
-                    if (activeBox === 'arg') setActiveBox('base');
-                    else setCursorPos(prev => Math.max(0, prev - 1));
-                  } else {
-                    setCursorPos(prev => Math.max(0, prev - 1));
-                  }
-                }}
-                className="dpad-btn left"
-                title="Trái"
-              >
+              <button onClick={navigateLeft} className="dpad-btn left" title="Trái">
                 <ChevronLeft size={12} />
               </button>
-
-              <button
-                onClick={() => {
-                  playKeySound();
-                  if (activeTemplate === 'FRAC' && activeBox === 'den') {
-                    setActiveBox('num');
-                  } else if (activeTemplate === 'INTEGRAL') {
-                    if (activeBox === 'body') setActiveBox('upper');
-                    else if (activeBox === 'lower') setActiveBox('body');
-                  } else if (activeTemplate === 'LOGBASE' && activeBox === 'base') {
-                    setActiveBox('arg');
-                  } else if (history.length > 0) {
-                    setDisplayExpr(history[0].expr);
-                  }
-                }}
-                className="dpad-btn up"
-                title="Lên"
-              >
+              <button onClick={navigateUp} className="dpad-btn up" title="Lên">
                 <ChevronUp size={12} />
               </button>
-
-              <button
-                onClick={() => {
-                  playKeySound();
-                  if (activeTemplate === 'FRAC' && activeBox === 'num') {
-                    setActiveBox('den');
-                  } else if (activeTemplate === 'INTEGRAL') {
-                    if (activeBox === 'body') setActiveBox('lower');
-                    else if (activeBox === 'upper') setActiveBox('body');
-                  } else if (activeTemplate === 'LOGBASE' && activeBox === 'arg') {
-                    setActiveBox('base');
-                  } else {
-                    handleAC();
-                  }
-                }}
-                className="dpad-btn down"
-                title="Xuống"
-              >
+              <button onClick={navigateDown} className="dpad-btn down" title="Xuống">
                 <ChevronDown size={12} />
               </button>
-
-              <button
-                onClick={() => {
-                  playKeySound();
-                  if (activeTemplate === 'FRAC') {
-                    if (activeBox === 'num') setActiveBox('den');
-                    else if (activeBox === 'den') setActiveBox('none');
-                  } else if (activeTemplate === 'INTEGRAL') {
-                    if (activeBox === 'lower') setActiveBox('body');
-                    else if (activeBox === 'body') setActiveBox('upper');
-                    else setActiveBox('none');
-                  } else if (activeTemplate === 'LOGBASE') {
-                    if (activeBox === 'base') setActiveBox('arg');
-                    else setActiveBox('none');
-                  } else {
-                    setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-                  }
-                }}
-                className="dpad-btn right"
-                title="Phải"
-              >
+              <button onClick={navigateRight} className="dpad-btn right" title="Phải">
                 <ChevronRight size={12} />
               </button>
               <span className="dpad-center-badge">REPLAY</span>
