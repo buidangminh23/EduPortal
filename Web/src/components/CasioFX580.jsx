@@ -1062,7 +1062,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* Mode Menu Modal Overlay */}
       {showModeMenu && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModeMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
               <h3>CHỌN CHẾ ĐỘ (MENU / MODE)</h3>
@@ -1093,7 +1093,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* Physical Constants Modal */}
       {showConstMenu && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowConstMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
               <h3>HẰNG SỐ VẬT LÝ & HÓA HỌC (CONST)</h3>
@@ -1122,7 +1122,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* Unit Conversion Modal */}
       {showConvMenu && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowConvMenu(false); }}>
           <div className="casio-modal animate-pop">
             <div className="modal-header">
               <h3>ĐỔI ĐƠN VỊ ĐO LƯỜNG (CONV)</h3>
@@ -1151,7 +1151,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* Step by Step Solution Modal */}
       {showStepByStepModal && stepSolution && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowStepByStepModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '600px' }}>
             <div className="modal-header">
               <h3><Sparkles size={18} style={{ color: '#00e5ff' }} /> {stepSolution.title}</h3>
@@ -1170,7 +1170,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* THPT Exam Cheat Sheet Modal */}
       {showGuideModal && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowGuideModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '650px' }}>
             <div className="modal-header">
               <h3><BookOpen size={18} /> MẸO BẤM MÁY CASIO 580 THI THPT QUỐC GIA</h3>
@@ -1198,7 +1198,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
       {/* History Modal */}
       {showHistoryModal && (
-        <div className="casio-modal-overlay">
+        <div className="casio-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowHistoryModal(false); }}>
           <div className="casio-modal animate-pop" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h3>LỊCH SỬ TÍNH TOÁN ({history.length})</h3>
