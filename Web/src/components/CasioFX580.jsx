@@ -235,12 +235,14 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         handleDel();
       } else if (e.key === 'Escape') {
         handleAC();
-      } else if (e.key.toLowerCase() === 's') {
-        setShift(prev => !prev);
-      } else if (e.key.toLowerCase() === 'a') {
-        setAlpha(prev => !prev);
       } else if (e.key.toLowerCase() === 'x') {
         handleKeyPress('X');
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setCursorPos(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
       }
     };
 
@@ -470,12 +472,19 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
     }
 
-    setDisplayExpr(prev => prev + token);
+    setDisplayExpr(prev => {
+      const left = prev.slice(0, cursorPos);
+      const right = prev.slice(cursorPos);
+      const updated = left + token + right;
+      setCursorPos(left.length + token.length);
+      return updated;
+    });
   };
 
   const handleAC = () => {
     playKeySound();
     setDisplayExpr('');
+    setCursorPos(0);
     setResultText('0');
     setNumericValue(0);
     setShift(false);
@@ -486,7 +495,13 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
   const handleDel = () => {
     playKeySound();
-    setDisplayExpr(prev => prev.slice(0, -1));
+    if (cursorPos === 0) return;
+    setDisplayExpr(prev => {
+      const left = prev.slice(0, cursorPos - 1);
+      const right = prev.slice(cursorPos);
+      setCursorPos(left.length);
+      return left + right;
+    });
   };
 
   const decimalToFraction = (val) => {
@@ -964,10 +979,20 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             <span className="status-math">MATH</span>
           </div>
 
-          {/* Expression Input Area with Natural Display Formatting */}
+          {/* Expression Input Area with Natural Display Formatting & Interactive Cursor */}
           <div className="screen-input-area">
-            {displayExpr ? renderNaturalMath(displayExpr) : <span className="placeholder-text">0</span>}
-            <span className="cursor-blink">|</span>
+            {displayExpr ? (
+              <>
+                {renderNaturalMath(displayExpr.slice(0, cursorPos))}
+                <span className="cursor-blink">|</span>
+                {renderNaturalMath(displayExpr.slice(cursorPos))}
+              </>
+            ) : (
+              <>
+                <span className="cursor-blink">|</span>
+                <span className="placeholder-text">0</span>
+              </>
+            )}
           </div>
 
           {/* Result Output Area */}
