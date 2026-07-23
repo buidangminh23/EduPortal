@@ -227,27 +227,59 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     } catch (e) {}
   };
 
+  const commitActiveTemplateToDisplayExpr = (targetPos = 'right') => {
+    if (activeTemplate === 'NONE') return;
+
+    let templateStr = '';
+    if (activeTemplate === 'FRAC') {
+      templateStr = `(${fracNum || '0'})/(${fracDen || '1'})`;
+    } else if (activeTemplate === 'INTEGRAL') {
+      templateStr = `∫(${integBody || 'X'},${integLower || '0'},${integUpper || '1'})`;
+    } else if (activeTemplate === 'LOGBASE') {
+      templateStr = `log_(${logBase || '10'},${logArg || '1'})`;
+    } else if (activeTemplate === 'POWER') {
+      templateStr = `^(${powerExp || '1'})`;
+    }
+
+    if (templateStr) {
+      setDisplayExpr(prev => {
+        const left = prev.slice(0, cursorPos);
+        const right = prev.slice(cursorPos);
+        const updated = left + templateStr + right;
+        setCursorPos(targetPos === 'left' ? left.length : left.length + templateStr.length);
+        return updated;
+      });
+    }
+
+    setActiveTemplate('NONE');
+    setActiveBox('main');
+    setFracNum('');
+    setFracDen('');
+    setIntegBody('');
+    setIntegLower('');
+    setIntegUpper('');
+    setLogBase('');
+    setLogArg('');
+    setPowerExp('');
+  };
+
   const navigateLeft = () => {
     playKeySound();
     if (activeTemplate === 'FRAC') {
-      if (activeBox === 'right' || activeBox === 'none') setActiveBox('den');
-      else if (activeBox === 'den') setActiveBox('num');
-      else if (activeBox === 'num') setActiveBox('left');
+      if (activeBox === 'den') setActiveBox('num');
+      else if (activeBox === 'num') commitActiveTemplateToDisplayExpr('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'right' || activeBox === 'none') setActiveBox('body');
-      else if (activeBox === 'body') setActiveBox('upper');
+      if (activeBox === 'body') setActiveBox('upper');
       else if (activeBox === 'upper') setActiveBox('lower');
-      else if (activeBox === 'lower') setActiveBox('left');
+      else if (activeBox === 'lower') commitActiveTemplateToDisplayExpr('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'right' || activeBox === 'none') setActiveBox('arg');
-      else if (activeBox === 'arg') setActiveBox('base');
-      else if (activeBox === 'base') setActiveBox('left');
+      if (activeBox === 'arg') setActiveBox('base');
+      else if (activeBox === 'base') commitActiveTemplateToDisplayExpr('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'right' || activeBox === 'none') setActiveBox('exp');
-      else if (activeBox === 'exp') setActiveBox('left');
+      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('left');
       else setCursorPos(prev => Math.max(0, prev - 1));
     } else {
       setCursorPos(prev => Math.max(0, prev - 1));
@@ -257,24 +289,20 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const navigateRight = () => {
     playKeySound();
     if (activeTemplate === 'FRAC') {
-      if (activeBox === 'left') setActiveBox('num');
-      else if (activeBox === 'num') setActiveBox('den');
-      else if (activeBox === 'den') setActiveBox('right');
+      if (activeBox === 'num') setActiveBox('den');
+      else if (activeBox === 'den') commitActiveTemplateToDisplayExpr('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'left') setActiveBox('lower');
-      else if (activeBox === 'lower') setActiveBox('upper');
+      if (activeBox === 'lower') setActiveBox('upper');
       else if (activeBox === 'upper') setActiveBox('body');
-      else if (activeBox === 'body') setActiveBox('right');
+      else if (activeBox === 'body') commitActiveTemplateToDisplayExpr('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'left') setActiveBox('base');
-      else if (activeBox === 'base') setActiveBox('arg');
-      else if (activeBox === 'arg') setActiveBox('right');
+      if (activeBox === 'base') setActiveBox('arg');
+      else if (activeBox === 'arg') commitActiveTemplateToDisplayExpr('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'left') setActiveBox('exp');
-      else if (activeBox === 'exp') setActiveBox('right');
+      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('right');
       else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
     } else {
       setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
@@ -568,12 +596,14 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'e': token = 'e'; break;
         case 'Ans': token = 'Ans'; break;
         case 'a/b':
+          commitActiveTemplateToDisplayExpr('right');
           setActiveTemplate('FRAC');
           setActiveBox('num');
           setFracNum('');
           setFracDen('');
           return;
         case '∫dx':
+          commitActiveTemplateToDisplayExpr('right');
           setActiveTemplate('INTEGRAL');
           setActiveBox('body');
           setIntegBody('');
@@ -581,12 +611,14 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           setIntegUpper('');
           return;
         case 'log':
+          commitActiveTemplateToDisplayExpr('right');
           setActiveTemplate('LOGBASE');
           setActiveBox('base');
           setLogBase('');
           setLogArg('');
           return;
         case 'xⁿ':
+          commitActiveTemplateToDisplayExpr('right');
           setActiveTemplate('POWER');
           setActiveBox('exp');
           setPowerExp('');
@@ -1211,11 +1243,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
           {/* Expression Input Area with Natural Display Formatting & Interactive Templates */}
           <div className="screen-input-area">
-            {/* Cursor on LEFT of template when user moves left */}
-            {activeTemplate !== 'NONE' && activeBox === 'left' && (
-              <span className="cursor-blink">|</span>
-            )}
-
             {displayExpr ? renderNaturalMath(displayExpr.slice(0, cursorPos)) : null}
             {activeTemplate === 'NONE' && <span className="cursor-blink">|</span>}
             {displayExpr ? renderNaturalMath(displayExpr.slice(cursorPos)) : null}
@@ -1309,11 +1336,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                 {activeBox === 'exp' && <span className="cursor-blink">|</span>}
                 {!powerExp && activeBox !== 'exp' && <span className="frac-box" />}
               </sup>
-            )}
-
-            {/* Cursor on RIGHT of template when user moves right */}
-            {activeTemplate !== 'NONE' && (activeBox === 'right' || activeBox === 'none') && (
-              <span className="cursor-blink">|</span>
             )}
 
             {!displayExpr && activeTemplate === 'NONE' && <span className="placeholder-text">0</span>}
