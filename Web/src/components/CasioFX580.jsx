@@ -532,15 +532,111 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         }
       }
 
+      // 5. Square Root: √(content) or √(unclosed
+      if (str.includes('√(')) {
+        const idx = str.indexOf('√(');
+        const before = str.slice(0, idx);
+        const rest = str.slice(idx + 2);
+
+        let parenCount = 1;
+        let closeIdx = -1;
+        for (let i = 0; i < rest.length; i++) {
+          if (rest[i] === '(') parenCount++;
+          else if (rest[i] === ')') {
+            parenCount--;
+            if (parenCount === 0) {
+              closeIdx = i;
+              break;
+            }
+          }
+        }
+
+        if (closeIdx !== -1) {
+          const inner = rest.slice(0, closeIdx);
+          const after = rest.slice(closeIdx + 1);
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <span className="casio-sqrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>√</span>
+                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+                  ({inner ? renderNaturalMath(inner) : null})
+                </span>
+              </span>
+              {after ? renderNaturalMath(after) : null}
+            </span>
+          );
+        } else {
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <span className="casio-sqrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>√</span>
+                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+                  ({renderNaturalMath(rest)}
+                </span>
+              </span>
+            </span>
+          );
+        }
+      }
+
+      // 6. Cube Root: ³√(content) or ³√(unclosed
+      if (str.includes('³√(')) {
+        const idx = str.indexOf('³√(');
+        const before = str.slice(0, idx);
+        const rest = str.slice(idx + 3);
+
+        let parenCount = 1;
+        let closeIdx = -1;
+        for (let i = 0; i < rest.length; i++) {
+          if (rest[i] === '(') parenCount++;
+          else if (rest[i] === ')') {
+            parenCount--;
+            if (parenCount === 0) {
+              closeIdx = i;
+              break;
+            }
+          }
+        }
+
+        if (closeIdx !== -1) {
+          const inner = rest.slice(0, closeIdx);
+          const after = rest.slice(closeIdx + 1);
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <span className="casio-cbrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>∛</span>
+                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+                  ({inner ? renderNaturalMath(inner) : null})
+                </span>
+              </span>
+              {after ? renderNaturalMath(after) : null}
+            </span>
+          );
+        } else {
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <span className="casio-cbrt" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.05em', marginRight: '1px' }}>∛</span>
+                <span style={{ borderTop: '1.8px solid #122115', paddingTop: '1px', paddingLeft: '2px', paddingRight: '2px' }}>
+                  ({renderNaturalMath(rest)}
+                </span>
+              </span>
+            </span>
+          );
+        }
+      }
+
       // Convert string tokens to pretty JSX elements
-      let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\()/g);
+      let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\()/g);
 
       return parts.map((part, index) => {
         if (part === '^2') return <sup key={index} className="casio-sup">2</sup>;
         if (part === '^3') return <sup key={index} className="casio-sup">3</sup>;
         if (part.startsWith('^')) return <sup key={index} className="casio-sup">{part.slice(1)}</sup>;
-        if (part === '√(') return <span key={index}>√<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
-        if (part === '³√(') return <span key={index}>∛<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
         if (part === 'sin⁻¹(') return <span key={index}>sin<sup>-1</sup>(</span>;
         if (part === 'cos⁻¹(') return <span key={index}>cos<sup>-1</sup>(</span>;
         if (part === 'tan⁻¹(') return <span key={index}>tan<sup>-1</sup>(</span>;
