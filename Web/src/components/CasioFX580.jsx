@@ -414,110 +414,143 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
   // Natural Display Renderer Helper (Formating fractions, integrals, log base, superscripts, roots, etc.)
   const renderNaturalMath = (text) => {
-    if (!text) return null;
-    const str = String(text);
+    try {
+      if (!text) return null;
+      const str = String(text);
 
-    // 1. Integral: ∫(body, lower, upper) or ∫(...) or ∫
-    if (str.includes('∫')) {
-      const match = str.match(/∫\((.*?)\)/);
-      let body = '', lower = '', upper = '';
-      if (match && match[1]) {
-        const parts = match[1].split(',');
-        body = parts[0] || '';
-        lower = parts[1] || '';
-        upper = parts[2] || '';
-      }
-
-      return (
-        <span className="casio-integral">
-          <span className="integral-symbol">
-            <span className="integral-upper">{upper ? renderNaturalMath(upper) : <span className="frac-box"></span>}</span>
-            <span className="integral-lower">{lower ? renderNaturalMath(lower) : <span className="frac-box"></span>}</span>
-          </span>
-          <span className="integral-body">
-            {body ? renderNaturalMath(body) : <span className="frac-box"></span>} <span style={{ fontStyle: 'italic', marginLeft: 2, fontWeight: 700 }}>dx</span>
-          </span>
-        </span>
-      );
-    }
-
-    // 2. Logarithm with Base: log_(base, arg) or log_(...) or log_
-    if (str.includes('log_')) {
-      const match = str.match(/log_\((.*?)\)/);
-      let base = '', arg = '';
-      if (match && match[1]) {
-        const parts = match[1].split(',');
-        base = parts[0] || '';
-        arg = parts[1] || '';
-      }
-
-      return (
-        <span className="casio-log">
-          <span className="log-text">log</span>
-          <span className="log-base">{base ? renderNaturalMath(base) : <span className="frac-box"></span>}</span>
-          <span className="log-arg">({arg ? renderNaturalMath(arg) : <span className="frac-box"></span>})</span>
-        </span>
-      );
-    }
-
-    // 3. Fraction: handle committed format (num)/(den) and simple a/b
-    if (str.includes('/')) {
-      // Try to match committed fraction format: (num)/(den) possibly followed by more expression
-      const commitMatch = str.match(/^(.*?)\(([^()]*)\)\/\(([^()]*)\)(.*)$/);
-      if (commitMatch) {
-        const [, before, num, den, after] = commitMatch;
+      // 0. Handle d/dx before fraction check (contains '/' but is not a fraction)
+      if (str.includes('d/dx(')) {
+        const idx = str.indexOf('d/dx(');
+        const before = str.slice(0, idx);
+        const after = str.slice(idx + 5); // after 'd/dx('
         return (
-          <>
+          <span>
             {before && renderNaturalMath(before)}
-            <span className="casio-frac">
-              <span className="frac-num">
-                {num ? renderNaturalMath(num) : <span className="frac-box"></span>}
-              </span>
-              <span className="frac-den">
-                {den ? renderNaturalMath(den) : <span className="frac-box"></span>}
-              </span>
-            </span>
+            <span><span style={{ textDecoration: 'underline' }}>d</span>/dx(</span>
             {after && renderNaturalMath(after)}
-          </>
+          </span>
         );
       }
 
-      // Fallback: simple fraction with single /
-      const slashIndex = str.indexOf('/');
-      const numPart = str.slice(0, slashIndex).trim();
-      const denPart = str.slice(slashIndex + 1).trim();
+      // 1. Integral: ∫(body, lower, upper) or ∫(...) or ∫
+      if (str.includes('∫')) {
+        const match = str.match(/∫\((.*?)\)/);
+        let body = '', lower = '', upper = '';
+        if (match && match[1]) {
+          const parts = match[1].split(',');
+          body = parts[0] || '';
+          lower = parts[1] || '';
+          upper = parts[2] || '';
+        }
 
-      const numClean = numPart.replace(/^\(|\)$/g, '');
-      const denClean = denPart.replace(/^\(|\)$/g, '');
+        return (
+          <span className="casio-integral">
+            <span className="integral-symbol">
+              <span className="integral-upper">{upper ? renderNaturalMath(upper) : <span className="frac-box"></span>}</span>
+              <span className="integral-lower">{lower ? renderNaturalMath(lower) : <span className="frac-box"></span>}</span>
+            </span>
+            <span className="integral-body">
+              {body ? renderNaturalMath(body) : <span className="frac-box"></span>} <span style={{ fontStyle: 'italic', marginLeft: 2, fontWeight: 700 }}>dx</span>
+            </span>
+          </span>
+        );
+      }
 
-      return (
-        <span className="casio-frac">
-          <span className="frac-num">
-            {numClean ? renderNaturalMath(numClean) : <span className="frac-box"></span>}
+      // 2. Logarithm with Base: log_(base, arg) or log_(...) or log_
+      if (str.includes('log_')) {
+        const match = str.match(/log_\((.*?)\)/);
+        let base = '', arg = '';
+        if (match && match[1]) {
+          const parts = match[1].split(',');
+          base = parts[0] || '';
+          arg = parts[1] || '';
+        }
+
+        return (
+          <span className="casio-log">
+            <span className="log-text">log</span>
+            <span className="log-base">{base ? renderNaturalMath(base) : <span className="frac-box"></span>}</span>
+            <span className="log-arg">({arg ? renderNaturalMath(arg) : <span className="frac-box"></span>})</span>
           </span>
-          <span className="frac-den">
-            {denClean ? renderNaturalMath(denClean) : <span className="frac-box"></span>}
+        );
+      }
+
+      // 3. Fraction: handle committed format (num)/(den) and simple a/b
+      if (str.includes('/')) {
+        // Try to match committed fraction format: (num)/(den) possibly followed by more expression
+        const commitMatch = str.match(/^(.*?)\(([^()]*)\)\/\(([^()]*)\)(.*)$/);
+        if (commitMatch) {
+          const [, before, num, den, after] = commitMatch;
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <span className="casio-frac">
+                <span className="frac-num">
+                  {num ? renderNaturalMath(num) : <span className="frac-box"></span>}
+                </span>
+                <span className="frac-den">
+                  {den ? renderNaturalMath(den) : <span className="frac-box"></span>}
+                </span>
+              </span>
+              {after ? renderNaturalMath(after) : null}
+            </span>
+          );
+        }
+
+        // Fallback: simple fraction with single /
+        const slashIndex = str.indexOf('/');
+        const numPart = str.slice(0, slashIndex).trim();
+        const denPart = str.slice(slashIndex + 1).trim();
+
+        const numClean = numPart.replace(/^\(|\)$/g, '');
+        const denClean = denPart.replace(/^\(|\)$/g, '');
+
+        return (
+          <span className="casio-frac">
+            <span className="frac-num">
+              {numClean ? renderNaturalMath(numClean) : <span className="frac-box"></span>}
+            </span>
+            <span className="frac-den">
+              {denClean ? renderNaturalMath(denClean) : <span className="frac-box"></span>}
+            </span>
           </span>
-        </span>
-      );
+        );
+      }
+
+      // 4. Power/exponent: ^(exp) from committed template
+      if (str.includes('^(')) {
+        const match = str.match(/^(.*?)\^\(([^()]*)\)(.*)$/);
+        if (match) {
+          const [, before, exp, after] = match;
+          return (
+            <span>
+              {before ? renderNaturalMath(before) : null}
+              <sup className="casio-sup">{exp || '□'}</sup>
+              {after ? renderNaturalMath(after) : null}
+            </span>
+          );
+        }
+      }
+
+      // Convert string tokens to pretty JSX elements
+      let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\()/g);
+
+      return parts.map((part, index) => {
+        if (part === '^2') return <sup key={index} className="casio-sup">2</sup>;
+        if (part === '^3') return <sup key={index} className="casio-sup">3</sup>;
+        if (part.startsWith('^')) return <sup key={index} className="casio-sup">{part.slice(1)}</sup>;
+        if (part === '√(') return <span key={index}>√<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
+        if (part === '³√(') return <span key={index}>∛<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
+        if (part === 'sin⁻¹(') return <span key={index}>sin<sup>-1</sup>(</span>;
+        if (part === 'cos⁻¹(') return <span key={index}>cos<sup>-1</sup>(</span>;
+        if (part === 'tan⁻¹(') return <span key={index}>tan<sup>-1</sup>(</span>;
+        if (part === '∫(') return <span key={index}>∫ (</span>;
+        return <span key={index}>{part}</span>;
+      });
+    } catch (e) {
+      // Fallback: render raw text if parsing fails
+      return <span>{String(text)}</span>;
     }
-
-    // Convert string tokens to pretty JSX elements
-    let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\(|d\/dx\()/g);
-
-    return parts.map((part, index) => {
-      if (part === '^2') return <sup key={index} className="casio-sup">2</sup>;
-      if (part === '^3') return <sup key={index} className="casio-sup">3</sup>;
-      if (part.startsWith('^')) return <sup key={index} className="casio-sup">{part.slice(1)}</sup>;
-      if (part === '√(') return <span key={index}>√<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
-      if (part === '³√(') return <span key={index}>∛<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
-      if (part === 'sin⁻¹(') return <span key={index}>sin<sup>-1</sup>(</span>;
-      if (part === 'cos⁻¹(') return <span key={index}>cos<sup>-1</sup>(</span>;
-      if (part === 'tan⁻¹(') return <span key={index}>tan<sup>-1</sup>(</span>;
-      if (part === '∫(') return <span key={index}>∫ (</span>;
-      if (part === 'd/dx(') return <span key={index}><span style={{ textDecoration: 'underline' }}>d</span>/dx(</span>;
-      return <span key={index}>{part}</span>;
-    });
   };
 
   // Key press handler
