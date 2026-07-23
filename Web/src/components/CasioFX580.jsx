@@ -91,7 +91,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [history, setHistory] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Output format state: 'decimal', 'fraction', 'mixed', 'scientific', 'fact'
+  // Output format state: 'decimal', 'fraction', 'mixed', 'scientific'
   const [displayFormat, setDisplayFormat] = useState('decimal');
   const [numericValue, setNumericValue] = useState(0);
 
@@ -113,38 +113,71 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [showStepByStepModal, setShowStepByStepModal] = useState(false);
   const [stepSolution, setStepSolution] = useState(null);
 
-  // Dedicated Mode States
-  // Mode 9: EQN Solver state
-  const [eqnType, setEqnType] = useState('poly'); // 'simul' or 'poly'
-  const [polyDegree, setPolyDegree] = useState(2); // 2, 3, 4
-  const [polyCoeffs, setPolyCoeffs] = useState({ a: 1, b: -5, c: 6, d: 0, e: 0 });
-  const [simulMatrix, setSimulMatrix] = useState([
-    [2, 1, 5],
-    [1, -1, 1]
-  ]);
-  const [eqnResults, setEqnResults] = useState(null);
+  // DEDICATED MODES STATES
 
-  // Mode 8: Table f(x) state
+  // Mode 2: Complex
+  const [cplxZ1, setCplxZ1] = useState({ real: 3, imag: 4 });
+  const [cplxZ2, setCplxZ2] = useState({ real: 1, imag: -2 });
+  const [cplxResult, setCplxResult] = useState(null);
+
+  // Mode 3: Base-N
+  const [baseNVal, setBaseNVal] = useState(255);
+  const [activeBase, setActiveBase] = useState('DEC');
+
+  // Mode 4: Matrix
+  const [matDim, setMatDim] = useState(2); // 2x2, 3x3
+  const [matA, setMatA] = useState([[1, 2], [3, 4]]);
+  const [matB, setMatB] = useState([[5, 6], [7, 8]]);
+  const [matrixResult, setMatrixResult] = useState(null);
+
+  // Mode 5: Vector
+  const [vctDim, setVctDim] = useState(3); // 2D or 3D
+  const [vctA, setVctA] = useState([1, 2, 3]);
+  const [vctB, setVctB] = useState([4, 5, 6]);
+  const [vectorResult, setVectorResult] = useState(null);
+
+  // Mode 6: Stat
+  const [statPoints, setStatPoints] = useState('1, 2, 3, 4, 5, 6, 7, 8');
+  const [statYPoints, setStatYPoints] = useState('2, 4, 5, 7, 8, 10, 11, 14');
+  const [statResult, setStatResult] = useState(null);
+
+  // Mode 7: Dist
+  const [distType, setDistType] = useState('normPD'); // normPD, normCD, binomPD, binomCD
+  const [distParams, setDistParams] = useState({ x: 0, mu: 0, sigma: 1, k: 3, n: 10, p: 0.5 });
+  const [distResult, setDistResult] = useState(null);
+
+  // Mode 8: Table
   const [tableFunc, setTableFunc] = useState('X^2 - 4*X + 3');
   const [tableStart, setTableStart] = useState(-3);
   const [tableEnd, setTableEnd] = useState(5);
   const [tableStep, setTableStep] = useState(1);
   const [tableRows, setTableRows] = useState(null);
 
-  // Mode 4: Matrix state
-  const [matA, setMatA] = useState([[1, 2], [3, 4]]);
-  const [matB, setMatB] = useState([[5, 6], [7, 8]]);
-  const [matrixOpResult, setMatrixOpResult] = useState(null);
+  // Mode 9: EQN/SOLV
+  const [eqnType, setEqnType] = useState('poly'); // 'simul' or 'poly'
+  const [polyDegree, setPolyDegree] = useState(2); // 2, 3, 4
+  const [simulDim, setSimulDim] = useState(2); // 2, 3, 4
+  const [polyCoeffs, setPolyCoeffs] = useState({ a: 1, b: -5, c: 6, d: 0, e: 0 });
+  const [simulCoeffs, setSimulCoeffs] = useState({
+    a1: 2, b1: 1, c1: 0, d1: 5,
+    a2: 1, b2: -1, c2: 0, d2: 1,
+    a3: 0, b3: 0, c3: 1, d3: 0
+  });
+  const [eqnResults, setEqnResults] = useState(null);
 
-  // Mode 5: Vector state
-  const [vctA, setVctA] = useState([1, 2, 3]);
-  const [vctB, setVctB] = useState([4, 5, 6]);
-  const [vectorOpResult, setVectorOpResult] = useState(null);
+  // Mode 10: INEQ
+  const [ineqSymbol, setIneqSymbol] = useState('>'); // '>', '>=', '<', '<='
+  const [ineqCoeffs, setIneqCoeffs] = useState({ a: 1, b: -5, c: 6 });
+  const [ineqResult, setIneqResult] = useState(null);
 
-  // Audio Context ref for keypress sound effect
+  // Mode 11: RATIO
+  const [ratioType, setRatioType] = useState(1); // 1: A:B = X:D, 2: A:B = C:X
+  const [ratioVals, setRatioVals] = useState({ A: 2, B: 4, C: 3, D: 6 });
+  const [ratioResult, setRatioResult] = useState(null);
+
+  // Audio Context ref
   const audioCtxRef = useRef(null);
 
-  // Sound generator
   const playKeySound = () => {
     if (!soundEnabled) return;
     try {
@@ -168,16 +201,13 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         osc.start();
         osc.stop(audioCtxRef.current.currentTime + 0.02);
       }
-    } catch (e) {
-      // Ignore audio errors
-    }
+    } catch (e) {}
   };
 
-  // Keyboard Event Listener supporting shortcuts and combinations
+  // Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore if user typing inside an input box
-      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
       if (e.key >= '0' && e.key <= '9') {
         handleKeyPress(e.key);
@@ -241,11 +271,32 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     return (n < 0 ? '-' : '') + factors.join(' × ');
   };
 
-  // Handle Input Key press with authentic Casio FX-580 key combination mechanics
+  // Natural Display Renderer Helper (Formating superscripts, roots, etc.)
+  const renderNaturalMath = (text) => {
+    if (!text) return null;
+
+    // Convert string tokens to pretty JSX elements
+    let parts = text.split(/(\^2|\^3|\^[0-9A-Z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\(|d\/dx\()/g);
+
+    return parts.map((part, index) => {
+      if (part === '^2') return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>2</sup>;
+      if (part === '^3') return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>3</sup>;
+      if (part.startsWith('^')) return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>{part.slice(1)}</sup>;
+      if (part === '√(') return <span key={index} style={{ color: '#38bdf8' }}>√<span style={{ borderTop: '2px solid #38bdf8', paddingLeft: 1 }}>(</span></span>;
+      if (part === '³√(') return <span key={index} style={{ color: '#38bdf8' }}>∛<span style={{ borderTop: '2px solid #38bdf8', paddingLeft: 1 }}>(</span></span>;
+      if (part === 'sin⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>sin<sup>-1</sup>(</span>;
+      if (part === 'cos⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>cos<sup>-1</sup>(</span>;
+      if (part === 'tan⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>tan<sup>-1</sup>(</span>;
+      if (part === '∫(') return <span key={index} style={{ color: '#eab308' }}>∫ (</span>;
+      if (part === 'd/dx(') return <span key={index} style={{ color: '#eab308' }}><span style={{ textDecoration: 'underline' }}>d</span>/dx(</span>;
+      return <span key={index}>{part}</span>;
+    });
+  };
+
+  // Key press handler
   const handleKeyPress = (val) => {
     playKeySound();
 
-    // Memory Store (STO) handling
     if (stoMode) {
       if (['A', 'B', 'C', 'D', 'E', 'F', 'X', 'Y', 'M'].includes(val)) {
         setVars(prev => ({ ...prev, [val]: numericValue }));
@@ -256,7 +307,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
     }
 
-    // Memory Recall (RCL) handling
     if (rclMode) {
       if (['A', 'B', 'C', 'D', 'E', 'F', 'X', 'Y', 'M'].includes(val)) {
         const storedVal = vars[val];
@@ -268,9 +318,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
     let token = val;
 
-    // SHIFT KEY COMBINATIONS (Yellow labels)
     if (shift) {
-      setShift(false); // SHIFT clears after next keypress
+      setShift(false);
       switch (val) {
         case 'sin': token = 'sin⁻¹('; break;
         case 'cos': token = 'cos⁻¹('; break;
@@ -288,11 +337,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case '0': token = 'Rnd('; break;
         case 'Ans': token = 'PreAns'; break;
         case '=': toggleDisplayFormat(); return;
-        case 'STO': setShowVarsModal(true); return; // SHIFT + STO = RECALL Variables
+        case 'STO': setShowVarsModal(true); return;
         case 'CONST': setShowConstMenu(true); return;
         case 'CONV': setShowConvMenu(true); return;
         case 'S⇔D': toggleDisplayFormat(); return;
-        case 'CALC': handleSolveEquation(); return; // SHIFT + CALC = SOLVE
+        case 'CALC': handleSolveEquation(); return;
         case 'FACT': 
           if (Number.isInteger(numericValue)) {
             setResultText(getPrimeFactorizationStr(numericValue));
@@ -300,10 +349,8 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           return;
         default: token = val;
       }
-    }
-    // ALPHA KEY COMBINATIONS (Pink labels)
-    else if (alpha) {
-      setAlpha(false); // ALPHA clears after next keypress
+    } else if (alpha) {
+      setAlpha(false);
       switch (val) {
         case '(-)': token = 'A'; break;
         case '°\'"': token = 'B'; break;
@@ -327,9 +374,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'CALC': handleCalcVariable(); return;
         default: token = val;
       }
-    }
-    // NORMAL KEY PRESS
-    else {
+    } else {
       switch (val) {
         case 'sin': token = 'sin('; break;
         case 'cos': token = 'cos('; break;
@@ -360,7 +405,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     setDisplayExpr(prev => prev + token);
   };
 
-  // Clear button (AC)
   const handleAC = () => {
     playKeySound();
     setDisplayExpr('');
@@ -372,13 +416,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     setRclMode(false);
   };
 
-  // Delete button (DEL)
   const handleDel = () => {
     playKeySound();
     setDisplayExpr(prev => prev.slice(0, -1));
   };
 
-  // Format decimal to fraction string helper
   const decimalToFraction = (val) => {
     if (isNaN(val) || !isFinite(val)) return null;
     if (Number.isInteger(val)) return `${val}`;
@@ -398,7 +440,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     return null;
   };
 
-  // Toggle S<=>D display format
   const toggleDisplayFormat = () => {
     playKeySound();
     if (displayFormat === 'decimal') {
@@ -430,14 +471,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
   };
 
-  // Expression Evaluator Engine
   const evaluateExpression = (exprStr, customVars = {}) => {
     if (!exprStr || exprStr.trim() === '') return 0;
 
     let clean = exprStr;
-
-    // Substitute constants & variables
     const activeVars = { ...vars, ...customVars };
+
     clean = clean.replace(/PreAns/g, activeVars.PreAns || 0);
     clean = clean.replace(/Ans/g, activeVars.Ans || 0);
     clean = clean.replace(/π/g, Math.PI);
@@ -452,15 +491,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     clean = clean.replace(/\bY\b/g, activeVars.Y || 0);
     clean = clean.replace(/\bM\b/g, activeVars.M || 0);
 
-    // Operator replacements
     clean = clean.replace(/×/g, '*').replace(/÷/g, '/');
     clean = clean.replace(/\^2/g, '**2').replace(/\^3/g, '**3').replace(/\^/g, '**');
 
-    // Angle unit multiplier for trig
     const toRad = angleUnit === 'DEG' ? (Math.PI / 180) : angleUnit === 'GRAD' ? (Math.PI / 200) : 1;
     const fromRad = angleUnit === 'DEG' ? (180 / Math.PI) : angleUnit === 'GRAD' ? (200 / Math.PI) : 1;
 
-    // Trigonometric functions
     clean = clean.replace(/sin⁻¹\(/g, `(${fromRad}*Math.asin(`);
     clean = clean.replace(/cos⁻¹\(/g, `(${fromRad}*Math.acos(`);
     clean = clean.replace(/tan⁻¹\(/g, `(${fromRad}*Math.atan(`);
@@ -468,13 +504,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     clean = clean.replace(/cos\(/g, `Math.cos(${toRad}*`);
     clean = clean.replace(/tan\(/g, `Math.tan(${toRad}*`);
 
-    // Logarithms and roots
     clean = clean.replace(/ln\(/g, 'Math.log(');
     clean = clean.replace(/log\(/g, 'Math.log10(');
     clean = clean.replace(/√\(/g, 'Math.sqrt(');
     clean = clean.replace(/³√\(/g, 'Math.cbrt(');
 
-    // Factorials
     clean = clean.replace(/(\d+)!/g, (_, num) => {
       let n = parseInt(num);
       let res = 1;
@@ -482,7 +516,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       return res;
     });
 
-    // Safely evaluate using Function
     try {
       const res = new Function(`return (${clean})`)();
       if (typeof res === 'number') {
@@ -490,28 +523,15 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
       return NaN;
     } catch (err) {
-      throw new Error('Cú pháp không hợp lệ (Syntax ERROR)');
+      throw new Error('Cú pháp không hợp lệ');
     }
   };
 
-  // Main Calculation Trigger (=)
   const handleCalculate = () => {
     playKeySound();
     if (!displayExpr) return;
 
     try {
-      // Complex mode (Mode 2) check
-      if (mode === 2 && displayExpr.includes('i')) {
-        handleComplexCalculate();
-        return;
-      }
-
-      // Base-N mode (Mode 3)
-      if (mode === 3) {
-        handleBaseNCalculate();
-        return;
-      }
-
       const val = evaluateExpression(displayExpr);
       if (isNaN(val) || !isFinite(val)) {
         setResultText('Math ERROR');
@@ -520,14 +540,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         setNumericValue(rounded);
         setResultText(String(rounded));
 
-        // Update memory variables Ans and PreAns
         setVars(prev => ({
           ...prev,
           PreAns: prev.Ans,
           Ans: rounded
         }));
 
-        // Add to history
         setHistory(prev => [{ expr: displayExpr, res: String(rounded) }, ...prev.slice(0, 49)]);
       }
     } catch (err) {
@@ -535,37 +553,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
   };
 
-  // Complex mode calculator (Mode 2)
-  const handleComplexCalculate = () => {
-    try {
-      setResultText('3 + 4i'); // Formatted complex result
-      setStepSolution({
-        title: 'Tính toán Số Phức (Mode 2)',
-        steps: [
-          `Biểu thức: ${displayExpr}`,
-          `Biến đổi về dạng chuẩn z = a + bi`,
-          `Phần thực Re(z) = 3, Phần ảo Im(z) = 4`,
-          `Modun |z| = √(3² + 4²) = 5`,
-          `Acmăng Arg(z) = arctan(4/3) ≈ 53.13°`,
-          `Dạng lượng giác / Cực: 5 ∠ 53.13°`
-        ]
-      });
-    } catch (e) {
-      setResultText('Complex ERROR');
-    }
-  };
-
-  // Base-N calculator (Mode 3)
-  const handleBaseNCalculate = () => {
-    try {
-      const val = Math.floor(evaluateExpression(displayExpr.replace(/i/g, '0')));
-      setResultText(`DEC: ${val} | BIN: ${val.toString(2)} | HEX: ${val.toString(16).toUpperCase()}`);
-    } catch (e) {
-      setResultText('Base ERROR');
-    }
-  };
-
-  // Solve Equation (Newton-Raphson method for SOLVE button)
   const handleSolveEquation = () => {
     playKeySound();
     let exprStr = displayExpr;
@@ -606,14 +593,131 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     }
   };
 
-  // CALC button (Evaluate expression for variable values)
   const handleCalcVariable = () => {
     playKeySound();
     const val = evaluateExpression(displayExpr, { X: vars.X });
     setResultText(`X=${vars.X} => ${val}`);
   };
 
-  // Mode 9: Polynomial Solver (Quadratic, Cubic, Quartic)
+  // FULL MODE SOLVERS IMPLEMENTATIONS
+
+  // Mode 2: Complex Solver
+  const solveComplex = () => {
+    playKeySound();
+    const a1 = cplxZ1.real, b1 = cplxZ1.imag;
+    const a2 = cplxZ2.real, b2 = cplxZ2.imag;
+
+    const sumR = a1 + a2, sumI = b1 + b2;
+    const prodR = a1 * a2 - b1 * b2, prodI = a1 * b2 + a2 * b1;
+    const modZ1 = Math.sqrt(a1 * a1 + b1 * b1);
+    const argZ1 = (Math.atan2(b1, a1) * 180 / Math.PI).toFixed(2);
+
+    setCplxResult({
+      sum: `${sumR} + ${sumI}i`,
+      prod: `${prodR} + ${prodI}i`,
+      mod: modZ1.toFixed(4),
+      polar: `${modZ1.toFixed(4)} ∠ ${argZ1}°`
+    });
+  };
+
+  // Mode 4: Matrix Solver
+  const solveMatrix = () => {
+    playKeySound();
+    const a = matA[0][0], b = matA[0][1], c = matA[1][0], d = matA[1][1];
+    const detA = a * d - b * c;
+    const trA = a + d;
+
+    let invA = 'Không có (det = 0)';
+    if (detA !== 0) {
+      invA = `[${(d/detA).toFixed(2)}, ${(-b/detA).toFixed(2)}; ${(-c/detA).toFixed(2)}, ${(a/detA).toFixed(2)}]`;
+    }
+
+    setMatrixResult({
+      detA,
+      trA,
+      invA,
+      transA: `[${a}, ${c}; ${b}, ${d}]`
+    });
+  };
+
+  // Mode 5: Vector Solver
+  const solveVector = () => {
+    playKeySound();
+    const [x1, y1, z1] = vctA;
+    const [x2, y2, z2] = vctB;
+
+    const dotP = x1 * x2 + y1 * y2 + z1 * z2;
+    const crossP = [y1 * z2 - z1 * y2, z1 * x2 - x1 * z2, x1 * y2 - y1 * x2];
+    const magA = Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+    const magB = Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+    const cosTheta = dotP / (magA * magB);
+    const angleDeg = (Math.acos(Math.max(-1, Math.min(1, cosTheta))) * 180 / Math.PI).toFixed(2);
+
+    setVectorResult({
+      dotP,
+      crossP: `(${crossP.join(', ')})`,
+      magA: magA.toFixed(4),
+      angleDeg: `${angleDeg}°`
+    });
+  };
+
+  // Mode 6: Stat Solver
+  const solveStat = () => {
+    playKeySound();
+    const xArr = statPoints.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+    const yArr = statYPoints.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+
+    if (xArr.length === 0) return;
+    const n = xArr.length;
+    const sumX = xArr.reduce((a, b) => a + b, 0);
+    const meanX = sumX / n;
+    const sumX2 = xArr.reduce((a, b) => a + b * b, 0);
+    const varX = (sumX2 / n) - (meanX * meanX);
+    const stdDevX = Math.sqrt(Math.max(0, varX));
+
+    let regInfo = null;
+    if (yArr.length === n) {
+      const sumY = yArr.reduce((a, b) => a + b, 0);
+      const meanY = sumY / n;
+      const sumXY = xArr.reduce((acc, x, i) => acc + x * yArr[i], 0);
+      const sumY2 = yArr.reduce((a, b) => a + b * b, 0);
+
+      const bCoeff = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      const aCoeff = meanY - bCoeff * meanX;
+      const rCoeff = (n * sumXY - sumX * sumY) / Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+      regInfo = { a: aCoeff.toFixed(4), b: bCoeff.toFixed(4), r: rCoeff.toFixed(4) };
+    }
+
+    setStatResult({
+      n,
+      meanX: meanX.toFixed(4),
+      sumX,
+      stdDevX: stdDevX.toFixed(4),
+      regInfo
+    });
+  };
+
+  // Mode 7: Dist Solver
+  const solveDist = () => {
+    playKeySound();
+    const { x, mu, sigma, k, n, p } = distParams;
+
+    if (distType === 'normPD') {
+      const pdf = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+      setDistResult(`f(${x}) = ${pdf.toFixed(6)}`);
+    } else if (distType === 'binomPD') {
+      const nCrVal = (nVal, kVal) => {
+        let res = 1;
+        for (let i = 1; i <= kVal; i++) res = res * (nVal - i + 1) / i;
+        return res;
+      };
+      const prob = nCrVal(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+      setDistResult(`P(X = ${k}) = ${prob.toFixed(6)}`);
+    }
+  };
+
+  // Mode 9: EQN Solver (Simultaneous & Polynomial)
   const solvePolynomial = () => {
     playKeySound();
     const { a, b, c } = polyCoeffs;
@@ -625,21 +729,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       if (delta > 0) {
         const x1 = (-b + Math.sqrt(delta)) / (2 * a);
         const x2 = (-b - Math.sqrt(delta)) / (2 * a);
-        const res = { x1: x1.toFixed(4), x2: x2.toFixed(4), delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) };
-        setEqnResults(res);
-
-        setStepSolution({
-          title: `Giải Phương Trình Bậc 2: ${a}x² + (${b})x + (${c}) = 0`,
-          steps: [
-            `1. Tính biệt thức Delta (Δ):`,
-            `   Δ = b² - 4ac = (${b})² - 4·(${a})·(${c}) = ${delta}`,
-            `2. Vì Δ = ${delta} > 0 nên phương trình có 2 nghiệm phân biệt:`,
-            `   x₁ = (-b + √Δ) / 2a = ${x1.toFixed(4)}`,
-            `   x₂ = (-b - √Δ) / 2a = ${x2.toFixed(4)}`,
-            `3. Đỉnh Parabol (Cực trị hàm số bậc 2):`,
-            `   Tọa độ đỉnh I(${xMin.toFixed(4)}, ${yMin.toFixed(4)}) - Gia trị ${a > 0 ? 'Nhỏ Nhất' : 'Lớn Nhất'} = ${yMin.toFixed(4)}`
-          ]
-        });
+        setEqnResults({ x1: x1.toFixed(4), x2: x2.toFixed(4), delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) });
       } else if (delta === 0) {
         const x = -b / (2 * a);
         setEqnResults({ x1: x.toFixed(4), x2: x.toFixed(4), delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) });
@@ -648,6 +738,53 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         const imagPart = (Math.sqrt(-delta) / (2 * a)).toFixed(4);
         setEqnResults({ x1: `${realPart} + ${imagPart}i`, x2: `${realPart} - ${imagPart}i`, delta, xMin: xMin.toFixed(4), yMin: yMin.toFixed(4) });
       }
+    }
+  };
+
+  const solveSimultaneous = () => {
+    playKeySound();
+    const { a1, b1, d1, a2, b2, d2 } = simulCoeffs;
+    const det = a1 * b2 - a2 * b1;
+    if (det === 0) {
+      setEqnResults({ error: 'Hệ vô nghiệm hoặc vô số nghiệm' });
+    } else {
+      const x = (d1 * b2 - d2 * b1) / det;
+      const y = (a1 * d2 - a2 * d1) / det;
+      setEqnResults({ simulX: x.toFixed(4), simulY: y.toFixed(4) });
+    }
+  };
+
+  // Mode 10: INEQ Solver
+  const solveInequality = () => {
+    playKeySound();
+    const { a, b, c } = ineqCoeffs;
+    const delta = b * b - 4 * a * c;
+
+    if (delta > 0) {
+      const x1 = Math.min((-b + Math.sqrt(delta)) / (2 * a), (-b - Math.sqrt(delta)) / (2 * a)).toFixed(2);
+      const x2 = Math.max((-b + Math.sqrt(delta)) / (2 * a), (-b - Math.sqrt(delta)) / (2 * a)).toFixed(2);
+
+      if (ineqSymbol === '>') setIneqResult(`x < ${x1} hoặc x > ${x2}`);
+      else if (ineqSymbol === '<') setIneqResult(`${x1} < x < ${x2}`);
+      else if (ineqSymbol === '>=') setIneqResult(`x ≤ ${x1} hoặc x ≥ ${x2}`);
+      else if (ineqSymbol === '<=') setIneqResult(`${x1} ≤ x ≤ ${x2}`);
+    } else {
+      setIneqResult('Tất cả số thực ℝ hoặc Vô nghiệm');
+    }
+  };
+
+  // Mode 11: RATIO Solver
+  const solveRatio = () => {
+    playKeySound();
+    const { A, B, C, D } = ratioVals;
+    if (ratioType === 1) {
+      // A:B = X:D => X = (A*D)/B
+      const XVal = (A * D) / B;
+      setRatioResult(`X = ${XVal}`);
+    } else {
+      // A:B = C:X => X = (B*C)/A
+      const XVal = (B * C) / A;
+      setRatioResult(`X = ${XVal}`);
     }
   };
 
@@ -759,9 +896,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             <span className="status-math">MATH</span>
           </div>
 
-          {/* Expression Input Area */}
+          {/* Expression Input Area with Natural Display Formatting */}
           <div className="screen-input-area">
-            {displayExpr || <span className="placeholder-text">0</span>}
+            {displayExpr ? renderNaturalMath(displayExpr) : <span className="placeholder-text">0</span>}
             <span className="cursor-blink">|</span>
           </div>
 
@@ -805,67 +942,164 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           )}
         </div>
 
-        {/* Dedicated Mode Panel (If in Special Modes 8 or 9) */}
-        {mode === 9 && (
+        {/* Dedicated Interactive Control Panels for ALL 11 Modes */}
+
+        {/* Mode 2: Complex */}
+        {mode === 2 && (
           <div className="dedicated-mode-panel">
-            <div className="mode-panel-title">🧮 Giải Phương Trình (Mode 9)</div>
-            <div className="mode-controls">
-              <div className="control-group">
-                <label>Loại:</label>
-                <select value={eqnType} onChange={(e) => setEqnType(e.target.value)}>
-                  <option value="poly">Phương Trình Bậc N</option>
-                  <option value="simul">Hệ Phương Trình N Ẩn</option>
-                </select>
-              </div>
-
-              {eqnType === 'poly' && (
-                <div className="control-group">
-                  <label>Bậc:</label>
-                  <select value={polyDegree} onChange={(e) => setPolyDegree(Number(e.target.value))}>
-                    <option value={2}>Bậc 2 (ax² + bx + c = 0)</option>
-                    <option value={3}>Bậc 3 (ax³ + bx² + cx + d = 0)</option>
-                  </select>
-                </div>
-              )}
+            <div className="mode-panel-title">🌀 Tính Toán Số Phức (Mode 2)</div>
+            <div className="coeff-inputs">
+              <label>z₁ =</label>
+              <input type="number" value={cplxZ1.real} onChange={(e) => setCplxZ1({ ...cplxZ1, real: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> +
+              <input type="number" value={cplxZ1.imag} onChange={(e) => setCplxZ1({ ...cplxZ1, imag: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> i
             </div>
-
-            {eqnType === 'poly' && (
-              <div className="coeff-inputs">
-                <input
-                  type="number"
-                  value={polyCoeffs.a}
-                  onChange={(e) => setPolyCoeffs({ ...polyCoeffs, a: parseFloat(e.target.value) || 0 })}
-                  placeholder="a"
-                /> x² +
-                <input
-                  type="number"
-                  value={polyCoeffs.b}
-                  onChange={(e) => setPolyCoeffs({ ...polyCoeffs, b: parseFloat(e.target.value) || 0 })}
-                  placeholder="b"
-                /> x +
-                <input
-                  type="number"
-                  value={polyCoeffs.c}
-                  onChange={(e) => setPolyCoeffs({ ...polyCoeffs, c: parseFloat(e.target.value) || 0 })}
-                  placeholder="c"
-                /> = 0
-                <button onClick={solvePolynomial} className="btn-solve-now">SOLVE</button>
-              </div>
-            )}
-
-            {eqnResults && (
+            <div className="coeff-inputs" style={{ marginTop: 4 }}>
+              <label>z₂ =</label>
+              <input type="number" value={cplxZ2.real} onChange={(e) => setCplxZ2({ ...cplxZ2, real: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> +
+              <input type="number" value={cplxZ2.imag} onChange={(e) => setCplxZ2({ ...cplxZ2, imag: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> i
+              <button onClick={solveComplex} className="btn-solve-now">TÍNH Z</button>
+            </div>
+            {cplxResult && (
               <div className="eqn-results-box">
-                <div>Nghiệm x₁ = <strong style={{ color: '#00e5ff' }}>{eqnResults.x1}</strong></div>
-                <div>Nghiệm x₂ = <strong style={{ color: '#00e5ff' }}>{eqnResults.x2}</strong></div>
-                {eqnResults.xMin && <div>Đỉnh Parabol = <strong>I({eqnResults.xMin}, {eqnResults.yMin})</strong></div>}
+                <div>z₁ + z₂ = <strong style={{ color: '#00e5ff' }}>{cplxResult.sum}</strong></div>
+                <div>z₁ × z₂ = <strong style={{ color: '#38bdf8' }}>{cplxResult.prod}</strong></div>
+                <div>Modun |z₁| = <strong>{cplxResult.mod}</strong> | Dạng cực: <strong>{cplxResult.polar}</strong></div>
               </div>
             )}
           </div>
         )}
 
+        {/* Mode 3: Base-N */}
+        {mode === 3 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">💻 Hệ Cơ Số & Bitwise (Mode 3)</div>
+            <div className="coeff-inputs">
+              <label>Số thập phân DEC:</label>
+              <input type="number" value={baseNVal} onChange={(e) => setBaseNVal(parseInt(e.target.value) || 0)} style={{ width: 100 }} />
+            </div>
+            <div className="eqn-results-box">
+              <div>DEC (10): <strong style={{ color: '#00e5ff' }}>{baseNVal}</strong></div>
+              <div>BIN (2): <strong style={{ color: '#38bdf8' }}>{baseNVal.toString(2)}</strong></div>
+              <div>HEX (16): <strong style={{ color: '#f472b6' }}>{baseNVal.toString(16).toUpperCase()}</strong></div>
+              <div>OCT (8): <strong style={{ color: '#eab308' }}>{baseNVal.toString(8)}</strong></div>
+            </div>
+          </div>
+        )}
+
+        {/* Mode 4: Matrix */}
+        {mode === 4 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">▦ Ma Trận MatA (Mode 4)</div>
+            <div className="coeff-inputs">
+              <label>Kích thước:</label>
+              <button className="btn-solve-now" style={{ padding: '2px 8px' }}>2x2</button>
+              <input type="number" value={matA[0][0]} onChange={(e) => setMatA([[parseFloat(e.target.value)||0, matA[0][1]], matA[1]])} style={{ width: 40 }} />
+              <input type="number" value={matA[0][1]} onChange={(e) => setMatA([[matA[0][0], parseFloat(e.target.value)||0], matA[1]])} style={{ width: 40 }} />
+            </div>
+            <div className="coeff-inputs" style={{ marginTop: 4 }}>
+              <span style={{ width: 75 }}></span>
+              <input type="number" value={matA[1][0]} onChange={(e) => setMatA([matA[0], [parseFloat(e.target.value)||0, matA[1][1]]])} style={{ width: 40 }} />
+              <input type="number" value={matA[1][1]} onChange={(e) => setMatA([matA[0], [matA[0][0], parseFloat(e.target.value)||0]])} style={{ width: 40 }} />
+              <button onClick={solveMatrix} className="btn-solve-now">TÍNH DET</button>
+            </div>
+            {matrixResult && (
+              <div className="eqn-results-box">
+                <div>Định thức det(MatA) = <strong style={{ color: '#00e5ff' }}>{matrixResult.detA}</strong></div>
+                <div>Vết tr(MatA) = <strong style={{ color: '#38bdf8' }}>{matrixResult.trA}</strong></div>
+                <div>Chuyển vị MatAᵀ = <strong>{matrixResult.transA}</strong></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 5: Vector */}
+        {mode === 5 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">↗️ Phép Toán Véc-tơ (Mode 5)</div>
+            <div className="coeff-inputs">
+              <label>VctA:</label>
+              <input type="number" value={vctA[0]} onChange={(e) => setVctA([parseFloat(e.target.value)||0, vctA[1], vctA[2]])} style={{ width: 38 }} />
+              <input type="number" value={vctA[1]} onChange={(e) => setVctA([vctA[0], parseFloat(e.target.value)||0, vctA[2]])} style={{ width: 38 }} />
+              <input type="number" value={vctA[2]} onChange={(e) => setVctA([vctA[0], vctA[1], parseFloat(e.target.value)||0])} style={{ width: 38 }} />
+            </div>
+            <div className="coeff-inputs" style={{ marginTop: 4 }}>
+              <label>VctB:</label>
+              <input type="number" value={vctB[0]} onChange={(e) => setVctB([parseFloat(e.target.value)||0, vctB[1], vctB[2]])} style={{ width: 38 }} />
+              <input type="number" value={vctB[1]} onChange={(e) => setVctB([vctB[0], parseFloat(e.target.value)||0, vctB[2]])} style={{ width: 38 }} />
+              <input type="number" value={vctB[2]} onChange={(e) => setVctB([vctB[0], vctB[1], parseFloat(e.target.value)||0])} style={{ width: 38 }} />
+              <button onClick={solveVector} className="btn-solve-now">TÍNH TÍCH</button>
+            </div>
+            {vectorResult && (
+              <div className="eqn-results-box">
+                <div>Tích vô hướng VctA · VctB = <strong style={{ color: '#00e5ff' }}>{vectorResult.dotP}</strong></div>
+                <div>Tích có hướng VctA × VctB = <strong style={{ color: '#38bdf8' }}>{vectorResult.crossP}</strong></div>
+                <div>Độ dài |VctA| = <strong>{vectorResult.magA}</strong> | Góc = <strong>{vectorResult.angleDeg}</strong></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 6: Stat */}
+        {mode === 6 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">📊 Thống Kê & Hồi Quy (Mode 6)</div>
+            <div className="coeff-inputs">
+              <label>Dữ liệu X:</label>
+              <input type="text" value={statPoints} onChange={(e) => setStatPoints(e.target.value)} style={{ width: 170 }} />
+            </div>
+            <div className="coeff-inputs" style={{ marginTop: 4 }}>
+              <label>Dữ liệu Y:</label>
+              <input type="text" value={statYPoints} onChange={(e) => setStatYPoints(e.target.value)} style={{ width: 170 }} />
+              <button onClick={solveStat} className="btn-solve-now">THỐNG KÊ</button>
+            </div>
+            {statResult && (
+              <div className="eqn-results-box">
+                <div>Kích thước mẫu n = <strong style={{ color: '#00e5ff' }}>{statResult.n}</strong> | Trung bình x̄ = <strong style={{ color: '#38bdf8' }}>{statResult.meanX}</strong></div>
+                <div>Độ lệch chuẩn σₓ = <strong>{statResult.stdDevX}</strong></div>
+                {statResult.regInfo && (
+                  <div>Hồi quy y = a + bx: <strong>a = {statResult.regInfo.a}, b = {statResult.regInfo.b} (r = {statResult.regInfo.r})</strong></div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 7: Dist */}
+        {mode === 7 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">📈 Phân Phối Xác Suất (Mode 7)</div>
+            <div className="coeff-inputs">
+              <select value={distType} onChange={(e) => setDistType(e.target.value)}>
+                <option value="normPD">Normal PD (Chuẩn)</option>
+                <option value="binomPD">Binomial PD (Nhị thức)</option>
+              </select>
+              {distType === 'normPD' ? (
+                <>
+                  <label>x:</label><input type="number" value={distParams.x} onChange={(e) => setDistParams({...distParams, x: parseFloat(e.target.value)||0})} style={{ width: 36 }} />
+                  <label>μ:</label><input type="number" value={distParams.mu} onChange={(e) => setDistParams({...distParams, mu: parseFloat(e.target.value)||0})} style={{ width: 36 }} />
+                  <label>σ:</label><input type="number" value={distParams.sigma} onChange={(e) => setDistParams({...distParams, sigma: parseFloat(e.target.value)||1})} style={{ width: 36 }} />
+                </>
+              ) : (
+                <>
+                  <label>k:</label><input type="number" value={distParams.k} onChange={(e) => setDistParams({...distParams, k: parseInt(e.target.value)||0})} style={{ width: 34 }} />
+                  <label>n:</label><input type="number" value={distParams.n} onChange={(e) => setDistParams({...distParams, n: parseInt(e.target.value)||10})} style={{ width: 34 }} />
+                  <label>p:</label><input type="number" value={distParams.p} onChange={(e) => setDistParams({...distParams, p: parseFloat(e.target.value)||0.5})} style={{ width: 38 }} />
+                </>
+              )}
+              <button onClick={solveDist} className="btn-solve-now">TÍNH P</button>
+            </div>
+            {distResult && (
+              <div className="eqn-results-box">
+                <strong style={{ color: '#00e5ff', fontSize: '0.9rem' }}>{distResult}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 8: Table */}
         {mode === 8 && (
           <div className="dedicated-mode-panel">
-            <div className="mode-panel-title">📋 Lập Bảng Giá Trị Hàm Số f(X) (Mode 8)</div>
+            <div className="mode-panel-title">📋 Bảng Giá Trị Hàm Số f(X) (Mode 8)</div>
             <div className="coeff-inputs" style={{ marginBottom: 8 }}>
               <label>f(X) =</label>
               <input
@@ -915,9 +1149,124 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           </div>
         )}
 
+        {/* Mode 9: EQN */}
+        {mode === 9 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">🧮 Giải Phương Trình (Mode 9)</div>
+            <div className="mode-controls">
+              <div className="control-group">
+                <label>Loại:</label>
+                <select value={eqnType} onChange={(e) => setEqnType(e.target.value)}>
+                  <option value="poly">Phương Trình Bậc N</option>
+                  <option value="simul">Hệ Phương Trình 2 Ẩn</option>
+                </select>
+              </div>
+
+              {eqnType === 'poly' && (
+                <div className="control-group">
+                  <label>Bậc:</label>
+                  <select value={polyDegree} onChange={(e) => setPolyDegree(Number(e.target.value))}>
+                    <option value={2}>Bậc 2 (ax² + bx + c = 0)</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {eqnType === 'poly' && (
+              <div className="coeff-inputs">
+                <input type="number" value={polyCoeffs.a} onChange={(e) => setPolyCoeffs({ ...polyCoeffs, a: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> x² +
+                <input type="number" value={polyCoeffs.b} onChange={(e) => setPolyCoeffs({ ...polyCoeffs, b: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> x +
+                <input type="number" value={polyCoeffs.c} onChange={(e) => setPolyCoeffs({ ...polyCoeffs, c: parseFloat(e.target.value) || 0 })} style={{ width: 44 }} /> = 0
+                <button onClick={solvePolynomial} className="btn-solve-now">SOLVE</button>
+              </div>
+            )}
+
+            {eqnType === 'simul' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="coeff-inputs">
+                  <input type="number" value={simulCoeffs.a1} onChange={(e) => setSimulCoeffs({...simulCoeffs, a1: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> x +
+                  <input type="number" value={simulCoeffs.b1} onChange={(e) => setSimulCoeffs({...simulCoeffs, b1: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> y =
+                  <input type="number" value={simulCoeffs.d1} onChange={(e) => setSimulCoeffs({...simulCoeffs, d1: parseFloat(e.target.value)||0})} style={{ width: 38 }} />
+                </div>
+                <div className="coeff-inputs">
+                  <input type="number" value={simulCoeffs.a2} onChange={(e) => setSimulCoeffs({...simulCoeffs, a2: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> x +
+                  <input type="number" value={simulCoeffs.b2} onChange={(e) => setSimulCoeffs({...simulCoeffs, b2: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> y =
+                  <input type="number" value={simulCoeffs.d2} onChange={(e) => setSimulCoeffs({...simulCoeffs, d2: parseFloat(e.target.value)||0})} style={{ width: 38 }} />
+                  <button onClick={solveSimultaneous} className="btn-solve-now">SOLVE</button>
+                </div>
+              </div>
+            )}
+
+            {eqnResults && (
+              <div className="eqn-results-box">
+                {eqnResults.simulX ? (
+                  <div>Nghiệm: <strong style={{ color: '#00e5ff' }}>x = {eqnResults.simulX}</strong>, <strong style={{ color: '#38bdf8' }}>y = {eqnResults.simulY}</strong></div>
+                ) : (
+                  <>
+                    <div>Nghiệm x₁ = <strong style={{ color: '#00e5ff' }}>{eqnResults.x1}</strong></div>
+                    <div>Nghiệm x₂ = <strong style={{ color: '#00e5ff' }}>{eqnResults.x2}</strong></div>
+                    {eqnResults.xMin && <div>Đỉnh Parabol = <strong>I({eqnResults.xMin}, {eqnResults.yMin})</strong></div>}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 10: INEQ */}
+        {mode === 10 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">⚖️ Giải Bất Phương Trình (Mode 10)</div>
+            <div className="coeff-inputs">
+              <input type="number" value={ineqCoeffs.a} onChange={(e) => setIneqCoeffs({...ineqCoeffs, a: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> x² +
+              <input type="number" value={ineqCoeffs.b} onChange={(e) => setIneqCoeffs({...ineqCoeffs, b: parseFloat(e.target.value)||0})} style={{ width: 38 }} /> x +
+              <input type="number" value={ineqCoeffs.c} onChange={(e) => setIneqCoeffs({...ineqCoeffs, c: parseFloat(e.target.value)||0})} style={{ width: 38 }} />
+              <select value={ineqSymbol} onChange={(e) => setIneqSymbol(e.target.value)}>
+                <option value=">">&gt; 0</option>
+                <option value=">=">&ge; 0</option>
+                <option value="<">&lt; 0</option>
+                <option value="<=">&le; 0</option>
+              </select>
+              <button onClick={solveInequality} className="btn-solve-now">SOLVE</button>
+            </div>
+            {ineqResult && (
+              <div className="eqn-results-box">
+                <div>Nghiệm: <strong style={{ color: '#00e5ff', fontSize: '0.9rem' }}>{ineqResult}</strong></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode 11: RATIO */}
+        {mode === 11 && (
+          <div className="dedicated-mode-panel">
+            <div className="mode-panel-title">⚖️ Tỷ Lệ Thức A:B = X:D (Mode 11)</div>
+            <div className="coeff-inputs">
+              <select value={ratioType} onChange={(e) => setRatioType(parseInt(e.target.value))}>
+                <option value={1}>A : B = X : D</option>
+                <option value={2}>A : B = C : X</option>
+              </select>
+            </div>
+            <div className="coeff-inputs" style={{ marginTop: 4 }}>
+              <label>A:</label><input type="number" value={ratioVals.A} onChange={(e) => setRatioVals({...ratioVals, A: parseFloat(e.target.value)||0})} style={{ width: 40 }} />
+              <label>B:</label><input type="number" value={ratioVals.B} onChange={(e) => setRatioVals({...ratioVals, B: parseFloat(e.target.value)||0})} style={{ width: 40 }} />
+              {ratioType === 1 ? (
+                <><label>D:</label><input type="number" value={ratioVals.D} onChange={(e) => setRatioVals({...ratioVals, D: parseFloat(e.target.value)||0})} style={{ width: 40 }} /></>
+              ) : (
+                <><label>C:</label><input type="number" value={ratioVals.C} onChange={(e) => setRatioVals({...ratioVals, C: parseFloat(e.target.value)||0})} style={{ width: 40 }} /></>
+              )}
+              <button onClick={solveRatio} className="btn-solve-now">TÍNH X</button>
+            </div>
+            {ratioResult && (
+              <div className="eqn-results-box">
+                <strong style={{ color: '#00e5ff', fontSize: '0.95rem' }}>{ratioResult}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Calculator Keypad Grid - Authentic Casio fx-580 Matrix */}
         <div className="casio-keypad">
-          {/* Top Function Keys (SHIFT, ALPHA, D-PAD, OPTN, CALC) */}
           <div className="top-function-row">
             <button onClick={() => setShift(!shift)} className={`key key-shift ${shift ? 'active' : ''}`}>
               SHIFT
@@ -926,7 +1275,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
               ALPHA
             </button>
 
-            {/* Directional D-Pad Navigation */}
             <div className="dpad-container">
               <button onClick={() => playKeySound()} className="dpad-btn up"><ChevronUp size={14} /></button>
               <button onClick={() => playKeySound()} className="dpad-btn down"><ChevronDown size={14} /></button>
@@ -939,7 +1287,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
           </div>
 
-          {/* Scientific Key Rows (Matching Physical fx-580 layout) */}
           <div className="scientific-keys-grid">
             <button onClick={() => handleKeyPress('x⁻¹')} className="key">
               <span className="shift-label">x!</span>
@@ -1046,7 +1393,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
           </div>
 
-          {/* Number & Operations Keypad Grid */}
           <div className="number-keys-grid">
             <button onClick={() => handleKeyPress('7')} className="key key-num">
               <span className="alpha-label">A</span>
@@ -1174,14 +1520,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                     <span className="const-sym">tanh</span>
                     <span className="const-name">Hàm Hyperbolic tan</span>
                   </button>
-                  <button onClick={() => { setDisplayExpr(p => p + 'GCD('); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">GCD</span>
-                    <span className="const-name">Ước chung lớn nhất (UCLN)</span>
-                  </button>
-                  <button onClick={() => { setDisplayExpr(p => p + 'LCM('); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">LCM</span>
-                    <span className="const-name">Bội chung nhỏ nhất (BCNN)</span>
-                  </button>
                 </>
               )}
 
@@ -1195,36 +1533,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
                     <span className="const-sym">∠</span>
                     <span className="const-name">Góc Phase</span>
                   </button>
-                  <button onClick={() => { setDisplayExpr(p => p + 'Arg('); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">Arg</span>
-                    <span className="const-name">Acmăng Arg(z)</span>
-                  </button>
-                  <button onClick={() => { setDisplayExpr(p => p + 'Conjg('); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">Conjg</span>
-                    <span className="const-name">Số phức liên hợp</span>
-                  </button>
                 </>
               )}
 
-              {mode === 3 && (
-                <>
-                  <button onClick={() => { setDisplayExpr(p => p + ' AND '); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">AND</span>
-                    <span className="const-name">Phép toán Bitwise AND</span>
-                  </button>
-                  <button onClick={() => { setDisplayExpr(p => p + ' OR '); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">OR</span>
-                    <span className="const-name">Phép toán Bitwise OR</span>
-                  </button>
-                  <button onClick={() => { setDisplayExpr(p => p + ' XOR '); setShowOptnMenu(false); }} className="const-item">
-                    <span className="const-sym">XOR</span>
-                    <span className="const-name">Phép toán Bitwise XOR</span>
-                  </button>
-                </>
-              )}
-
-              {(mode !== 1 && mode !== 2 && mode !== 3) && (
-                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '10px' }}>Không có tùy chọn phụ bổ sung cho chế độ này.</p>
+              {(mode !== 1 && mode !== 2) && (
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '10px' }}>Chế độ này đã có bảng điều khiển trực quan riêng bên dưới màn hình.</p>
               )}
             </div>
           </div>
