@@ -928,15 +928,11 @@ sub + sup, sup + sub {
 }
 
 .cursor-blink {
-  animation: blink 1s infinite;
-  margin-left: 1px;
+  display: inline-block;
+  margin: 0 1px;
   font-weight: 900;
-  color: #052e16;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  color: #122115;
+  opacity: 1;
 }
 
 .screen-result-area {
