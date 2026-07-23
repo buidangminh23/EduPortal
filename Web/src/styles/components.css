@@ -744,6 +744,7 @@ sub + sup, sup + sub {
   user-select: none;
   max-width: 480px;
   margin: 0 auto;
+  position: relative;
 }
 
 .casio-container.full-page {
@@ -1383,32 +1384,6 @@ sub + sup, sup + sub {
   border-bottom: 1px solid rgba(255, 255, 255, 0.6);
   width: 100%;
   text-align: center;
-}
-
-.casio-container {
-  display: flex;
-  flex-direction: column;
-  background: #111827;
-  color: #f8fafc;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  user-select: none;
-  max-width: 480px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.casio-container.full-page {
-  margin: 10px auto;
-}
-
-.casio-container.floating {
-  width: 100%;
-  max-width: 100%;
-  border-radius: 0 0 16px 16px;
-  box-shadow: none;
 }
 
 /* Modals Overlay inside Casio */

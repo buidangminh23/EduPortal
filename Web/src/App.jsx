@@ -38,8 +38,8 @@ const DutySchedule = lazy(() => import('./components/DutySchedule'));
 const SeatingChart = lazy(() => import('./components/SeatingChart'));
 const ClassVoting = lazy(() => import('./components/ClassVoting'));
 const AIRiskAnalysis = lazy(() => import('./components/AIRiskAnalysis'));
-const CasioFX580 = lazy(() => import('./components/CasioFX580'));
-const CasioFloatingWidget = lazy(() => import('./components/CasioFloatingWidget'));
+import CasioFX580 from './components/CasioFX580';
+import CasioFloatingWidget from './components/CasioFloatingWidget';
 const ClassComparison = lazy(() => import('./components/ClassComparison'));
 const SchoolGallery = lazy(() => import('./components/SchoolGallery'));
 
