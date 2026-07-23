@@ -90,6 +90,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const [angleUnit, setAngleUnit] = useState('DEG'); // DEG, RAD, GRAD
   const [displayExpr, setDisplayExpr] = useState('');
   const [cursorPos, setCursorPos] = useState(0);
+
+  // Interactive Fraction State
+  const [inFrac, setInFrac] = useState(false);
+  const [fracNum, setFracNum] = useState('');
+  const [fracDen, setFracDen] = useState('');
+  const [activeBox, setActiveBox] = useState('num'); // 'num' | 'den' | 'none'
   const [resultText, setResultText] = useState('0');
   const [history, setHistory] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -459,7 +465,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'π': token = 'π'; break;
         case 'e': token = 'e'; break;
         case 'Ans': token = 'Ans'; break;
-        case 'a/b': token = '/'; break;
+        case 'a/b':
+          setInFrac(true);
+          setActiveBox('num');
+          setFracNum('');
+          setFracDen('');
+          return;
         case 'i': token = 'i'; break;
         case 'Pol': token = 'Pol('; break;
         case 'Rec': token = 'Rec('; break;
@@ -470,6 +481,15 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'OPTN': setShowOptnMenu(true); return;
         default: token = val;
       }
+    }
+
+    if (inFrac && activeBox !== 'none') {
+      if (activeBox === 'num') {
+        setFracNum(prev => prev + token);
+      } else if (activeBox === 'den') {
+        setFracDen(prev => prev + token);
+      }
+      return;
     }
 
     setDisplayExpr(prev => {
@@ -485,6 +505,10 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     playKeySound();
     setDisplayExpr('');
     setCursorPos(0);
+    setInFrac(false);
+    setFracNum('');
+    setFracDen('');
+    setActiveBox('num');
     setResultText('0');
     setNumericValue(0);
     setShift(false);
@@ -495,6 +519,17 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
   const handleDel = () => {
     playKeySound();
+    if (inFrac && activeBox !== 'none') {
+      if (activeBox === 'num') {
+        if (fracNum.length > 0) setFracNum(prev => prev.slice(0, -1));
+        else setInFrac(false);
+      } else if (activeBox === 'den') {
+        if (fracDen.length > 0) setFracDen(prev => prev.slice(0, -1));
+        else setActiveBox('num');
+      }
+      return;
+    }
+
     if (cursorPos === 0) return;
     setDisplayExpr(prev => {
       const left = prev.slice(0, cursorPos - 1);
@@ -981,18 +1016,33 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
           {/* Expression Input Area with Natural Display Formatting & Interactive Cursor */}
           <div className="screen-input-area">
-            {displayExpr ? (
-              <>
-                {renderNaturalMath(displayExpr.slice(0, cursorPos))}
-                <span className="cursor-blink">|</span>
-                {renderNaturalMath(displayExpr.slice(cursorPos))}
-              </>
-            ) : (
-              <>
-                <span className="cursor-blink">|</span>
-                <span className="placeholder-text">0</span>
-              </>
+            {displayExpr ? renderNaturalMath(displayExpr.slice(0, cursorPos)) : null}
+            {!inFrac && <span className="cursor-blink">|</span>}
+            {displayExpr ? renderNaturalMath(displayExpr.slice(cursorPos)) : null}
+
+            {/* Interactive Stacked Fraction Template */}
+            {inFrac && (
+              <span className="casio-frac">
+                <span
+                  className={`frac-num ${activeBox === 'num' ? 'active-box' : ''}`}
+                  onClick={() => setActiveBox('num')}
+                >
+                  {fracNum}
+                  {activeBox === 'num' && <span className="cursor-blink">|</span>}
+                  {!fracNum && activeBox !== 'num' && <span className="frac-box" />}
+                </span>
+                <span
+                  className={`frac-den ${activeBox === 'den' ? 'active-box' : ''}`}
+                  onClick={() => setActiveBox('den')}
+                >
+                  {fracDen}
+                  {activeBox === 'den' && <span className="cursor-blink">|</span>}
+                  {!fracDen && activeBox !== 'den' && <span className="frac-box" />}
+                </span>
+              </span>
             )}
+
+            {!displayExpr && !inFrac && <span className="placeholder-text">0</span>}
           </div>
 
           {/* Result Output Area */}
@@ -1369,16 +1419,64 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
             </button>
 
             <div className="dpad-container">
-              <button onClick={() => { playKeySound(); setCursorPos(prev => Math.max(0, prev - 1)); }} className="dpad-btn left" title="Trái (Sang Trái)">
+              <button
+                onClick={() => {
+                  playKeySound();
+                  if (inFrac) {
+                    if (activeBox === 'den') setActiveBox('num');
+                    else if (activeBox === 'num') setCursorPos(prev => Math.max(0, prev - 1));
+                  } else {
+                    setCursorPos(prev => Math.max(0, prev - 1));
+                  }
+                }}
+                className="dpad-btn left"
+                title="Trái (Sang Tử/Trái)"
+              >
                 <ChevronLeft size={12} />
               </button>
-              <button onClick={() => { playKeySound(); if (history.length > 0) setDisplayExpr(history[0].expr); }} className="dpad-btn up" title="Lên (Lịch sử)">
+              <button
+                onClick={() => {
+                  playKeySound();
+                  if (inFrac && activeBox === 'den') {
+                    setActiveBox('num');
+                  } else if (history.length > 0) {
+                    setDisplayExpr(history[0].expr);
+                  }
+                }}
+                className="dpad-btn up"
+                title="Lên (Lên Tử số)"
+              >
                 <ChevronUp size={12} />
               </button>
-              <button onClick={() => { playKeySound(); handleAC(); }} className="dpad-btn down" title="Xuống (Xóa màn hình)">
+              <button
+                onClick={() => {
+                  playKeySound();
+                  if (inFrac && activeBox === 'num') {
+                    setActiveBox('den');
+                  } else if (inFrac && activeBox === 'den') {
+                    setActiveBox('none');
+                  } else {
+                    handleAC();
+                  }
+                }}
+                className="dpad-btn down"
+                title="Xuống (Xuống Mẫu số)"
+              >
                 <ChevronDown size={12} />
               </button>
-              <button onClick={() => { playKeySound(); setCursorPos(prev => Math.min(displayExpr.length, prev + 1)); }} className="dpad-btn right" title="Phải (Sang Phải)">
+              <button
+                onClick={() => {
+                  playKeySound();
+                  if (inFrac) {
+                    if (activeBox === 'num') setActiveBox('den');
+                    else if (activeBox === 'den') setActiveBox('none');
+                  } else {
+                    setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+                  }
+                }}
+                className="dpad-btn right"
+                title="Phải (Sang Mẫu/Phải)"
+              >
                 <ChevronRight size={12} />
               </button>
               <span className="dpad-center-badge">REPLAY</span>

@@ -1244,6 +1244,9 @@ sub + sup, sup + sub {
   text-align: center;
   width: 100%;
   font-weight: 800;
+  min-width: 16px;
+  min-height: 16px;
+  cursor: pointer;
 }
 
 .casio-frac .frac-den {
@@ -1251,6 +1254,15 @@ sub + sup, sup + sub {
   text-align: center;
   width: 100%;
   font-weight: 800;
+  min-width: 16px;
+  min-height: 16px;
+  cursor: pointer;
+}
+
+.frac-num.active-box, .frac-den.active-box {
+  outline: 1.5px solid #122115;
+  border-radius: 2px;
+  background: rgba(18, 33, 21, 0.15);
 }
 
 .frac-box {
