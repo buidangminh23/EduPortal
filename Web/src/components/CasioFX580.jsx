@@ -369,16 +369,16 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     let parts = String(text).split(/(\^2|\^3|\^[0-9A-Za-z]+|√\(|³√\(|sin⁻¹\(|cos⁻¹\(|tan⁻¹\(|∫\(|d\/dx\()/g);
 
     return parts.map((part, index) => {
-      if (part === '^2') return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>2</sup>;
-      if (part === '^3') return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>3</sup>;
-      if (part.startsWith('^')) return <sup key={index} style={{ color: '#00e5ff', fontWeight: 900 }}>{part.slice(1)}</sup>;
-      if (part === '√(') return <span key={index} style={{ color: '#38bdf8' }}>√<span style={{ borderTop: '2px solid #38bdf8', paddingLeft: 1 }}>(</span></span>;
-      if (part === '³√(') return <span key={index} style={{ color: '#38bdf8' }}>∛<span style={{ borderTop: '2px solid #38bdf8', paddingLeft: 1 }}>(</span></span>;
-      if (part === 'sin⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>sin<sup>-1</sup>(</span>;
-      if (part === 'cos⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>cos<sup>-1</sup>(</span>;
-      if (part === 'tan⁻¹(') return <span key={index} style={{ color: '#f472b6' }}>tan<sup>-1</sup>(</span>;
-      if (part === '∫(') return <span key={index} style={{ color: '#eab308' }}>∫ (</span>;
-      if (part === 'd/dx(') return <span key={index} style={{ color: '#eab308' }}><span style={{ textDecoration: 'underline' }}>d</span>/dx(</span>;
+      if (part === '^2') return <sup key={index} className="casio-sup">2</sup>;
+      if (part === '^3') return <sup key={index} className="casio-sup">3</sup>;
+      if (part.startsWith('^')) return <sup key={index} className="casio-sup">{part.slice(1)}</sup>;
+      if (part === '√(') return <span key={index}>√<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
+      if (part === '³√(') return <span key={index}>∛<span style={{ borderTop: '2px solid #122115', paddingLeft: 1 }}>(</span></span>;
+      if (part === 'sin⁻¹(') return <span key={index}>sin<sup>-1</sup>(</span>;
+      if (part === 'cos⁻¹(') return <span key={index}>cos<sup>-1</sup>(</span>;
+      if (part === 'tan⁻¹(') return <span key={index}>tan<sup>-1</sup>(</span>;
+      if (part === '∫(') return <span key={index}>∫ (</span>;
+      if (part === 'd/dx(') return <span key={index}><span style={{ textDecoration: 'underline' }}>d</span>/dx(</span>;
       return <span key={index}>{part}</span>;
     });
   };
