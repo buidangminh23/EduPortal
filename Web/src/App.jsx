@@ -5,7 +5,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login';
 import LandingPage from './components/LandingPage';
 import AppCommandDock from './components/AppCommandDock';
-import { ShieldCheck, Mail, Phone, Trophy } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, Trophy, Search, X, Filter, Sparkles, Eye, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
@@ -284,15 +284,31 @@ function GamificationPage() {
   );
 }
 
-// Sub-component: Student profile table for Admin/BGH view
+
+
+const removeVietnameseTones = (str) => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
+};
+
+// Sub-component: Student profile table for Admin/BGH view with Smart Search
 function AdminStudentManager() {
   const { students, addStudent } = useContext(AppContext);
   const [showAdd, setShowAdd] = useState(false);
   const [newStd, setNewStd] = useState({ name: '', class: '12A1', parentName: '', parentPhone: '' });
   
-  // Filter states
+  // Smart Search & Filter states
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('All'); // All, 12, 11, 10
   const [selectedClass, setSelectedClass] = useState('All'); // All, 12A1, 12A2, 11A1, 10A1
+  const [gpaFilter, setGpaFilter] = useState('All'); // All, xuatsac, gioi, kha, at_risk
+  const [feeFilter, setFeeFilter] = useState('All'); // All, paid, unpaid
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState(null);
 
   // Handle grade change and auto-adjust class filter
   const handleGradeChange = (grade) => {
@@ -311,8 +327,46 @@ function AdminStudentManager() {
   const filteredStudents = students.filter(s => {
     const matchGrade = selectedGrade === 'All' || s.grade === selectedGrade;
     const matchClass = selectedClass === 'All' || s.class === selectedClass;
-    return matchGrade && matchClass;
+
+    // Calculate GPA
+    const grades = Object.values(s.grades || {});
+    const avg = grades.length > 0 ? (grades.reduce((a, b) => a + b, 0) / grades.length) : 0;
+    
+    let matchGpa = true;
+    if (gpaFilter === 'xuatsac') matchGpa = avg >= 9.0;
+    else if (gpaFilter === 'gioi') matchGpa = avg >= 8.0 && avg < 9.0;
+    else if (gpaFilter === 'kha') matchGpa = avg >= 6.5 && avg < 8.0;
+    else if (gpaFilter === 'at_risk') matchGpa = avg < 6.5;
+
+    // Fee Status match
+    const unpaidCount = s.feeStatus ? s.feeStatus.filter(f => !f.paid).length : 0;
+    let matchFee = true;
+    if (feeFilter === 'paid') matchFee = unpaidCount === 0;
+    else if (feeFilter === 'unpaid') matchFee = unpaidCount > 0;
+
+    // Smart Text Search
+    let matchSearch = true;
+    if (searchQuery.trim()) {
+      const q = removeVietnameseTones(searchQuery.trim());
+      const nameMatch = removeVietnameseTones(s.name).includes(q);
+      const idMatch = removeVietnameseTones(s.id).includes(q);
+      const parentMatch = removeVietnameseTones(s.parentName || '').includes(q);
+      const phoneMatch = (s.parentPhone || '').includes(q);
+      const classMatch = removeVietnameseTones(s.class || '').includes(q);
+
+      matchSearch = nameMatch || idMatch || parentMatch || phoneMatch || classMatch;
+    }
+
+    return matchGrade && matchClass && matchGpa && matchFee && matchSearch;
   });
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedGrade('All');
+    setSelectedClass('All');
+    setGpaFilter('All');
+    setFeeFilter('All');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -326,65 +380,160 @@ function AdminStudentManager() {
   return (
     <div className="glass-panel animate-fade">
       {/* Roster Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h3>Hồ Sơ Học Sinh Toàn Trường ({students.length})</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Danh sách học sinh chính quy trực thuộc hệ thống đào tạo.</p>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>Hồ Sơ Học Sinh Toàn Trường</span>
+            <span className="badge badge-info" style={{ borderRadius: '12px', fontSize: '0.8rem', padding: '4px 10px' }}>
+              {filteredStudents.length} / {students.length} học sinh
+            </span>
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Danh sách học sinh chính quy trực thuộc hệ thống đào tạo với bộ tìm kiếm thông minh.</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn btn-primary">Thêm Học Sinh Mới</button>
+        <button onClick={() => setShowAdd(true)} className="btn btn-primary">
+          + Thêm Học Sinh Mới
+        </button>
       </div>
 
-      {/* Grade and Class Filters */}
+      {/* Smart Search & Advanced Filters Container */}
       <div style={{ 
         background: 'rgba(79, 70, 229, 0.03)', 
-        border: '1px solid rgba(79, 70, 229, 0.08)',
-        borderRadius: '14px', 
-        padding: '16px', 
+        border: '1px solid rgba(79, 70, 229, 0.1)',
+        borderRadius: '16px', 
+        padding: '18px', 
         marginBottom: '24px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px'
+        gap: '14px'
       }}>
-        {/* Grade Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', width: '90px' }}>Chọn Khối:</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {['All', '12', '11', '10'].map(grade => (
+        {/* Instant Search Bar */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#6366f1' }} />
+          <input
+            type="text"
+            className="form-control"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="🔍 Tìm kiếm thông minh: Nhập tên học sinh (Nguyễn Hoàng Nam), Mã HS (HS001), Phụ huynh, SĐT..."
+            style={{
+              paddingLeft: '46px',
+              paddingRight: searchQuery ? '40px' : '16px',
+              height: '46px',
+              borderRadius: '12px',
+              border: '1.5px solid rgba(99, 102, 241, 0.3)',
+              background: '#fff',
+              fontSize: '0.92rem',
+              fontWeight: 500,
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.06)'
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '24px',
+                height: '24px',
+                display: 'grid',
+                placeItems: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Multi-criteria Filter Controls */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          {/* Grade Filters */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>💥 Chọn Khối</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['All', '12', '11', '10'].map(grade => (
+                <button
+                  key={grade}
+                  onClick={() => handleGradeChange(grade)}
+                  className={`btn ${selectedGrade === grade ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: '16px' }}
+                >
+                  {grade === 'All' ? 'Tất cả' : `Khối ${grade}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Class Filters */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>🏫 Chọn Lớp</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button
-                key={grade}
-                onClick={() => handleGradeChange(grade)}
-                className={`btn ${selectedGrade === grade ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '20px' }}
+                onClick={() => setSelectedClass('All')}
+                className={`btn ${selectedClass === 'All' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: '16px' }}
               >
-                {grade === 'All' ? 'Tất cả Khối' : `Khối ${grade}`}
+                Tất cả Lớp
               </button>
-            ))}
+              {getClassOptions().map(cls => (
+                <button
+                  key={cls}
+                  onClick={() => setSelectedClass(cls)}
+                  className={`btn ${selectedClass === cls ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: '16px' }}
+                >
+                  Lớp {cls}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* GPA Filter */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>⭐ Lọc Học Lực / Điểm TB</div>
+            <select
+              value={gpaFilter}
+              onChange={e => setGpaFilter(e.target.value)}
+              className="form-control"
+              style={{ height: '34px', fontSize: '0.8rem', borderRadius: '10px', background: '#fff' }}
+            >
+              <option value="All">Tất cả điểm số</option>
+              <option value="xuatsac">🌟 Xuất sắc (&gt;= 9.0)</option>
+              <option value="gioi">🎓 Giỏi (8.0 - 8.9)</option>
+              <option value="kha">📈 Khá (6.5 - 7.9)</option>
+              <option value="at_risk">⚠️ Cần hỗ trợ (&lt; 6.5)</option>
+            </select>
+          </div>
+
+          {/* Fee Filter */}
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '6px' }}>💳 Trạng Thái Học Phí</div>
+            <select
+              value={feeFilter}
+              onChange={e => setFeeFilter(e.target.value)}
+              className="form-control"
+              style={{ height: '34px', fontSize: '0.8rem', borderRadius: '10px', background: '#fff' }}
+            >
+              <option value="All">Tất cả trạng thái</option>
+              <option value="paid">✅ Đã hoàn thành học phí</option>
+              <option value="unpaid">⚠️ Còn nợ học phí</option>
+            </select>
           </div>
         </div>
 
-        {/* Class Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', width: '90px' }}>Chọn Lớp:</span>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setSelectedClass('All')}
-              className={`btn ${selectedClass === 'All' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '20px' }}
-            >
-              Tất cả Lớp
+        {/* Reset Filter Action */}
+        {(searchQuery || selectedGrade !== 'All' || selectedClass !== 'All' || gpaFilter !== 'All' || feeFilter !== 'All') && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={resetFilters} className="btn" style={{ fontSize: '0.78rem', color: '#ef4444', background: 'rgba(239,68,68,0.08)', fontWeight: 600 }}>
+              ✕ Xóa tất cả bộ lọc
             </button>
-            {getClassOptions().map(cls => (
-              <button
-                key={cls}
-                onClick={() => setSelectedClass(cls)}
-                className={`btn ${selectedClass === cls ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '20px' }}
-              >
-                Lớp {cls}
-              </button>
-            ))}
           </div>
-        </div>
+        )}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -400,13 +549,15 @@ function AdminStudentManager() {
               <th>Số điện thoại</th>
               <th>Điểm TB học kì</th>
               <th>Trạng thái học phí</th>
+              <th style={{ textAlign: 'center' }}>Thao Tác</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan="9" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                  Không tìm thấy học sinh nào thuộc bộ lọc hiện tại.
+                <td colSpan="10" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '6px' }}>🔍 Không tìm thấy kết quả phù hợp</div>
+                  <div style={{ fontSize: '0.85rem' }}>Thử tìm từ khóa khác hoặc bấm <strong>"Xóa tất cả bộ lọc"</strong>.</div>
                 </td>
               </tr>
             ) : (
@@ -415,7 +566,7 @@ function AdminStudentManager() {
                 const avg = (grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(2);
                 const unpaidCount = s.feeStatus.filter(f => !f.paid).length;
                 return (
-                  <tr key={s.id}>
+                  <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedStudentDetail(s)}>
                     <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{s.id}</td>
                     <td>
                       <img 
@@ -443,6 +594,15 @@ function AdminStudentManager() {
                         <span className="badge badge-danger">Còn nợ {unpaidCount} khoản</span>
                       )}
                     </td>
+                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => setSelectedStudentDetail(s)}
+                        className="btn"
+                        style={{ padding: '6px 10px', background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Eye size={14} /> Chi tiết
+                      </button>
+                    </td>
                   </tr>
                 );
               })
@@ -450,6 +610,72 @@ function AdminStudentManager() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal: Xem Hồ Sơ Chi Tiết Học Sinh */}
+      {selectedStudentDetail && (
+        <div className="modal-overlay" onClick={() => setSelectedStudentDetail(null)}>
+          <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: '640px', width: '90%', borderRadius: '20px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img
+                  src={selectedStudentDetail.avatarUrl || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80'}
+                  alt={selectedStudentDetail.name}
+                  style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>{selectedStudentDetail.name}</h3>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', gap: '8px', marginTop: '2px' }}>
+                    <span>Mã HS: <strong>{selectedStudentDetail.id}</strong></span>
+                    <span>•</span>
+                    <span>Lớp: <strong>{selectedStudentDetail.class}</strong></span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setSelectedStudentDetail(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Content Breakdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Grades Table */}
+              <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Trophy size={16} style={{ color: '#eab308' }} /> Bảng Điểm Các Môn Học
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px' }}>
+                  {Object.entries(selectedStudentDetail.grades || {}).map(([subject, score]) => (
+                    <div key={subject} style={{ background: '#fff', borderRadius: '8px', padding: '8px 12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'capitalize' }}>{subject}</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: score >= 8 ? '#10b981' : score >= 6.5 ? '#3b82f6' : '#ef4444' }}>{score}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Parent Info */}
+              <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Phụ huynh bảo hộ</div>
+                  <div style={{ fontWeight: 700, color: '#1e293b' }}>{selectedStudentDetail.parentName}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    <Phone size={12} /> {selectedStudentDetail.parentPhone}
+                  </div>
+                </div>
+                <a href={`tel:${selectedStudentDetail.parentPhone}`} className="btn btn-primary" style={{ padding: '8px 14px', fontSize: '0.8rem', textDecoration: 'none' }}>
+                  📞 Liên hệ ngay
+                </a>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button onClick={() => setSelectedStudentDetail(null)} className="btn btn-secondary" style={{ padding: '8px 20px' }}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div className="modal-overlay">
