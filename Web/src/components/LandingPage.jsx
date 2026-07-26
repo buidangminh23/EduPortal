@@ -45,6 +45,21 @@ export default function LandingPage({ onLogin }) {
     setShowAllNews(false);
   };
 
+  const handleDirectDemoLogin = () => {
+    const session = {
+      username: 'hoangnam',
+      role: 'student',
+      displayName: 'Nguyễn Hoàng Nam',
+      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+      class: '12A1',
+      studentId: 'HS001',
+      email: 'nam.nh@school.edu.vn'
+    };
+    localStorage.removeItem('eduportal_logged_out');
+    localStorage.setItem('userSession', JSON.stringify(session));
+    window.location.reload();
+  };
+
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: '100vh', width: '100%' }}>
       {/* Navbar Header */}
@@ -69,9 +84,14 @@ export default function LandingPage({ onLogin }) {
           </div>
         </div>
         
-        <button className="btn btn-primary" onClick={onLogin}>
-          Đăng nhập hệ thống
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn" style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
+            Vào nhanh Demo
+          </button>
+          <button className="btn btn-primary" onClick={onLogin}>
+            Đăng nhập hệ thống
+          </button>
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -97,14 +117,18 @@ export default function LandingPage({ onLogin }) {
           <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '30px' }}>
             Nền tảng số kết nối toàn diện nhà trường, giáo viên, phụ huynh và học sinh. Tối ưu dạy và học, quản lý lớp học bằng trợ lý AI hiện đại.
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={onLogin}>
-              <span>Trải nghiệm ngay</span>
+              <span>Vào Đăng Nhập</span>
               <ArrowRight size={18} />
+            </button>
+            <button className="btn" style={{ padding: '12px 28px', fontSize: '1rem', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
+              <span>Khám Phá Demo Ngay</span>
             </button>
           </div>
         </div>
       </section>
+
 
       {/* Stats Section */}
       <section style={{ padding: '40px 40px', background: 'var(--surface)' }}>
