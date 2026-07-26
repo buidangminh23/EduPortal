@@ -110,10 +110,6 @@ function App() {
           return <ClassJournal />;
         case 'duty_schedule':
           return <DutySchedule />;
-        case 'seating_chart':
-          return <SeatingChart />;
-        case 'class_voting':
-          return <ClassVoting />;
         case 'ai_risk':
           return <AIRiskAnalysis />;
         case 'class_comparison':

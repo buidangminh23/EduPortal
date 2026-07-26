@@ -1016,6 +1016,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const savedAt = savedAtByClass[selectedClass];
 
   const commitSeats = useCallback((nextSeats, actionLabel) => {
+    if (isReadOnly) return false;
     const normalizedNextSeats = cloneSeats(nextSeats);
     if (areSeatsEqual(seats, normalizedNextSeats)) return false;
 
@@ -1026,9 +1027,10 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
     setLastAction(actionLabel);
     setSwapCount(c => c + 1);
     return true;
-  }, [seats, selectedClass, setSeatsByClass]);
+  }, [isReadOnly, seats, selectedClass, setSeatsByClass]);
 
   const swapSeats = useCallback((prev, index) => {
+    if (isReadOnly) return false;
     const sourceSeat = seats[prev];
     const targetSeat = seats[index];
     if (!sourceSeat || !targetSeat || sourceSeat.locked || targetSeat.locked) return false;
@@ -1038,7 +1040,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
     newSeats[prev] = { ...newSeats[prev], student: newSeats[index].student };
     newSeats[index] = { ...newSeats[index], student: tmp };
     return commitSeats(newSeats, 'Đổi chỗ học sinh');
-  }, [commitSeats, seats]);
+  }, [commitSeats, isReadOnly, seats]);
 
   /* Handle seat click: first click selects, second click swaps */
   const handleSeatClick = useCallback((index) => {
@@ -1162,6 +1164,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   }, [swapSeats]);
 
   const arrangeUnlockedSeats = useCallback((orderedStudents, actionLabel) => {
+    if (isReadOnly) return;
     const lockedStudentIds = new Set(
       seats
         .filter(seat => seat.locked && seat.student)
@@ -1177,7 +1180,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
 
     commitSeats(nextSeats, actionLabel);
     setSelectedSeat(null);
-  }, [commitSeats, seats]);
+  }, [commitSeats, isReadOnly, seats]);
 
   const handleShuffle = useCallback(() => {
     const students = seats.map(s => s.student).filter(Boolean);
@@ -1217,6 +1220,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   }, [arrangeUnlockedSeats, classRoster]);
 
   const toggleSeatLock = useCallback((index) => {
+    if (isReadOnly) return;
     const seat = seats[index];
     if (!seat) return;
 
@@ -1224,10 +1228,10 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
       seatIndex === index ? { ...item, locked: !item.locked } : item
     ));
     commitSeats(nextSeats, seat.locked ? 'Mở khóa ghế' : 'Khóa ghế');
-  }, [commitSeats, seats]);
+  }, [commitSeats, isReadOnly, seats]);
 
   const handleUndo = useCallback(() => {
-    if (!history.length) return;
+    if (isReadOnly || !history.length) return;
     const previous = history[history.length - 1];
 
     setHistory(prev => prev.slice(0, -1));
@@ -1236,10 +1240,10 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
     setDirtyClasses(prev => ({ ...prev, [selectedClass]: true }));
     setLastAction(`Hoàn tác: ${previous.label}`);
     setSelectedSeat(null);
-  }, [history, lastAction, seats, selectedClass, setSeatsByClass]);
+  }, [history, isReadOnly, lastAction, seats, selectedClass, setSeatsByClass]);
 
   const handleRedo = useCallback(() => {
-    if (!future.length) return;
+    if (isReadOnly || !future.length) return;
     const next = future[0];
 
     setFuture(prev => prev.slice(1));
@@ -1248,7 +1252,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
     setDirtyClasses(prev => ({ ...prev, [selectedClass]: true }));
     setLastAction(`Làm lại: ${next.label}`);
     setSelectedSeat(null);
-  }, [future, seats, selectedClass, setSeatsByClass]);
+  }, [future, isReadOnly, seats, selectedClass, setSeatsByClass]);
 
   const handleSave = useCallback(() => {
     setDirtyClasses(prev => ({ ...prev, [selectedClass]: false }));
@@ -1367,25 +1371,27 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
             </button>
 
             {/* Wheel of Names trigger */}
-            <button
-              className="btn"
-              onClick={() => setIsWheelOpen(true)}
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                color: '#fff',
-                borderColor: 'transparent',
-                fontWeight: 600,
-                fontSize: 13,
-                padding: '7px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6
-              }}
-              title="Mở vòng quay may mắn gọi tên ngẫu nhiên"
-            >
-              <Compass size={15} />
-              Vòng quay random
-            </button>
+            {!isReadOnly && (
+              <button
+                className="btn"
+                onClick={() => setIsWheelOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                  color: '#fff',
+                  borderColor: 'transparent',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  padding: '7px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+                title="Mở vòng quay may mắn gọi tên ngẫu nhiên"
+              >
+                <Compass size={15} />
+                Vòng quay random
+              </button>
+            )}
 
             {/* Edit toggle button for teachers/admins */}
             {!isReadOnly && (
@@ -1544,7 +1550,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
         )}
 
         {/* ── Instruction Banner ── */}
-        {selectedSeat !== null && (
+        {!isReadOnly && selectedSeat !== null && (
           <div
             className="no-print animate-fade"
             style={{
