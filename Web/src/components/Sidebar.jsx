@@ -36,9 +36,7 @@ import {
   Camera,
   Sparkles,
   Compass,
-  Calculator,
-  Sparkle,
-  Compass as NavCompass
+  Calculator
 } from 'lucide-react';
 
 // Section-based nav items for Student Dashboard
@@ -47,6 +45,7 @@ const STUDENT_SECTIONS = [
     title: 'HỌC TẬP & ĐIỂM SỐ',
     items: [
       { id: 'overview',           label: 'Tổng Quan Học Tập',     icon: LayoutDashboard, isSubTab: true },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'deadlines',          label: 'Deadline & Lịch Thi',    icon: AlarmClock,      isSubTab: true },
       { id: 'assignments',        label: 'Bài Tập Về Nhà',        icon: CheckSquare,     isSubTab: true },
       { id: 'attendance',         label: 'Điểm Danh Chuyên Cần',  icon: ClipboardCheck,  isSubTab: true },
@@ -84,7 +83,6 @@ const STUDENT_SECTIONS = [
       { id: 'wallet_id',          label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard,      isSubTab: true },
       { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
       { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
-      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
     ]
   }
 ];
@@ -95,6 +93,7 @@ const TEACHER_SECTIONS = [
     title: 'QUẢN LÝ LỚP & GIẢNG DẠY',
     items: [
       { id: 'students',           label: 'Học Sinh & Điểm Số',    icon: Users,           isSubTab: true },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'attendance',         label: 'Điểm Danh Lớp',         icon: ClipboardCheck,  isSubTab: true },
       { id: 'conduct',            label: 'Điểm Rèn Luyện Lớp',     icon: Award,           isSubTab: true },
       { id: 'journal',            label: 'Ghi Sổ Đầu Bài',       icon: BookOpen,        isSubTab: false },
@@ -124,7 +123,6 @@ const TEACHER_SECTIONS = [
       { id: 'teacher_leaves',     label: 'Nghỉ Phép & Dạy Thay',   icon: Clock,           isSubTab: true },
       { id: 'duty_schedule',      label: 'Lịch Trực Tuần GV',    icon: Calendar,        isSubTab: false },
       { id: 'asset_manager',      label: 'Đặt Phòng & Thiết Bị',  icon: Layers,          isSubTab: false },
-      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
     ]
   }
 ];
@@ -135,6 +133,7 @@ const ADMIN_SECTIONS = [
     title: 'QUẢN TRỊ TRƯỜNG HỌC',
     items: [
       { id: 'dashboard',          label: 'Tổng Quan BGH',        icon: LayoutDashboard, isSubTab: false },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'teachers',           label: 'Quản Lý Giáo Viên',    icon: GraduationCap,   isSubTab: false },
       { id: 'students',           label: 'Quản Lý Học Sinh',     icon: Users,           isSubTab: false },
       { id: 'portfolio',          label: 'Học Bạ Số & CV',       icon: BookMarked,      isSubTab: false },
@@ -158,7 +157,6 @@ const ADMIN_SECTIONS = [
       { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
       { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
       { id: 'school_gallery',     label: 'Album Sự Kiện Trường', icon: Camera,          isSubTab: false },
-      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
     ]
   }
 ];
@@ -169,6 +167,7 @@ const PARENT_SECTIONS = [
     title: 'THEO DÕI HỌC TẬP',
     items: [
       { id: 'grades',             label: 'Bảng Điểm & Ký Nhận',   icon: Award,           isSubTab: true },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'attendance',         label: 'Chuyên Cần Của Con',    icon: ClipboardCheck,  isSubTab: true },
       { id: 'assignments',        label: 'Xem Bài Tập Về Nhà',    icon: CheckSquare,     isSubTab: true },
       { id: 'seating_chart',      label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers,          isSubTab: false },
@@ -192,7 +191,6 @@ const PARENT_SECTIONS = [
       { id: 'leaves',             label: 'Xin Nghỉ Phép',         icon: Calendar,        isSubTab: true },
       { id: 'evaluations',        label: 'Đánh Giá Giáo Viên',    icon: Star,            isSubTab: true },
       { id: 'ai_guidance',        label: 'Định Hướng AI',         icon: Sparkles,        isSubTab: true },
-      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
     ]
   }
 ];
@@ -215,6 +213,7 @@ const DICT_EN = {
 
   // Item Labels
   'Tổng Quan Học Tập': 'Academic Overview',
+  'Thời Khóa Biểu': 'School Timetable',
   'Deadline & Lịch Thi': 'Deadlines & Exams',
   'Bài Tập Về Nhà': 'Homework & Assignments',
   'Học Liệu & Flashcards': 'Materials & Flashcards',
@@ -237,7 +236,6 @@ const DICT_EN = {
   'Học Bạ Số & CV': 'Digital Portfolio & CV',
   'Xe Bus Học Đường': 'School Bus Tracker',
   'Bảng Tin Trường': 'School Bulletin',
-  'Thời Khóa Biểu': 'School Timetable',
   'Học Sinh & Điểm Số': 'Students & Grades',
   'Điểm Danh Lớp': 'Class Attendance',
   'Điểm Rèn Luyện Lớp': 'Class Conduct',
