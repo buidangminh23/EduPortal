@@ -142,11 +142,43 @@ const SEED_PRESETS = [
   }
 ];
 
+// Safe LocalStorage wrapper to prevent browser security exception crashes
+const safeStorage = {
+  getItem(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Ignore write errors (e.g. private mode limits)
+    }
+  },
+  removeItem(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore remove errors
+    }
+  }
+};
+
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'id_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+};
+
 // In Mock mode, initialize state in LocalStorage
 const initLocalStorageMockDB = () => {
   const checkAndSeed = (key, defaultData) => {
-    if (!localStorage.getItem(`mock_sb_${key}`)) {
-      localStorage.setItem(`mock_sb_${key}`, JSON.stringify(defaultData));
+    if (!safeStorage.getItem(`mock_sb_${key}`)) {
+      safeStorage.setItem(`mock_sb_${key}`, JSON.stringify(defaultData));
     }
   };
 
@@ -170,12 +202,18 @@ const initLocalStorageMockDB = () => {
 class MockQueryBuilder {
   constructor(tableName) {
     this.tableName = tableName;
-    this.data = JSON.parse(localStorage.getItem(`mock_sb_${tableName}`) || '[]');
+    let parsed = [];
+    try {
+      const raw = safeStorage.getItem(`mock_sb_${tableName}`);
+      if (raw) parsed = JSON.parse(raw);
+    } catch {
+      parsed = [];
+    }
+    this.data = parsed;
     this.filters = [];
   }
 
   select() {
-    // Basic select representation
     return this;
   }
 
@@ -229,7 +267,6 @@ class MockQueryBuilder {
     return { data: filtered, error: null };
   }
 
-  // To support standard async/await or thenable calls on builder directly
   then(onfulfilled, onrejected) {
     return this.execute().then(onfulfilled, onrejected);
   }
@@ -237,13 +274,13 @@ class MockQueryBuilder {
   async insert(newData) {
     const recordsToInsert = Array.isArray(newData) ? newData : [newData];
     const newRecords = recordsToInsert.map(r => ({
-      id: r.id || crypto.randomUUID(),
+      id: r.id || generateId(),
       created_at: new Date().toISOString(),
       ...r
     }));
 
     this.data.push(...newRecords);
-    localStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
+    safeStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
     return { data: Array.isArray(newData) ? newRecords : newRecords[0], error: null };
   }
 
@@ -262,7 +299,7 @@ class MockQueryBuilder {
       return item;
     });
 
-    localStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
+    safeStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
     return { data: updatedRecords, error: null };
   }
 
@@ -272,7 +309,7 @@ class MockQueryBuilder {
       const idx = this.data.findIndex(r => r.id === recordId);
       if (idx !== -1) {
         this.data[idx] = { ...this.data[idx], ...record };
-        localStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
+        safeStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
         return { data: this.data[idx], error: null };
       }
     }
@@ -293,7 +330,7 @@ class MockQueryBuilder {
       return true;
     });
 
-    localStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
+    safeStorage.setItem(`mock_sb_${this.tableName}`, JSON.stringify(this.data));
     return { data: deletedRecords, error: null };
   }
 }
@@ -306,7 +343,6 @@ class MockAuthClient {
 
   onAuthStateChange(callback) {
     this.listeners.push(callback);
-    // Trigger immediately with current state
     const session = this.getSessionSync();
     callback(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
 
@@ -322,8 +358,12 @@ class MockAuthClient {
   }
 
   getSessionSync() {
-    const saved = localStorage.getItem('mock_sb_session');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = safeStorage.getItem('mock_sb_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   }
 
   async getSession() {
@@ -331,12 +371,15 @@ class MockAuthClient {
   }
 
   async signInWithPassword({ email, password }) {
-    const profiles = JSON.parse(localStorage.getItem('mock_sb_profiles') || '[]');
-    
-    // Support login via email or short username mapping
+    let profiles = [];
+    try {
+      profiles = JSON.parse(safeStorage.getItem('mock_sb_profiles') || '[]');
+    } catch {
+      profiles = [];
+    }
+
     let matchedProfile = profiles.find(p => p.email === email);
     if (!matchedProfile) {
-      // Map short usernames for demo quick creds compat
       const mappedEmail = 
         email === 'minhtriet' ? 'triet.nm@school.edu.vn' :
         email === 'hoangnam' ? 'nam.nh@school.edu.vn' :
@@ -352,7 +395,6 @@ class MockAuthClient {
       return { data: null, error: { message: 'Tài khoản không tồn tại!' } };
     }
 
-    // Mock password checking
     const validPassword = 
       matchedProfile.role === 'teacher' ? 'teacher123' :
       matchedProfile.role === 'student' ? 'student123' :
@@ -373,13 +415,13 @@ class MockAuthClient {
       expires_at: Math.floor(Date.now() / 1000) + 3600
     };
 
-    localStorage.setItem('mock_sb_session', JSON.stringify(session));
+    safeStorage.setItem('mock_sb_session', JSON.stringify(session));
     this.notifyListeners('SIGNED_IN', session);
     return { data: session, error: null };
   }
 
   async signOut() {
-    localStorage.removeItem('mock_sb_session');
+    safeStorage.removeItem('mock_sb_session');
     this.notifyListeners('SIGNED_OUT', null);
     return { error: null };
   }
@@ -397,9 +439,12 @@ const mockSupabase = {
   }
 };
 
-// Initialize mock DB on startup if mock mode active
 if (!isRealSupabase) {
-  initLocalStorageMockDB();
+  try {
+    initLocalStorageMockDB();
+  } catch (e) {
+    console.warn('Mock DB init fallback:', e);
+  }
 }
 
 export const supabase = isRealSupabase ? supabaseClient : mockSupabase;

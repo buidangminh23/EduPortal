@@ -30,11 +30,11 @@ const INITIAL_HEATMAP = buildMockHeatmap();
 
 /* ─── HELPERS ─────────────────────────────────────────────────────────────── */
 function getMotivation(streak) {
-  if (streak === 0)       return { text: 'Bắt đầu streak hôm nay! 🌱',              color: '#6b7280' };
-  if (streak <= 3)        return { text: 'Khởi động tốt! Tiếp tục nhé! 💪',         color: '#059669' };
-  if (streak <= 7)        return { text: 'Tuần học xuất sắc! 🌟',                   color: '#d97706' };
-  if (streak <= 14)       return { text: 'Streak đỉnh cao! 🔥 Thành thần cũng!',    color: '#dc2626' };
-  return                         { text: 'Huyền thoại! Không ai ngăn được bạn! 🏆', color: '#7c3aed' };
+  if (streak === 0)       return { text: 'Bắt đầu streak hôm nay! 🌱',              color: '#4b5563' };
+  if (streak <= 3)        return { text: 'Khởi động tốt! Tiếp tục nhé! 💪',         color: '#047857' };
+  if (streak <= 7)        return { text: 'Tuần học xuất sắc! 🌟',                   color: '#b45309' };
+  if (streak <= 14)       return { text: 'Streak đỉnh cao! 🔥 Thành thần cũng!',    color: '#b91c1c' };
+  return                         { text: 'Huyền thoại! Không ai ngăn được bạn! 🏆', color: '#6d28d9' };
 }
 
 function getStreakBadge(streak) {

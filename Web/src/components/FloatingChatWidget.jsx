@@ -228,8 +228,9 @@ export default function FloatingChatWidget() {
         }
         .widget-msg-tutor {
           align-self: flex-start;
+          background-color: #0f172a;
           background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          color: #e2e8f0;
+          color: #f8fafc;
           border-radius: 4px 16px 16px 16px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
@@ -350,8 +351,8 @@ export default function FloatingChatWidget() {
                     style={{
                       flex: 1, padding: '8px 4px', borderRadius: '10px', border: 'none',
                       background: activeTab === tab.id ? 'white' : 'transparent',
-                      color: activeTab === tab.id ? 'var(--accent-primary)' : '#64748b',
-                      fontSize: '0.78rem', fontWeight: activeTab === tab.id ? 700 : 500,
+                      color: activeTab === tab.id ? '#4338ca' : '#475569',
+                      fontSize: '0.78rem', fontWeight: activeTab === tab.id ? 700 : 600,
                       cursor: 'pointer', transition: 'all 0.2s',
                       boxShadow: activeTab === tab.id ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
                     }}
@@ -415,7 +416,7 @@ export default function FloatingChatWidget() {
                             }}>
                               <Sparkles size={10} color="white" />
                             </div>
-                            <span style={{ fontSize: '0.67rem', color: '#94a3b8', fontWeight: 600 }}>GIA SƯ AI</span>
+                            <span style={{ fontSize: '0.67rem', color: '#475569', fontWeight: 700 }}>GIA SƯ AI</span>
                           </div>
                         )}
                         <div
@@ -463,6 +464,7 @@ export default function FloatingChatWidget() {
                       onChange={e => setTutorInput(e.target.value)}
                       disabled={tutorIsTyping}
                       placeholder={tutorIsTyping ? 'Gia sư đang soạn...' : 'Hỏi bất kỳ bài tập nào...'}
+                      aria-label="Nhập câu hỏi bài tập cho Gia sư AI"
                       style={{
                         flex: 1, padding: '9px 14px', borderRadius: '12px', fontSize: '0.82rem',
                         border: '1.5px solid rgba(99,102,241,0.2)', background: '#f8fafc',
@@ -544,7 +546,7 @@ export default function FloatingChatWidget() {
                             }}>
                               <Heart size={9} color="white" />
                             </div>
-                            <span style={{ fontSize: '0.67rem', color: '#94a3b8', fontWeight: 600 }}>TƯ VẤN AI</span>
+                            <span style={{ fontSize: '0.67rem', color: '#475569', fontWeight: 700 }}>TƯ VẤN AI</span>
                           </div>
                         )}
                         <div
@@ -554,7 +556,7 @@ export default function FloatingChatWidget() {
                           {m.text}
                         </div>
                         {m.timestamp && (
-                          <span style={{ fontSize: '0.62rem', color: '#cbd5e1', paddingLeft: m.sender !== 'user' ? '2px' : 0 }}>
+                          <span style={{ fontSize: '0.62rem', color: '#64748b', paddingLeft: m.sender !== 'user' ? '2px' : 0 }}>
                             {new Date(m.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
@@ -599,7 +601,7 @@ export default function FloatingChatWidget() {
                             className="widget-quick-chip"
                             style={{
                               padding: '7px 11px', borderRadius: '99px', border: '1.5px solid rgba(99,102,241,0.25)',
-                              background: 'rgba(99,102,241,0.05)', color: 'var(--accent-primary)',
+                              background: 'rgba(99,102,241,0.08)', color: '#4338ca',
                               fontSize: '0.73rem', fontWeight: 600, cursor: 'pointer',
                               textAlign: 'left', transition: 'all 0.15s'
                             }}
@@ -624,6 +626,7 @@ export default function FloatingChatWidget() {
                         onChange={e => setCounselorInput(e.target.value)}
                         disabled={counselorIsTyping}
                         placeholder={counselorIsTyping ? 'Thầy đang trả lời...' : 'Chia sẻ với thầy...'}
+                        aria-label="Nhập tin nhắn tâm lý tư vấn"
                         style={{
                           flex: 1, padding: '9px 14px', borderRadius: '12px', fontSize: '0.82rem',
                           border: '1.5px solid rgba(99,102,241,0.2)', background: '#f8fafc',

@@ -8,37 +8,22 @@ import {
 } from 'lucide-react';
 
 const SUBJECT_KEYS = ['Math', 'Literature', 'Physics', 'English'];
-const SUBJECT_META = {
-  Math: { name: 'Toán', color: 'blue' },
-  Literature: { name: 'Ngữ văn', color: 'pink' },
-  Physics: { name: 'Vật lý', color: 'violet' },
-  English: { name: 'Tiếng Anh', color: 'mint' },
-};
-
-const PERIODS = [
-  { time: '07:00', subject: 'Chào cờ', room: 'Sân trường', color: 'amber' },
-  { time: '07:50', subject: 'Toán', room: 'P.201 · Cô Hoa', color: 'blue' },
-  { time: '08:40', subject: 'Tiếng Anh', room: 'P.305 · Thầy Phúc', color: 'mint' },
-  { time: '09:45', subject: 'Vật lý', room: 'P.Lab 2 · Thầy Dũng', color: 'violet' },
-  { time: '10:35', subject: 'Ngữ văn', room: 'P.201 · Cô Lan', color: 'pink' },
-  { time: '14:00', subject: 'Thể dục', room: 'Nhà thi đấu · Thầy Hải', color: 'lime' },
-];
 
 const BADGES = [
-  { name: 'Chuyên cần', ico: '🎯', color: 'blue', got: true },
-  { name: 'Top 3 lớp', ico: '🏆', color: 'amber', got: true },
-  { name: 'Mọt sách', ico: '📚', color: 'violet', got: true },
-  { name: 'Streak 7', ico: '🔥', color: 'orange', got: true },
-  { name: 'Siêu Toán', ico: '🧮', color: 'mint', got: false },
-  { name: 'Nhà vô địch', ico: '👑', color: 'pink', got: false },
+  { name: 'Chuyên cần', enName: 'Attendance', ico: '🎯', color: 'blue', got: true },
+  { name: 'Top 3 lớp', enName: 'Top 3 Class', ico: '🏆', color: 'amber', got: true },
+  { name: 'Mọt sách', enName: 'Bookworm', ico: '📚', color: 'violet', got: true },
+  { name: 'Streak 7', enName: '7-Day Streak', ico: '🔥', color: 'orange', got: true },
+  { name: 'Siêu Toán', enName: 'Math Wizard', ico: '🧮', color: 'mint', got: false },
+  { name: 'Nhà vô địch', enName: 'Champion', ico: '👑', color: 'pink', got: false },
 ];
 
-function bulletinTag(b) {
-  if (b.priority === 'urgent' || b.priority === 'high') return { label: 'Khẩn', color: 'coral' };
-  if (b.type === 'event' || b.type === 'activity') return { label: 'Hoạt động', color: 'mint' };
-  if (b.type === 'finance') return { label: 'Học phí', color: 'amber' };
-  if (b.type === 'academic') return { label: 'Học vụ', color: 'blue' };
-  return { label: 'Thông báo', color: 'violet' };
+function bulletinTag(b, t) {
+  if (b.priority === 'urgent' || b.priority === 'high') return { label: t('Khẩn', 'Urgent'), color: 'coral' };
+  if (b.type === 'event' || b.type === 'activity') return { label: t('Hoạt động', 'Activity'), color: 'mint' };
+  if (b.type === 'finance') return { label: t('Học phí', 'Tuition'), color: 'amber' };
+  if (b.type === 'academic') return { label: t('Học vụ', 'Academic'), color: 'blue' };
+  return { label: t('Thông báo', 'Announcement'), color: 'violet' };
 }
 const dmy = (s) => { if (!s) return ''; const d = new Date(s); return `${d.getDate()}/${d.getMonth() + 1}`; };
 
@@ -82,15 +67,17 @@ function Bar({ value, color }) {
   return <div className="bar"><i style={{ width: `${Math.min(100, value * 10)}%`, background: `var(--${color})` }} /></div>;
 }
 
-function formatDue(dateStr) {
+function formatDue(dateStr, t) {
   if (!dateStr) return '';
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
   const diff = Math.round((d - today) / 86400000);
-  if (diff === 0) return { label: 'Hôm nay, 23:59', urgent: true };
-  if (diff === 1) return { label: 'Ngày mai', urgent: false };
-  if (diff < 0) return { label: 'Quá hạn', urgent: true };
-  const wd = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][d.getDay()];
+  if (diff === 0) return { label: t('Hôm nay, 23:59', 'Today, 23:59'), urgent: true };
+  if (diff === 1) return { label: t('Ngày mai', 'Tomorrow'), urgent: false };
+  if (diff < 0) return { label: t('Quá hạn', 'Overdue'), urgent: true };
+  const wdVi = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'][d.getDay()];
+  const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+  const wd = t(wdVi, wdEn);
   return { label: `${wd}, ${d.getDate()}/${d.getMonth() + 1}`, urgent: false };
 }
 
@@ -153,13 +140,22 @@ export default function OverviewTab({ student, setActiveTab }) {
     localStorage.setItem(`student_notes_${student.id}`, JSON.stringify(nextNotes));
   };
 
+  const todaySchedule = [
+    { time: '07:00', subject: t('Chào cờ', 'Flag Ceremony'), room: t('Sân trường', 'School Yard'), color: 'amber' },
+    { time: '07:50', subject: t('Toán', 'Math'), room: t('P.201 · Cô Hoa', 'Room 201 · Ms. Hoa'), color: 'blue' },
+    { time: '08:40', subject: t('Tiếng Anh', 'English'), room: t('P.305 · Thầy Phúc', 'Room 305 · Mr. Phuc'), color: 'mint' },
+    { time: '09:45', subject: t('Vật lý', 'Physics'), room: t('P.Lab 2 · Thầy Dũng', 'Lab Room 2 · Mr. Dung'), color: 'violet' },
+    { time: '10:35', subject: t('Ngữ văn', 'Literature'), room: t('P.201 · Cô Lan', 'Room 201 · Ms. Lan'), color: 'pink' },
+    { time: '14:00', subject: t('Thể dục', 'Physical Education'), room: t('Nhà thi đấu · Thầy Hải', 'Gymnasium · Mr. Hai'), color: 'lime' },
+  ];
+
   return (
     <div>
       <div className="page-head">
         <div>
           <h2 className="page-title">{t(`Chào ${firstName}, sẵn sàng học chưa? 🚀`, `Hello ${firstName}, ready to learn? 🚀`)}</h2>
           <p className="page-sub">
-            {t('Hôm nay bạn có ', 'Today you have ')}<b style={{ color: 'var(--accent-ink)' }}>{myDeadlines.length} {t('bài tập', 'assignments')}</b> {t('đến hạn và ', 'due and ')}<b style={{ color: 'var(--accent-ink)' }}>{PERIODS.length} {t('tiết học', 'periods')}</b>.
+            {t('Hôm nay bạn có ', 'Today you have ')}<b style={{ color: 'var(--accent-ink)' }}>{myDeadlines.length} {t('bài tập', 'assignments')}</b> {t('đến hạn và ', 'due and ')}<b style={{ color: 'var(--accent-ink)' }}>{todaySchedule.length} {t('tiết học', 'periods')}</b>.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowNoteModal(true)}><Plus size={18} /> {t('Ghi chú mới', 'New Note')}</button>
@@ -180,7 +176,7 @@ export default function OverviewTab({ student, setActiveTab }) {
           <SectionCard title={t('Lịch học hôm nay', 'Today Schedule')} icon={Calendar} delay="d3"
             action={<button className="btn btn-soft btn-sm" onClick={() => setActiveTab && setActiveTab('calendar')}>{t('Cả tuần', 'Full Week')} <ChevronRight size={15} /></button>}>
             <div className="col" style={{ gap: 9 }}>
-              {PERIODS.map((p, i) => (
+              {todaySchedule.map((p, i) => (
                 <div className="tt-period" key={i} style={{ borderLeftColor: `var(--${p.color})` }}>
                   <div style={{ minWidth: 52 }}><span style={{ fontWeight: 800, fontSize: '0.92rem' }}>{p.time}</span></div>
                   <div className={`chip-ico bg-${p.color} t-${p.color}`} style={{ width: 38, height: 38 }}><BookOpen size={18} /></div>
@@ -199,7 +195,13 @@ export default function OverviewTab({ student, setActiveTab }) {
             action={<button className="btn btn-soft btn-sm" onClick={() => openStudentSubTab('competency_heatmap')}>{t('Chi tiết', 'Details')}</button>}>
             <div className="ds-grid cols-2" style={{ gap: 14 }}>
               {SUBJECT_KEYS.filter(k => typeof grades[k] === 'number').map((k) => {
-                const m = SUBJECT_META[k];
+                const metaMap = {
+                  Math: { name: t('Toán', 'Math'), color: 'blue' },
+                  Literature: { name: t('Ngữ văn', 'Literature'), color: 'pink' },
+                  Physics: { name: t('Vật lý', 'Physics'), color: 'violet' },
+                  English: { name: t('Tiếng Anh', 'English'), color: 'mint' },
+                };
+                const m = metaMap[k];
                 return (
                   <div key={k} className="flex items-center gap-12" style={{ padding: '4px 2px' }}>
                     <div className={`chip-ico bg-${m.color} t-${m.color}`} style={{ width: 40, height: 40 }}><BookOpen size={18} /></div>
@@ -240,13 +242,13 @@ export default function OverviewTab({ student, setActiveTab }) {
             <div className="col" style={{ gap: 8 }}>
               {myDeadlines.length === 0 && <div className="muted" style={{ fontSize: '0.85rem', padding: '8px 2px' }}>{t('Không có bài tập nào sắp đến hạn 🎉', 'No upcoming assignments 🎉')}</div>}
               {myDeadlines.map((a, i) => {
-                const due = formatDue(a.date);
+                const due = formatDue(a.date, t);
                 const color = ['blue', 'amber', 'mint', 'orange'][i % 4];
                 return (
                   <div className="row" key={a.id || i} style={{ padding: 11, border: '1px solid var(--line)', borderRadius: 'var(--r-md)' }}>
                     <div className={`chip-ico bg-${color} t-${color}`} style={{ width: 40, height: 40 }}><ClipboardList size={18} /></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t(a.title)}</div>
                       <div className={`flex items-center gap-6 ${due.urgent ? 't-coral' : 'muted'}`} style={{ fontSize: '0.78rem', fontWeight: 600, marginTop: 2 }}>
                         <Clock size={13} /> {due.label}
                       </div>
@@ -264,7 +266,7 @@ export default function OverviewTab({ student, setActiveTab }) {
               {BADGES.map((b, i) => (
                 <div className={`badge-tile bg-${b.color} ${b.got ? '' : 'locked'}`} key={i}>
                   <div className="bt-ico" style={{ background: '#fff', fontSize: 26 }}>{b.ico}</div>
-                  <span className={`t-${b.color}`} style={{ fontSize: '0.74rem', fontWeight: 700 }}>{b.name}</span>
+                  <span className={`t-${b.color}`} style={{ fontSize: '0.74rem', fontWeight: 700 }}>{t(b.name, b.enName)}</span>
                 </div>
               ))}
             </div>
@@ -275,14 +277,14 @@ export default function OverviewTab({ student, setActiveTab }) {
             <div className="col" style={{ gap: 12 }}>
               {news.length === 0 && <div className="muted" style={{ fontSize: '0.85rem' }}>{t('Chưa có thông báo mới.', 'No new announcements.')}</div>}
               {news.map((a, i) => {
-                const tag = bulletinTag(a);
+                const tag = bulletinTag(a, t);
                 return (
                   <div key={a.id || i}>
                     <div className="flex items-center gap-8" style={{ marginBottom: 5 }}>
                       <Pill color={tag.color}>{tag.label}</Pill>
                       <span className="muted" style={{ fontSize: '0.74rem' }}>{dmy(a.date)}</span>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem', lineHeight: 1.4 }}>{a.title}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', lineHeight: 1.4 }}>{t(a.title)}</div>
                     {i === 0 && news.length > 1 && <div style={{ height: 1, background: 'var(--line)', marginTop: 12 }} />}
                   </div>
                 );
