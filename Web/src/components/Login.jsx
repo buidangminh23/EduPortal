@@ -21,11 +21,12 @@ const QUICK_CREDS = {
 };
 
 export default function Login({ onBack }) {
-  const { setCurrentRole } = useContext(AppContext);
+  const { setCurrentRole, setUserSession } = useContext(AppContext);
   const { signInWithPassword } = useAuth();
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState(QUICK_CREDS.student.username);
   const [password, setPassword] = useState(QUICK_CREDS.student.password);
+
 
   const [clientId, setClientId] = useState(() => localStorage.getItem('google_client_id') || '1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
   const [showConfig, setShowConfig] = useState(false);
@@ -154,11 +155,15 @@ export default function Login({ onBack }) {
 
     localStorage.removeItem('eduportal_logged_out');
     localStorage.setItem('userSession', JSON.stringify(session));
+    if (setUserSession) {
+      setUserSession(session);
+    }
     if (setCurrentRole) {
       setCurrentRole(selRole);
     }
     window.location.reload();
   };
+
 
 
   const sel = ROLES.find(r => r.id === role) || ROLES[0];

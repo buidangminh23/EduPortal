@@ -893,12 +893,8 @@ export const AppProvider = ({ children }) => {
 
   const [mockSession, setMockSession] = useState(() => {
     try {
-      const isLoggedOut = safeStorage.getItem('eduportal_logged_out');
-      if (isLoggedOut === 'true') {
-        return null;
-      }
       const saved = safeStorage.getItem('userSession');
-      return saved ? JSON.parse(saved) : defaultDemoSession;
+      return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
@@ -922,25 +918,21 @@ export const AppProvider = ({ children }) => {
   const currentRole = userSession?.role || '';
 
   const setUserSession = (session) => {
+    setMockSession(session);
     if (session) {
-      safeStorage.removeItem('eduportal_logged_out');
       safeStorage.setItem('userSession', JSON.stringify(session));
-      setMockSession(session);
     } else {
-      safeStorage.setItem('eduportal_logged_out', 'true');
       safeStorage.removeItem('userSession');
-      setMockSession(null);
+      safeStorage.removeItem('mock_sb_session');
     }
   };
 
   const setCurrentRole = (newRole) => {
-    if (userSession) {
-      const updated = { ...userSession, role: newRole };
-      safeStorage.removeItem('eduportal_logged_out');
-      safeStorage.setItem('userSession', JSON.stringify(updated));
-      setMockSession(updated);
-    }
+    const base = userSession || defaultDemoSession;
+    const updated = { ...base, role: newRole };
+    setUserSession(updated);
   };
+
 
 
   // Shared student sub-tab state (controlled from Sidebar)
@@ -1510,9 +1502,9 @@ export const AppProvider = ({ children }) => {
   // Actions
   const logout = async () => {
     try {
-      safeStorage.setItem('eduportal_logged_out', 'true');
       safeStorage.removeItem('userSession');
       safeStorage.removeItem('mock_sb_session');
+      safeStorage.removeItem('eduportal_logged_out');
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('mock_sb_session')) {
           safeStorage.removeItem(key);
@@ -1529,6 +1521,7 @@ export const AppProvider = ({ children }) => {
     }
     window.location.reload();
   };
+
 
 
 
