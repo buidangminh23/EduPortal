@@ -893,10 +893,14 @@ export const AppProvider = ({ children }) => {
 
   const [mockSession, setMockSession] = useState(() => {
     try {
+      const isLoggedOut = safeStorage.getItem('eduportal_logged_out');
+      if (isLoggedOut === 'true') {
+        return null;
+      }
       const saved = safeStorage.getItem('userSession');
       return saved ? JSON.parse(saved) : defaultDemoSession;
     } catch {
-      return defaultDemoSession;
+      return null;
     }
   });
 
@@ -918,21 +922,26 @@ export const AppProvider = ({ children }) => {
   const currentRole = userSession?.role || '';
 
   const setUserSession = (session) => {
-    setMockSession(session);
     if (session) {
-      localStorage.setItem('userSession', JSON.stringify(session));
+      safeStorage.removeItem('eduportal_logged_out');
+      safeStorage.setItem('userSession', JSON.stringify(session));
+      setMockSession(session);
     } else {
-      localStorage.removeItem('userSession');
+      safeStorage.setItem('eduportal_logged_out', 'true');
+      safeStorage.removeItem('userSession');
+      setMockSession(null);
     }
   };
 
   const setCurrentRole = (newRole) => {
     if (userSession) {
       const updated = { ...userSession, role: newRole };
-      localStorage.setItem('userSession', JSON.stringify(updated));
+      safeStorage.removeItem('eduportal_logged_out');
+      safeStorage.setItem('userSession', JSON.stringify(updated));
       setMockSession(updated);
     }
   };
+
 
   // Shared student sub-tab state (controlled from Sidebar)
   const [studentSubTab, setStudentSubTab] = useState('overview');
@@ -1501,14 +1510,14 @@ export const AppProvider = ({ children }) => {
   // Actions
   const logout = async () => {
     try {
-      localStorage.removeItem('userSession');
-      localStorage.removeItem('mock_sb_session');
+      safeStorage.setItem('eduportal_logged_out', 'true');
+      safeStorage.removeItem('userSession');
+      safeStorage.removeItem('mock_sb_session');
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('mock_sb_session')) {
-          localStorage.removeItem(key);
+          safeStorage.removeItem(key);
         }
       });
-      setUserSession(null);
       setMockSession(null);
     } catch (e) {
       console.error(e);
@@ -1520,6 +1529,7 @@ export const AppProvider = ({ children }) => {
     }
     window.location.reload();
   };
+
 
 
   const addStudent = (student) => {

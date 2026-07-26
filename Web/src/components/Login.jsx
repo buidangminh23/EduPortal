@@ -152,12 +152,14 @@ export default function Login({ onBack }) {
       studentId: (selRole === 'student' || selRole === 'parent') ? 'HS001' : null,
     };
 
+    localStorage.removeItem('eduportal_logged_out');
     localStorage.setItem('userSession', JSON.stringify(session));
     if (setCurrentRole) {
       setCurrentRole(selRole);
     }
     window.location.reload();
   };
+
 
   const sel = ROLES.find(r => r.id === role) || ROLES[0];
 
