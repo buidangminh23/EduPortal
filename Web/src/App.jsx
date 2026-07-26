@@ -500,7 +500,18 @@ function AdminStudentManager() {
               value={gpaFilter}
               onChange={e => setGpaFilter(e.target.value)}
               className="form-control"
-              style={{ height: '34px', fontSize: '0.8rem', borderRadius: '10px', background: '#fff' }}
+              style={{
+                height: '42px',
+                padding: '0 12px',
+                lineHeight: '42px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1e293b',
+                borderRadius: '12px',
+                background: '#fff',
+                border: '1.5px solid rgba(99, 102, 241, 0.25)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+              }}
             >
               <option value="All">Tất cả điểm số</option>
               <option value="xuatsac">🌟 Xuất sắc (&gt;= 9.0)</option>
@@ -517,7 +528,18 @@ function AdminStudentManager() {
               value={feeFilter}
               onChange={e => setFeeFilter(e.target.value)}
               className="form-control"
-              style={{ height: '34px', fontSize: '0.8rem', borderRadius: '10px', background: '#fff' }}
+              style={{
+                height: '42px',
+                padding: '0 12px',
+                lineHeight: '42px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#1e293b',
+                borderRadius: '12px',
+                background: '#fff',
+                border: '1.5px solid rgba(99, 102, 241, 0.25)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+              }}
             >
               <option value="All">Tất cả trạng thái</option>
               <option value="paid">✅ Đã hoàn thành học phí</option>
