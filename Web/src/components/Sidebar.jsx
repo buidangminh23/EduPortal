@@ -408,8 +408,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     if (item.isSubTab) {
       if (activeTab !== 'dashboard') return false;
       if (isStudent) return studentSubTab === item.id;
-      if (isTeacher) return teacherSubTab === item.id;
-      if (isParent) return parentSubTab === item.id;
+      else if (isTeacher) return teacherSubTab === item.id;
+      else if (isParent) return parentSubTab === item.id;
       return false;
     }
     return activeTab === item.id;
@@ -439,13 +439,13 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             </div>
             <button
               onClick={logout}
-              title="Đăng xuất khỏi hệ thống"
+              aria-label="Đăng xuất khỏi hệ thống"
               style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                color: '#ef4444',
-                padding: '6px 10px',
-                borderRadius: '8px',
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.25)',
+                color: '#b91c1c',
+                padding: '4px 8px',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 fontSize: '0.75rem',
                 fontWeight: 700,
@@ -457,12 +457,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 flexShrink: 0
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = '#ef4444';
+                e.currentTarget.style.background = '#dc2626';
                 e.currentTarget.style.color = '#ffffff';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                e.currentTarget.style.color = '#ef4444';
+                e.currentTarget.style.background = 'rgba(220, 38, 38, 0.1)';
+                e.currentTarget.style.color = '#b91c1c';
               }}
             >
               <LogOut size={13} />
@@ -479,7 +479,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               <div style={{
                 fontSize: '0.68rem',
                 fontWeight: 700,
-                color: 'var(--text-tertiary, #94a3b8)',
+                color: 'var(--text-tertiary, #475569)',
                 letterSpacing: '0.06em',
                 padding: '0 10px',
                 marginBottom: '6px',
@@ -501,6 +501,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                       key={item.id}
                       onClick={() => handleItemClick(item)}
                       className={`nav-item ${active ? 'active' : ''}`}
+                      aria-label={displayLabel}
                       style={{
                         position: 'relative',
                         justifyContent: 'space-between'
@@ -516,11 +517,11 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                       {badge !== null && (
                         <span style={{
                           background: active 
-                            ? (getBadgeColor(item.id) === '#ef4444' ? '#ef4444' : 'var(--accent-ink)')
-                            : (getBadgeColor(item.id) === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-soft)'),
+                            ? (getBadgeColor(item.id) === '#dc2626' ? '#dc2626' : 'var(--accent-ink)')
+                            : (getBadgeColor(item.id) === '#dc2626' ? 'rgba(220, 38, 38, 0.15)' : 'var(--accent-soft)'),
                           color: active 
                             ? 'white'
-                            : (getBadgeColor(item.id) === '#ef4444' ? '#b91c1c' : 'var(--accent-ink)'),
+                            : (getBadgeColor(item.id) === '#dc2626' ? '#991b1b' : 'var(--accent-ink)'),
                           borderRadius: '99px',
                           fontSize: '0.65rem',
                           fontWeight: 700,
@@ -541,12 +542,13 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--line, rgba(255,255,255,0.1))' }}>
             <button
               onClick={logout}
+              aria-label="Đăng xuất khỏi hệ thống"
               style={{
                 width: '100%',
-                color: '#ef4444',
+                color: '#b91c1c',
                 fontWeight: 700,
-                background: 'rgba(239, 68, 68, 0.08)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.25)',
                 borderRadius: '10px',
                 padding: '10px 14px',
                 display: 'flex',

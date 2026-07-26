@@ -15,25 +15,25 @@
   --line-strong: #dfe1ef;
 
   /* Ink */
-  --ink: #1d2138;
-  --ink-soft: #565d7e;
-  --muted-c: #565d7e;
+  --ink: #1e293b;
+  --ink-soft: #475569;
+  --muted-c: #475569;
 
   /* Brand + accent palette */
   --violet: #6c5ce7;  --violet-soft: #efecff;
-  --blue: #3d7bff;    --blue-soft: #e6efff;
-  --sky: #1fb6f0;     --sky-soft: #e0f5ff;
-  --mint: #14c4a0;    --mint-soft: #ddf8f1;
-  --lime: #5bc85b;    --lime-soft: #e4f7e2;
-  --amber: #ffb020;   --amber-soft: #fff3da;
-  --orange: #ff8a3d;  --orange-soft: #ffeadd;
-  --coral: #ff6b6b;   --coral-soft: #ffe5e5;
-  --pink: #ff5fa2;    --pink-soft: #ffe4f0;
+  --blue: #2563eb;    --blue-soft: #e6efff;
+  --sky: #0284c7;     --sky-soft: #e0f5ff;
+  --mint: #0d9488;    --mint-soft: #ccfbf1;
+  --lime: #16a34a;    --lime-soft: #dcfce7;
+  --amber: #d97706;   --amber-soft: #fef3c7;
+  --orange: #ea580c;  --orange-soft: #ffedd5;
+  --coral: #dc2626;   --coral-soft: #fee2e2;
+  --pink: #db2777;    --pink-soft: #fce7f3;
 
   /* Accent — overridden per role by [data-role] */
   --accent: var(--violet);
   --accent-soft: var(--violet-soft);
-  --accent-ink: #4634c9;
+  --accent-ink: #4338ca;
 
   /* Radii */
   --r-sm: 12px;

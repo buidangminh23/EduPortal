@@ -1012,6 +1012,7 @@ export default function EduMeet() {
                 onClick={() => setMicOn(!micOn)} 
                 className={`control-btn ${micOn ? 'active' : ''}`}
                 title="Bật/Tắt Mic"
+                aria-label={micOn ? "Tắt Micro" : "Bật Micro"}
               >
                 {micOn ? <Mic size={18} /> : <MicOff size={18} />}
               </button>
@@ -1020,6 +1021,7 @@ export default function EduMeet() {
                 onClick={() => setCamOn(!camOn)} 
                 className={`control-btn ${camOn ? 'active' : ''}`}
                 title="Bật/Tắt Camera"
+                aria-label={camOn ? "Tắt Camera" : "Bật Camera"}
               >
                 {camOn ? <Video size={18} /> : <VideoOff size={18} />}
               </button>
@@ -1034,6 +1036,7 @@ export default function EduMeet() {
                 }} 
                 className={`control-btn ${screenShare ? 'active' : ''}`}
                 title="Trình chiếu màn hình"
+                aria-label="Trình chiếu màn hình"
               >
                 <Monitor size={18} />
               </button>
@@ -1045,6 +1048,7 @@ export default function EduMeet() {
                 }} 
                 className={`control-btn ${handRaised ? 'active' : ''}`}
                 title="Giơ tay phát biểu"
+                aria-label="Giơ tay phát biểu"
               >
                 <Hand size={18} />
               </button>
@@ -1054,6 +1058,7 @@ export default function EduMeet() {
                   onClick={() => setShowReactionMenu(!showReactionMenu)} 
                   className={`control-btn ${showReactionMenu ? 'active' : ''}`}
                   title="Thả cảm xúc"
+                  aria-label="Thả cảm xúc"
                 >
                   <Sparkles size={18} />
                 </button>
@@ -1067,6 +1072,7 @@ export default function EduMeet() {
                           triggerReaction(emoji);
                           setShowReactionMenu(false);
                         }}
+                        aria-label={`Thả biểu cảm ${emoji}`}
                         className="reaction-emoji-btn"
                       >
                         {emoji}
@@ -1085,6 +1091,7 @@ export default function EduMeet() {
                   boxShadow: isRecording ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
                 }}
                 title={isRecording ? "Dừng ghi âm" : "Ghi âm cuộc trò chuyện"}
+                aria-label={isRecording ? "Dừng ghi âm" : "Ghi âm cuộc trò chuyện"}
               >
                 <Disc size={18} className={isRecording ? 'spin-slow' : ''} fill={isRecording ? '#ef4444' : 'none'} />
               </button>
@@ -1093,6 +1100,7 @@ export default function EduMeet() {
                 onClick={togglePictureInPicture} 
                 className={`control-btn ${isPipActive ? 'active' : ''}`}
                 title={isPipActive ? "Tắt Picture-in-Picture" : "Thu nhỏ video (Picture-in-Picture)"}
+                aria-label={isPipActive ? "Tắt Picture-in-Picture" : "Thu nhỏ video (Picture-in-Picture)"}
               >
                 <PictureInPicture size={18} />
               </button>
@@ -1103,6 +1111,7 @@ export default function EduMeet() {
                 onClick={handleLeaveCall} 
                 className="control-btn danger"
                 title="Rời cuộc gọi"
+                aria-label="Rời cuộc gọi"
               >
                 <PhoneOff size={18} />
               </button>

@@ -79,8 +79,10 @@ export default function PortfolioBuilder() {
           alignItems: 'center',
           gap: '12px'
         }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Chọn học sinh quản lý:</span>
+          <label htmlFor="select-portfolio-student" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Chọn học sinh quản lý:</label>
           <select
+            id="select-portfolio-student"
+            aria-label="Chọn học sinh quản lý"
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
             className="form-control"
@@ -101,9 +103,9 @@ export default function PortfolioBuilder() {
           {/* STUDENT CV VIEWER & VISIBILITY CONFIG */}
           {isStudent && (
             <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 Cấu hình hiển thị hồ sơ
-              </h4>
+              </h3>
 
               {/* Toggle Public Switch */}
               <div style={{ 
@@ -117,7 +119,7 @@ export default function PortfolioBuilder() {
                 marginBottom: 16
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {portfolio.isPublic ? <Globe size={18} color="#10b981" /> : <Lock size={18} color="var(--text-muted)" />}
+                  {portfolio.isPublic ? <Globe size={18} color="#047857" /> : <Lock size={18} color="var(--text-muted)" />}
                   <div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>Cấu hình công khai hồ sơ</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -127,6 +129,7 @@ export default function PortfolioBuilder() {
                 </div>
                 <button 
                   onClick={handleTogglePublic} 
+                  aria-label={portfolio.isPublic ? 'Chuyển Riêng Tư' : 'Công Khai'}
                   className={`btn ${portfolio.isPublic ? 'btn-primary' : 'btn-secondary'}`}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
@@ -152,9 +155,9 @@ export default function PortfolioBuilder() {
               </div>
 
               {/* Achievements read-only list */}
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                 Hoạt động ngoại khóa đã ghi nhận:
-              </h4>
+              </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {portfolio.extracurricularAchievements.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
@@ -182,14 +185,15 @@ export default function PortfolioBuilder() {
           {/* TEACHER/ADMIN CV EDITOR FORM */}
           {canEdit && (
             <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Plus size={18} /> Cập nhật hoạt động & Thành tích ngoại khóa
-              </h4>
+              </h3>
 
               {/* Achievements add form */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                 <input 
                   type="text" 
+                  aria-label="Nhập tên hoạt động ngoại khóa hoặc giải thưởng"
                   value={newAchievement}
                   onChange={e => setNewAchievement(e.target.value)}
                   placeholder="Ví dụ: Đạt giải Nhất cuộc thi Tin học trẻ 2026..."
@@ -198,6 +202,7 @@ export default function PortfolioBuilder() {
                 />
                 <button 
                   onClick={handleAddAchievement} 
+                  aria-label="Thêm thành tích"
                   className="btn btn-primary"
                   style={{ gap: 4, height: 42, padding: '0 16px', flexShrink: 0 }}
                 >
@@ -228,8 +233,9 @@ export default function PortfolioBuilder() {
                       <span style={{ fontSize: '0.82rem', color: '#1e293b' }}>🏆 {item}</span>
                       <button 
                         onClick={() => handleDeleteAchievement(idx)} 
-                        className="btn btn-secondary" 
-                        style={{ padding: 4, color: 'var(--accent-danger)', background: 'transparent', border: 'none' }}
+                        aria-label="Xóa thành tích này"
+                        className="btn" 
+                        style={{ padding: 4, color: '#ef4444', background: 'transparent' }}
                       >
                         <Trash size={14} />
                       </button>
@@ -243,9 +249,9 @@ export default function PortfolioBuilder() {
           {/* ADMIN STUDENT PORTFOLIO VERIFICATION ROSTER */}
           {isAdmin && (
             <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
-              <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Shield size={18} /> Phê duyệt & Ký chữ ký điện tử Blockchain
-              </h4>
+              </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {students.map(std => {
@@ -279,7 +285,7 @@ export default function PortfolioBuilder() {
                           Hoạt động ngoại khóa ({stdPort.extracurricularAchievements.length}): {stdPort.extracurricularAchievements.join('; ') || 'Chưa cập nhật'}
                         </div>
                         {isSigned && (
-                          <div style={{ fontSize: '0.72rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.72rem', color: '#047857', display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontWeight: 700 }}>
                             <CheckCircle size={12} /> Học bạ số đã được niêm phong chữ ký điện tử.
                           </div>
                         )}
@@ -288,13 +294,15 @@ export default function PortfolioBuilder() {
                       <button
                         onClick={() => handleBghSign(std.id)}
                         disabled={isSigned || stdPort.extracurricularAchievements.length === 0}
+                        aria-label={isSigned ? 'Đã Ký Số' : 'Ký Số Blockchain'}
                         className="btn btn-primary"
                         style={{ 
                           fontSize: '0.8rem', 
                           padding: '8px 16px', 
-                          background: isSigned ? 'rgba(16, 185, 129, 0.15)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                          color: isSigned ? '#10b981' : 'white',
-                          border: 'none'
+                          background: isSigned ? 'rgba(4, 120, 87, 0.15)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                          color: isSigned ? '#047857' : 'white',
+                          border: 'none',
+                          fontWeight: 700
                         }}
                       >
                         {isSigned ? 'Đã Ký Số' : 'Ký Số Blockchain'}

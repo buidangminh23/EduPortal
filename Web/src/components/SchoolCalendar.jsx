@@ -642,10 +642,10 @@ export default function SchoolCalendar() {
             marginBottom: '16px' 
           }}>
             <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={handlePrevMonth} className="btn btn-secondary" style={{ padding: '8px', minWidth: 0, borderRadius: '8px' }}>
+              <button onClick={handlePrevMonth} className="btn btn-secondary" aria-label="Tháng trước" style={{ padding: '8px', minWidth: 0, borderRadius: '8px' }}>
                 <ChevronLeft size={16} />
               </button>
-              <button onClick={handleNextMonth} className="btn btn-secondary" style={{ padding: '8px', minWidth: 0, borderRadius: '8px' }}>
+              <button onClick={handleNextMonth} className="btn btn-secondary" aria-label="Tháng sau" style={{ padding: '8px', minWidth: 0, borderRadius: '8px' }}>
                 <ChevronRight size={16} />
               </button>
               <button onClick={handleGoToday} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0 12px', borderRadius: '8px' }}>
@@ -653,9 +653,9 @@ export default function SchoolCalendar() {
               </button>
             </div>
             
-            <h4 style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
+            <h3 style={{ margin: 0, fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
               {getVnMonthName(currentDate)}
-            </h4>
+            </h3>
 
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
               Hôm nay: 03/06/2026
