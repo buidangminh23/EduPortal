@@ -36,94 +36,193 @@ import {
   Camera,
   Sparkles,
   Compass,
-  Calculator
+  Calculator,
+  Sparkle,
+  Compass as NavCompass
 } from 'lucide-react';
 
-// Sub-nav items for student dashboard
-// Nhóm: Tổng quan → Học tập & Học liệu → Điểm danh & Rèn luyện → Giao tiếp & Hoạt động lớp → Hướng nghiệp & Tiện ích
-const STUDENT_SUB_ITEMS = [
-  { id: 'overview',            label: 'Tổng Quan Học Tập',     icon: LayoutDashboard },
-  { id: 'deadlines',           label: 'Deadline & Lịch Thi',    icon: AlarmClock },
-  { id: 'assignments',         label: 'Bài Tập Về Nhà',        icon: CheckSquare },
-  { id: 'library',             label: 'Học Liệu & Flashcards',  icon: Library },
-  { id: 'mock_exams',          label: 'Thi Thử Đại Học',       icon: ClipboardList, studentOnly: true },
-  { id: 'study_plan',          label: 'Kế Hoạch Ôn Thi AI',    icon: Target },
-  { id: 'competency_heatmap',  label: 'Bản Đồ Năng Lực AI',   icon: Activity },
-  { id: 'attendance',          label: 'Điểm Danh Chuyên Cần',  icon: ClipboardCheck },
-  { id: 'conduct',             label: 'Rèn Luyện',             icon: Award },
-  { id: 'class_chat',          label: 'Chat Nhóm Lớp',         icon: MessageSquare },
-  { id: 'tournament',          label: 'Cuộc Thi Thách Đấu',    icon: Trophy },
-  { id: 'clubs',               label: 'Câu Lạc Bộ',            icon: UsersRound },
-  { id: 'counseling',          label: 'Tư Vấn & Hướng Nghiệp', icon: Brain },
-  { id: 'university_matchmaker',  label: 'Định Hướng Đại Học AI', icon: GraduationCap },
-  { id: 'cafeteria',           label: 'Bán Trú & Dinh Dưỡng',  icon: UtensilsCrossed },
-  { id: 'wallet_id',           label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard },
-  { id: 'casio580',            label: 'Máy Tính Casio fx-580', icon: Calculator },
+// Section-based nav items for Student Dashboard
+const STUDENT_SECTIONS = [
+  {
+    title: 'HỌC TẬP & ĐIỂM SỐ',
+    items: [
+      { id: 'overview',           label: 'Tổng Quan Học Tập',     icon: LayoutDashboard, isSubTab: true },
+      { id: 'deadlines',          label: 'Deadline & Lịch Thi',    icon: AlarmClock,      isSubTab: true },
+      { id: 'assignments',        label: 'Bài Tập Về Nhà',        icon: CheckSquare,     isSubTab: true },
+      { id: 'attendance',         label: 'Điểm Danh Chuyên Cần',  icon: ClipboardCheck,  isSubTab: true },
+      { id: 'conduct',            label: 'Điểm Rèn Luyện',        icon: Award,           isSubTab: true },
+    ]
+  },
+  {
+    title: 'TRỢ LÝ AI & HỌC LIỆU',
+    items: [
+      { id: 'library',            label: 'Học Liệu & Flashcards',  icon: Library,         isSubTab: true },
+      { id: 'mock_exams',         label: 'Thi Thử Đại Học',       icon: ClipboardList,   isSubTab: true },
+      { id: 'study_plan',         label: 'Kế Hoạch Ôn Thi AI',    icon: Target,          isSubTab: true },
+      { id: 'competency_heatmap', label: 'Bản Đồ Năng Lực AI',   icon: Activity,        isSubTab: true },
+      { id: 'essay_grader',       label: 'AI Chấm Bài Luận',     icon: FileText,        isSubTab: false },
+      { id: 'weblab',             label: 'Phòng Thí Nghiệm Ảo',  icon: FlaskConical,    isSubTab: false },
+      { id: 'casio580',           label: 'Máy Tính Casio fx-580', icon: Calculator,      isSubTab: true },
+    ]
+  },
+  {
+    title: 'TƯ VẤN & THÀNH TÍCH',
+    items: [
+      { id: 'counseling',         label: 'Tư Vấn & Hướng Nghiệp', icon: Brain,           isSubTab: true },
+      { id: 'university_matchmaker', label: 'Định Hướng Đại Học AI', icon: GraduationCap, isSubTab: true },
+      { id: 'gamification',       label: 'Thành Tích & Xếp Hạng', icon: Trophy,          isSubTab: false },
+      { id: 'portfolio',          label: 'Học Bạ Số & CV',       icon: BookMarked,      isSubTab: false },
+    ]
+  },
+  {
+    title: 'ĐỜI SỐNG & CỘNG ĐỒNG',
+    items: [
+      { id: 'class_chat',         label: 'Chat Nhóm Lớp',         icon: MessageSquare,   isSubTab: true },
+      { id: 'clubs',              label: 'Câu Lạc Bộ',            icon: UsersRound,      isSubTab: true },
+      { id: 'tournament',         label: 'Cuộc Thi Thách Đấu',    icon: Trophy,          isSubTab: true },
+      { id: 'cafeteria',          label: 'Bán Trú & Dinh Dưỡng',  icon: UtensilsCrossed, isSubTab: true },
+      { id: 'wallet_id',          label: 'Thẻ HS & Ví Điện Tử',  icon: CreditCard,      isSubTab: true },
+      { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
+      { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
+    ]
+  }
 ];
 
-// Sub-nav items for subject teacher
-const TEACHER_SUBJECT_SUB_ITEMS = [
-  { id: 'resources',           label: 'Học Liệu Bài Giảng',     icon: BookOpen },
-  { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
-  { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
-  { id: 'ai_tutor_trainer',    label: 'Huấn Luyện Gia Sư AI',  icon: Compass },
-  { id: 'assignments',         label: 'Giao Bài Tập Về Nhà',   icon: CheckSquare },
-  { id: 'mock_exams',          label: 'Điểm Thi Thử Môn',      icon: ClipboardList },
-  { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
+// Section-based nav items for Teacher Dashboard
+const TEACHER_SECTIONS = [
+  {
+    title: 'QUẢN LÝ LỚP & GIẢNG DẠY',
+    items: [
+      { id: 'students',           label: 'Học Sinh & Điểm Số',    icon: Users,           isSubTab: true },
+      { id: 'attendance',         label: 'Điểm Danh Lớp',         icon: ClipboardCheck,  isSubTab: true },
+      { id: 'conduct',            label: 'Điểm Rèn Luyện Lớp',     icon: Award,           isSubTab: true },
+      { id: 'journal',            label: 'Ghi Sổ Đầu Bài',       icon: BookOpen,        isSubTab: false },
+      { id: 'seating_chart',      label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers,          isSubTab: false },
+      { id: 'class_voting',       label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck,  isSubTab: false },
+    ]
+  },
+  {
+    title: 'CÔNG CỤ AI & GIÁO ÁN',
+    items: [
+      { id: 'lesson_plans',       label: 'Kế Hoạch Giáo Án',       icon: FileText,        isSubTab: true },
+      { id: 'ai_planner',         label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles,        isSubTab: true },
+      { id: 'ai_tutor_trainer',   label: 'Huấn Luyện Gia Sư AI',  icon: Compass,         isSubTab: true },
+      { id: 'resources',          label: 'Học Liệu Bài Giảng',     icon: BookOpen,        isSubTab: true },
+      { id: 'exam_repository',    label: 'Kho Đề Thi',           icon: BookMarked,      isSubTab: false },
+      { id: 'essay_grader',       label: 'AI Chấm Bài Luận',     icon: FileText,        isSubTab: false },
+      { id: 'ai_risk',            label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle,   isSubTab: false },
+    ]
+  },
+  {
+    title: 'LIÊN LẠC PHỤ HUYNH & HÀNH CHÍNH',
+    items: [
+      { id: 'chat',               label: 'Nhắn Tin Phụ Huynh',   icon: MessageCircle,   isSubTab: false },
+      { id: 'qa',                 label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare,   isSubTab: true },
+      { id: 'meeting_booking',    label: 'Lịch Hẹn Gặp Mặt',    icon: CalendarCheck,   isSubTab: false },
+      { id: 'leaves',             label: 'Duyệt Nghỉ Phép',       icon: Calendar,        isSubTab: true },
+      { id: 'teacher_leaves',     label: 'Nghỉ Phép & Dạy Thay',   icon: Clock,           isSubTab: true },
+      { id: 'duty_schedule',      label: 'Lịch Trực Tuần GV',    icon: Calendar,        isSubTab: false },
+      { id: 'asset_manager',      label: 'Đặt Phòng & Thiết Bị',  icon: Layers,          isSubTab: false },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
+    ]
+  }
 ];
 
-// Sub-nav items for homeroom teacher
-const TEACHER_HOMEROOM_SUB_ITEMS = [
-  { id: 'students',            label: 'Học Sinh & Điểm 12A1',  icon: Users },
-  { id: 'attendance',          label: 'Điểm Danh Lớp 12A1',     icon: ClipboardCheck },
-  { id: 'conduct',             label: 'Điểm Rèn Luyện 12A1',    icon: Award },
-  { id: 'qa',                  label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare },
-  { id: 'leaves',              label: 'Duyệt Nghỉ Phép 12A1',   icon: Calendar },
-  { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
+// Section-based nav items for Principal / Admin
+const ADMIN_SECTIONS = [
+  {
+    title: 'QUẢN TRỊ TRƯỜNG HỌC',
+    items: [
+      { id: 'dashboard',          label: 'Tổng Quan BGH',        icon: LayoutDashboard, isSubTab: false },
+      { id: 'teachers',           label: 'Quản Lý Giáo Viên',    icon: GraduationCap,   isSubTab: false },
+      { id: 'students',           label: 'Quản Lý Học Sinh',     icon: Users,           isSubTab: false },
+      { id: 'portfolio',          label: 'Học Bạ Số & CV',       icon: BookMarked,      isSubTab: false },
+      { id: 'journal',            label: 'Sổ Đầu Bài Điện Tử',   icon: BookOpen,        isSubTab: false },
+    ]
+  },
+  {
+    title: 'CÔNG CỤ AI & PHÂN TÍCH',
+    items: [
+      { id: 'ai_risk',            label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle,   isSubTab: false },
+      { id: 'class_comparison',   label: 'So Sánh Các Lớp',      icon: Activity,        isSubTab: false },
+      { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',  icon: Calendar,        isSubTab: false },
+      { id: 'exam_repository',    label: 'Kho Đề Thi Trường',    icon: BookMarked,      isSubTab: false },
+    ]
+  },
+  {
+    title: 'VẬN HÀNH & TRUYỀN THÔNG',
+    items: [
+      { id: 'duty_schedule',      label: 'Phân Công Lịch Trực',  icon: Calendar,        isSubTab: false },
+      { id: 'asset_manager',      label: 'Tài Sản & Thiết Bị',   icon: Layers,          isSubTab: false },
+      { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
+      { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
+      { id: 'school_gallery',     label: 'Album Sự Kiện Trường', icon: Camera,          isSubTab: false },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
+    ]
+  }
 ];
 
-const TEACHER_SUB_ITEMS = [
-  { id: 'students',            label: 'Học Sinh & Điểm Số',    icon: Users },
-  { id: 'attendance',          label: 'Điểm Danh Lớp',         icon: ClipboardCheck },
-  { id: 'conduct',             label: 'Điểm Rèn Luyện Lớp',     icon: Award },
-  { id: 'resources',           label: 'Học Liệu Bài Giảng',     icon: BookOpen },
-  { id: 'lesson_plans',        label: 'Kế Hoạch Giáo Án',       icon: FileText },
-  { id: 'ai_planner',          label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles },
-  { id: 'ai_tutor_trainer',    label: 'Huấn Luyện Gia Sư AI',  icon: Compass },
-  { id: 'assignments',         label: 'Giao Bài Tập',          icon: CheckSquare },
-  { id: 'mock_exams',          label: 'Điểm Thi Thử Lớp',      icon: ClipboardList },
-  { id: 'qa',                  label: 'Hỏi Đáp Phụ Huynh',     icon: MessageSquare },
-  { id: 'leaves',              label: 'Duyệt Nghỉ Phép',       icon: Calendar },
-  { id: 'teacher_leaves',      label: 'Nghỉ Phép & Dạy Thay',   icon: Clock },
-];
-
-// Sub-nav items for parent dashboard
-// Nhóm: Điểm & Chuyên cần → Bài tập → Tài chính → Bán trú & Ví → Hỏi đáp → Xin nghỉ phép → Đánh giá GV → Định hướng AI
-const PARENT_SUB_ITEMS = [
-  { id: 'grades',              label: 'Bảng Điểm & Ký Nhận',   icon: Award },
-  { id: 'attendance',          label: 'Chuyên Cần Của Con',    icon: ClipboardCheck },
-  { id: 'assignments',         label: 'Xem Bài Tập',           icon: CheckSquare },
-  { id: 'fees',                label: 'Học Phí & Đóng Tiền',   icon: CreditCard },
-  { id: 'cafeteria',           label: 'Bán Trú Con',           icon: UtensilsCrossed },
-  { id: 'wallet',              label: 'Ví Điện Tử Con',        icon: CreditCard },
-  { id: 'qa',                  label: 'Hỏi Đáp Chủ Nhiệm',     icon: MessageSquare },
-  { id: 'leaves',              label: 'Xin Nghỉ Phép',         icon: Calendar },
-  { id: 'evaluations',         label: 'Đánh Giá Giáo Viên',    icon: Star },
-  { id: 'ai_guidance',         label: 'Định Hướng AI',         icon: Sparkles },
+// Section-based nav items for Parent Dashboard
+const PARENT_SECTIONS = [
+  {
+    title: 'THEO DÕI HỌC TẬP',
+    items: [
+      { id: 'grades',             label: 'Bảng Điểm & Ký Nhận',   icon: Award,           isSubTab: true },
+      { id: 'attendance',         label: 'Chuyên Cần Của Con',    icon: ClipboardCheck,  isSubTab: true },
+      { id: 'assignments',        label: 'Xem Bài Tập Về Nhà',    icon: CheckSquare,     isSubTab: true },
+      { id: 'seating_chart',      label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers,          isSubTab: false },
+    ]
+  },
+  {
+    title: 'TÀI CHÍNH & BÁN TRÚ',
+    items: [
+      { id: 'fees',               label: 'Học Phí & Đóng Tiền',   icon: CreditCard,      isSubTab: true },
+      { id: 'cafeteria',          label: 'Bán Trú & Dinh Dưỡng',  icon: UtensilsCrossed, isSubTab: true },
+      { id: 'wallet',             label: 'Ví Điện Tử Con',        icon: CreditCard,      isSubTab: true },
+      { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
+    ]
+  },
+  {
+    title: 'LIÊN LẠC NHÀ TRƯỜNG',
+    items: [
+      { id: 'chat',               label: 'Nhắn Tin Giáo Viên',   icon: MessageCircle,   isSubTab: false },
+      { id: 'qa',                 label: 'Hỏi Đáp Chủ Nhiệm',     icon: MessageSquare,   isSubTab: true },
+      { id: 'meeting_booking',    label: 'Đặt Lịch Gặp Mặt',    icon: CalendarCheck,   isSubTab: false },
+      { id: 'leaves',             label: 'Xin Nghỉ Phép',         icon: Calendar,        isSubTab: true },
+      { id: 'evaluations',        label: 'Đánh Giá Giáo Viên',    icon: Star,            isSubTab: true },
+      { id: 'ai_guidance',        label: 'Định Hướng AI',         icon: Sparkles,        isSubTab: true },
+      { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
+    ]
+  }
 ];
 
 const DICT_EN = {
-  // Student sub-tabs
+  // Section Headers
+  'HỌC TẬP & ĐIỂM SỐ': 'ACADEMICS & GRADES',
+  'TRỢ LÝ AI & HỌC LIỆU': 'AI TOOLS & MATERIALS',
+  'TƯ VẤN & THÀNH TÍCH': 'COUNSELING & AWARDS',
+  'ĐỜI SỐNG & CỘNG ĐỒNG': 'SCHOOL LIFE & COMMUNITY',
+  'QUẢN LÝ LỚP & GIẢNG DẠY': 'CLASS & TEACHING',
+  'CÔNG CỤ AI & GIÁO ÁN': 'AI TOOLS & LESSON PLANS',
+  'LIÊN LẠC PHỤ HUYNH & HÀNH CHÍNH': 'PARENT RELATIONS & ADMIN',
+  'QUẢN TRỊ TRƯỜNG HỌC': 'SCHOOL ADMINISTRATION',
+  'CÔNG CỤ AI & PHÂN TÍCH': 'AI & ACADEMIC ANALYTICS',
+  'VẬN HÀNH & TRUYỀN THÔNG': 'OPERATIONS & COMMUNICATIONS',
+  'THEO DÕI HỌC TẬP': 'CHILD ACADEMIC TRACKING',
+  'TÀI CHÍNH & BÁN TRÚ': 'FINANCES & BOARDING',
+  'LIÊN LẠC NHÀ TRƯỜNG': 'SCHOOL COMMUNICATION',
+
+  // Item Labels
   'Tổng Quan Học Tập': 'Academic Overview',
   'Deadline & Lịch Thi': 'Deadlines & Exams',
   'Bài Tập Về Nhà': 'Homework & Assignments',
   'Học Liệu & Flashcards': 'Materials & Flashcards',
-  'Thi Thử Đại Học': 'Mock University Entrance Exam',
+  'Thi Thử Đại Học': 'Mock Entrance Exam',
   'Kế Hoạch Ôn Thi AI': 'AI Study Plan',
   'Bản Đồ Năng Lực AI': 'AI Competency Heatmap',
-  'Bàn Đồ Năng Lực AI': 'AI Competency Heatmap',
   'Điểm Danh Chuyên Cần': 'Attendance Tracking',
-  'Rèn Luyện': 'Conduct & Behavior',
+  'Điểm Rèn Luyện': 'Conduct & Behavior',
   'Chat Nhóm Lớp': 'Class Group Chat',
   'Cuộc Thi Thách Đấu': 'Challenge Competitions',
   'Câu Lạc Bộ': 'Student Clubs',
@@ -132,77 +231,54 @@ const DICT_EN = {
   'Bán Trú & Dinh Dưỡng': 'Boarding & Meals',
   'Thẻ HS & Ví Điện Tử': 'Student ID & Wallet',
   'Máy Tính Casio fx-580': 'Casio fx-580 Calculator',
-
-  // Main menu items
-  'Bảng Học Tập': 'Learning Dashboard',
-  'Video bài giảng': 'Video Lectures',
-  'Thư viện số': 'Digital Library',
-  'Phòng Thí Nghiệm ảo': 'Virtual Lab',
-  'Học nhóm & Gia sư': 'Study Group & Tutor',
-  'Thi thử & Bài tập': 'Exams & Homework',
-
-  // Teacher sub-tabs
-  'Học Liệu Bài Giảng': 'Lecture Materials',
-  'Kế Hoạch Giáo Án': 'Lesson Plans',
-  'Trợ Lý Soạn Bài AI': 'AI Lesson Assistant',
-  'Huấn Luyện Gia Sư AI': 'AI Tutor Trainer',
-  'Giao Bài Tập Về Nhà': 'Assign Homework',
-  'Giao Bài Tập': 'Assign Homework',
-  'Điểm Thi Thử Môn': 'Subject Mock Exam Scores',
-  'Điểm Thi Thử Lớp': 'Class Mock Exam Scores',
-  'Nghỉ Phép & Dạy Thay': 'Leaves & Substitutions',
-  'Học Sinh & Điểm 12A1': 'Students & Grades 12A1',
-  'Điểm Danh Lớp 12A1': 'Class 12A1 Attendance',
-  'Điểm Rèn Luyện 12A1': 'Class 12A1 Conduct',
-  'Hỏi Đáp Phụ Huynh': 'Parent Q&A',
-  'Duyệt Nghỉ Phép 12A1': 'Approve Leaves 12A1',
+  'AI Chấm Bài Luận': 'AI Essay Grader',
+  'Phòng Thí Nghiệm Ảo': 'Virtual Science Lab',
+  'Thành Tích & Xếp Hạng': 'Leaderboard & Badges',
+  'Học Bạ Số & CV': 'Digital Portfolio & CV',
+  'Xe Bus Học Đường': 'School Bus Tracker',
+  'Bảng Tin Trường': 'School Bulletin',
+  'Thời Khóa Biểu': 'School Timetable',
   'Học Sinh & Điểm Số': 'Students & Grades',
   'Điểm Danh Lớp': 'Class Attendance',
   'Điểm Rèn Luyện Lớp': 'Class Conduct',
-  'Duyệt Nghỉ Phép': 'Approve Leaves',
-
-  // Parent sub-tabs
-  'Bảng Điểm & Ký Nhận': 'Report Card & Signature',
-  'Chuyên Cần Của Con': 'Child Attendance',
-  'Xem Bài Tập': 'View Assignments',
-  'Học Phí & Đóng Tiền': 'Tuition & Payments',
-  'Bán Trú Con': 'Child Boarding',
-  'Ví Điện Tử Con': 'Child Wallet',
-  'Hỏi Đáp Chủ Nhiệm': 'Homeroom Teacher Q&A',
-  'Xin Nghỉ Phép': 'Request Leave',
-  'Đánh Giá Giáo Viên': 'Teacher Evaluations',
-  'Định Hướng AI': 'AI Guidance',
-  'Bảng điểm của con': 'Child Report Card',
-
-  // Admin / BGH items
-  'Tổng quan BGH': 'Board Overview',
-  'Quản lý Giáo viên': 'Teacher Management',
-  'Quản lý Học sinh': 'Student Management',
-  'Học Bạ Số & CV': 'Digital Portfolio & CV',
-  'Xếp TKB Thông Minh': 'Smart Timetable Generator',
-  'Sổ đầu bài': 'Class Journal',
-  'Sơ Đồ Chỗ Ngồi Lớp': 'Seating Chart',
+  'Ghi Sổ Đầu Bài': 'Class Journal Entry',
+  'Sơ Đồ Chỗ Ngồi Lớp': 'Class Seating Chart',
   'Bầu Chọn Ban Cán Sự': 'Class Officer Voting',
+  'Kế Hoạch Giáo Án': 'Lesson Plans',
+  'Trợ Lý Soạn Bài AI': 'AI Lesson Assistant',
+  'Huấn Luyện Gia Sư AI': 'AI Tutor Trainer',
+  'Học Liệu Bài Giảng': 'Lecture Materials',
   'Kho Đề Thi': 'Exam Repository',
+  'Học Sinh Nguy Cơ AI': 'AI Student Risk Analysis',
+  'Nhắn Tin Phụ Huynh': 'Parent Messaging',
+  'Hỏi Đáp Phụ Huynh': 'Parent Q&A',
+  'Lịch Hẹn Gặp Mặt': 'Meeting Schedule',
+  'Duyệt Nghỉ Phép': 'Approve Leaves',
+  'Nghỉ Phép & Dạy Thay': 'Leaves & Substitutions',
+  'Lịch Trực Tuần GV': 'Weekly Duty Schedule',
+  'Đặt Phòng & Thiết Bị': 'Asset & Room Booking',
+  'Tổng Quan BGH': 'Board Dashboard Overview',
+  'Quản Lý Giáo Viên': 'Teacher Management',
+  'Quản Lý Học Sinh': 'Student Management',
+  'Sổ Đầu Bài Điện Tử': 'Digital Class Journal',
   'Phân Tích Nguy Cơ AI': 'AI Risk Analysis',
   'So Sánh Các Lớp': 'Class Comparison',
-  'Theo Dõi Xe Buýt': 'Bus Tracking',
-  'Bộ Ảnh Nhà Trường': 'School Gallery',
-  'Tài Sản & Thiết Bị': 'Assets & Equipment',
-  'Chấm Công Giáo Viên': 'Teacher Timekeeping',
-  'Lịch Trực Tuần': 'Weekly Duty Schedule',
-  'Học Liệu & Bài Giảng': 'Learning Materials',
-  'Cộng Đồng Kho Đề': 'Community Exams',
-  'Đặt Lịch Họp BGH': 'Book BGH Meeting',
-  'Phòng Họp Online': 'Online EduMeet',
-  'Tin Tức & Bảng Tin': 'News & Bulletins',
-  'Lịch Trường & Sự Kiện': 'School Calendar',
-  'Nhắn Tin Giáo Viên': 'Message Teachers',
-  'Đặt Lịch Gặp Mặt': 'Book Meeting',
-  'Bảng Tin Trường': 'School Bulletin',
-  'Album Sự Kiện Trường': 'School Event Album',
-  'Xe Bus Học Đường': 'School Bus Tracker',
-  'Thời khóa biểu': 'Timetable'
+  'Xếp TKB Thông Minh': 'Smart Timetable Generator',
+  'Kho Đề Thi Trường': 'School Exam Repository',
+  'Phân Công Lịch Trực': 'Duty Roster Assignment',
+  'Tài Sản & Thiết Bị': 'School Assets & Equipment',
+  'Album Sự Kiện Trường': 'School Event Gallery',
+  'Bảng Điểm & Ký Nhận': 'Report Card & Signature',
+  'Chuyên Cần Của Con': 'Child Attendance',
+  'Xem Bài Tập Về Nhà': 'View Child Homework',
+  'Học Phí & Đóng Tiền': 'Tuition & Payment',
+  'Ví Điện Tử Con': 'Child Wallet',
+  'Nhắn Tin Giáo Viên': 'Message Teacher',
+  'Hỏi Đáp Chủ Nhiệm': 'Homeroom Teacher Q&A',
+  'Đặt Lịch Gặp Mặt': 'Book Parent-Teacher Meeting',
+  'Xin Nghỉ Phép': 'Request Leave',
+  'Đánh Giá Giáo Viên': 'Teacher Evaluation',
+  'Định Hướng AI': 'AI Guidance'
 };
 
 export default function Sidebar({ activeTab, setActiveTab }) {
@@ -237,20 +313,13 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
   const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
 
-  const teacherSubItemsList = isTeacherSubject 
-    ? TEACHER_SUBJECT_SUB_ITEMS 
-    : isTeacherHomeroom 
-    ? TEACHER_HOMEROOM_SUB_ITEMS 
-    : TEACHER_SUB_ITEMS;
-
-  // Badge counts for student sub-items
+  // Badge counts for sub-items
   const studentConductLogs = conductLogs ? conductLogs.filter(l => l.studentId === activeStudent?.id) : [];
   const myAssignments = assignments ? assignments.filter(a => a.classTarget === activeStudent?.class) : [];
   const myEvaluations = teacherEvaluations
     ? teacherEvaluations.filter(e => e.raterRole === 'student' && e.raterName === activeStudent?.name)
     : [];
 
-  // Deadline badge: upcoming (not done) within 14 days + overdue
   const today = new Date(); today.setHours(0,0,0,0);
   const upcomingDeadlines = deadlines ? deadlines.filter(d => {
     if (d.done) return false;
@@ -260,7 +329,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     return diffDays <= 14;
   }) : [];
 
-  // Badge counts for teacher sub-items
   const classStudents = students ? students.filter(s => s.class === '12A1') : [];
   const classLeaves = leaveRequests ? leaveRequests.filter(l => l.class === '12A1') : [];
   const pendingLeavesCount = classLeaves.filter(l => l.status === 'pending').length;
@@ -270,20 +338,20 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
   const getBadge = (id) => {
     if (isStudent) {
-      if (id === 'deadlines')  return upcomingDeadlines.length || null;
-      if (id === 'conduct')    return studentConductLogs.length || null;
+      if (id === 'deadlines')   return upcomingDeadlines.length || null;
+      if (id === 'conduct')     return studentConductLogs.length || null;
       if (id === 'assignments') return myAssignments.length || null;
       if (id === 'evaluations') return myEvaluations.length || null;
     } else if (isTeacher) {
-      if (id === 'qa') return pendingQAsCount || null;
-      if (id === 'leaves') return pendingLeavesCount || null;
+      if (id === 'qa')             return pendingQAsCount || null;
+      if (id === 'leaves')         return pendingLeavesCount || null;
       if (id === 'teacher_leaves') return myCoverSchedules.length || null;
-      if (id === 'lesson_plans') return myLessonPlans.length || null;
-      if (id === 'conduct') return classStudents.length || null;
+      if (id === 'lesson_plans')   return myLessonPlans.length || null;
+      if (id === 'conduct')        return classStudents.length || null;
     } else if (isParent) {
-      if (id === 'fees') return (activeStudent?.feeStatus.filter(f => !f.paid).length) || null;
-      if (id === 'qa') return (parentQAs && activeStudent ? parentQAs.filter(q => q.parentName === activeStudent.parentName).length : 0) || null;
-      if (id === 'leaves') return (leaveRequests && activeStudent ? leaveRequests.filter(l => l.studentId === activeStudent.id).length : 0) || null;
+      if (id === 'fees')        return (activeStudent?.feeStatus?.filter(f => !f.paid).length) || null;
+      if (id === 'qa')          return (parentQAs && activeStudent ? parentQAs.filter(q => q.parentName === activeStudent.parentName).length : 0) || null;
+      if (id === 'leaves')      return (leaveRequests && activeStudent ? leaveRequests.filter(l => l.studentId === activeStudent.id).length : 0) || null;
       if (id === 'evaluations') return (teacherEvaluations && activeStudent ? teacherEvaluations.filter(e => e.raterRole === 'parent' && e.raterName === activeStudent.parentName).length : 0) || null;
       if (id === 'assignments') return (assignments && activeStudent ? assignments.filter(a => a.classTarget === activeStudent.class).length : 0) || null;
     }
@@ -298,117 +366,52 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     return 'var(--accent-ink)';
   };
 
-  const getNavItems = () => {
-    switch (currentRole) {
-      case 'admin':
-        // Nhóm: Tổng quan → Quản lý & Nhân sự → Tổ chức dạy học → Phân tích AI → Truyền thông & Cơ sở vật chất → Lịch
-        return [
-          { id: 'dashboard',           label: 'Tổng quan BGH',        icon: LayoutDashboard },
-          { id: 'teachers',            label: 'Quản lý Giáo viên',    icon: GraduationCap },
-          { id: 'students',            label: 'Quản lý Học sinh',     icon: Users },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
-          { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',   icon: Calendar },
-          { id: 'journal',             label: 'Sổ đầu bài',           icon: BookOpen },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
-          { id: 'ai_risk',             label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle },
-          { id: 'class_comparison',    label: 'So Sánh Các Lớp',      icon: Activity },
-          { id: 'duty_schedule',       label: 'Phân Công Lịch Trực',  icon: Calendar },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'asset_manager',       label: 'Tài Sản Trường',       icon: Layers },
-          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
-        ];
-      case 'teacher':
-      case 'teacher_subject':
-      case 'teacher_homeroom':
-        // Nhóm: Tổng quan → Nghiệp vụ dạy & Quản lý lớp → Công cụ & Đánh giá → Liên lạc PH → Tiện ích trường → Lịch
-        return [
-          { id: 'dashboard',           label: 'Tổng quan lớp học',    icon: LayoutDashboard },
-          { id: 'journal',             label: 'Ghi sổ đầu bài',      icon: BookOpen },
-          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers },
-          { id: 'class_voting',        label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
-          { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
-          { id: 'ai_risk',             label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
-          { id: 'chat',                label: 'Nhắn Tin Phụ Huynh',   icon: MessageCircle },
-          { id: 'meeting_booking',     label: 'Lịch Hẹn Gặp Mặt',    icon: CalendarCheck },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'duty_schedule',       label: 'Lịch Trực Tuần GV',    icon: Calendar },
-          { id: 'asset_manager',       label: 'Đặt Phòng/Thiết Bị',   icon: Layers },
-          { id: 'meet',                label: 'Phòng học EduMeet',    icon: Video },
-          { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
-        ];
-      case 'student':
-        // Nhóm: Tổng quan → Học tập & Tương tác → Đánh giá & Thành tích → Truyền thông → Đời sống & Tiện ích → Lịch
-        return [
-          { id: 'dashboard',           label: 'Bảng Điều Khiển HS',   icon: LayoutDashboard },
-          { id: 'lectures',            label: 'Video bài giảng',      icon: FileText },
-          { id: 'library_hub',         label: 'Thư viện số',         icon: Library },
-          { id: 'weblab',              label: 'Phòng Thí Nghiệm ảo',  icon: FlaskConical },
-          { id: 'casio580',            label: 'Máy Tính Casio fx-580', icon: Calculator },
-          { id: 'study_group',         label: 'Học nhóm & Gia sư',    icon: Users },
-          { id: 'meet',                label: 'Vào lớp EduMeet',      icon: Video },
-          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
-          { id: 'exam_repository',     label: 'Kho Đề Thi',           icon: BookMarked },
-          { id: 'essay_grader',        label: 'AI Chấm Bài Luận',     icon: FileText },
-          { id: 'gamification',        label: 'Thành Tích & Xếp Hạng',icon: Trophy },
-          { id: 'portfolio',           label: 'Học Bạ Số & CV',       icon: GraduationCap },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'wellness',            label: 'Hỗ trợ Tâm lý',        icon: Brain },
-          { id: 'canteen',             label: 'Căng tin Trường',      icon: UtensilsCrossed },
-          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
-        ];
-      case 'parent':
-        // Nhóm: Học tập & Lớp học → Giao tiếp & Cuộc hẹn → Thông tin trường & Xe bus → Lịch
-        return [
-          { id: 'dashboard',           label: 'Bảng điểm của con',    icon: Award },
-          { id: 'seating_chart',       label: 'Sơ Đồ Chỗ Ngồi Lớp',  icon: Layers },
-          { id: 'chat',                label: 'Nhắn Tin Giáo Viên',   icon: MessageCircle },
-          { id: 'meeting_booking',     label: 'Đặt Lịch Gặp Mặt',    icon: CalendarCheck },
-          { id: 'bulletin',            label: 'Bảng Tin Trường',      icon: Megaphone },
-          { id: 'school_gallery',      label: 'Album Sự Kiện Trường', icon: Camera },
-          { id: 'bus_tracker',         label: 'Xe Bus Học Đường',     icon: Bus },
-          { id: 'calendar',            label: 'Thời khóa biểu',       icon: Calendar },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const navItems = getNavItems().filter(item => {
-    if (item.id === 'dashboard' && (isStudent || isTeacher || isParent)) return false;
-    return true;
-  });
-
-  const getProfileName = () => {
-    if (userSession) return userSession.displayName;
-    if (currentRole === 'admin')   return 'Hiệu trưởng';
-    if (currentRole === 'teacher') return 'Thầy Minh Triết';
-    if (currentRole === 'student') return activeStudent?.name || 'Học sinh';
-    if (currentRole === 'parent')  return activeStudent?.parentName ? `PH. ${activeStudent.parentName}` : 'Phụ huynh';
-    return 'Người dùng';
+  const getSections = () => {
+    if (isStudent) return STUDENT_SECTIONS;
+    if (isTeacher) return TEACHER_SECTIONS;
+    if (isParent) return PARENT_SECTIONS;
+    return ADMIN_SECTIONS;
   };
 
   const getProfileSub = () => {
     if (currentRole === 'admin')   return 'Ban Giám Hiệu';
     if (currentRole === 'teacher') return 'Môn Toán - Lớp 12A1';
-    if (currentRole === 'student') return `Học sinh - Lớp ${activeStudent?.class}`;
-    if (currentRole === 'parent')  return `Phụ huynh lớp ${activeStudent?.class}`;
+    if (currentRole === 'student') return `Học sinh - Lớp ${activeStudent?.class || '12A1'}`;
+    if (currentRole === 'parent')  return `Phụ huynh lớp ${activeStudent?.class || '12A1'}`;
     return 'EduPortal';
   };
 
   const getRoleSnapshot = () => {
-    if (currentRole === 'admin') return `${students.length} HS · ${(teachers || []).length} GV`;
-    if (currentRole === 'teacher') return `${classStudents.length} HS lớp 12A1 · ${pendingQAsCount} Q&A chờ`;
+    if (currentRole === 'admin')   return `${students?.length || 0} HS · ${(teachers || []).length} GV`;
+    if (currentRole === 'teacher') return `${classStudents.length} HS 12A1 · ${pendingQAsCount} Q&A chờ`;
     if (currentRole === 'student') return `${upcomingDeadlines.length} deadline · ${myAssignments.length} bài tập`;
-    if (currentRole === 'parent') return `${activeStudent?.name || 'Học sinh'} · ${myAssignments.length} bài tập`;
+    if (currentRole === 'parent')  return `${activeStudent?.name || 'Học sinh'} · ${myAssignments.length} bài tập`;
     return 'Không gian làm việc';
   };
+
+  const handleItemClick = (item) => {
+    if (item.isSubTab) {
+      setActiveTab('dashboard');
+      if (isStudent) setStudentSubTab(item.id);
+      else if (isTeacher) setTeacherSubTab(item.id);
+      else if (isParent) setParentSubTab(item.id);
+    } else {
+      setActiveTab(item.id);
+    }
+  };
+
+  const isItemActive = (item) => {
+    if (item.isSubTab) {
+      if (activeTab !== 'dashboard') return false;
+      if (isStudent) return studentSubTab === item.id;
+      if (isTeacher) return teacherSubTab === item.id;
+      if (isParent) return parentSubTab === item.id;
+      return false;
+    }
+    return activeTab === item.id;
+  };
+
+  const sections = getSections();
 
   return (
     <aside className="sidebar" style={{ overflowY: 'auto' }}>
@@ -419,6 +422,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <span className="logo-text">EduPortal</span>
         </div>
 
+        {/* Workspace Card */}
         <div className="sidebar-mission-card">
           <div className="mission-top">
             <span className="mission-dot" />
@@ -428,82 +432,54 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <p>{getRoleSnapshot()}</p>
         </div>
 
-        <nav className="nav-links">
-          {/* ── Student: "Học Tập" section as main dashboard entry ── */}
-          {isStudent && (
-            <>
-              {/* Dashboard button that just returns to overview */}
-              <button
-                onClick={() => { setActiveTab('dashboard'); setStudentSubTab('overview'); }}
-                className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-                style={{ marginBottom: '2px' }}
-              >
-                <LayoutDashboard size={18} />
-                <span>{t('Bảng Học Tập', 'Learning Dashboard')}</span>
-              </button>
-
-              {/* Sub-items — always visible for student */}
+        {/* Categorized Navigation Menu */}
+        <nav className="nav-links" style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '20px' }}>
+          {sections.map((section, sIdx) => (
+            <div key={sIdx} className="nav-section">
+              {/* Section Header */}
               <div style={{
-                marginLeft: '10px',
-                borderLeft: '2px solid var(--accent-soft)',
-                paddingLeft: '8px',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: 'var(--text-tertiary, #94a3b8)',
+                letterSpacing: '0.06em',
+                padding: '0 10px',
                 marginBottom: '6px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1px'
+                textTransform: 'uppercase'
               }}>
-                {STUDENT_SUB_ITEMS.map(item => {
+                {t(section.title, DICT_EN[section.title] || section.title)}
+              </div>
+
+              {/* Items in Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {section.items.map(item => {
                   const Icon = item.icon;
-                  const isActive = activeTab === 'dashboard' && studentSubTab === item.id;
+                  const active = isItemActive(item);
                   const badge = getBadge(item.id);
                   const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
 
                   return (
                     <button
                       key={item.id}
-                      onClick={() => { setActiveTab('dashboard'); setStudentSubTab(item.id); }}
+                      onClick={() => handleItemClick(item)}
+                      className={`nav-item ${active ? 'active' : ''}`}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '7px 10px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        fontSize: '0.8rem',
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? 'var(--accent-ink)' : 'var(--text-secondary)',
-                        background: isActive
-                          ? 'var(--accent-soft)'
-                          : 'transparent',
-                        transition: 'all 0.15s',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'var(--accent-soft)';
-                          e.currentTarget.style.color = 'var(--text-primary)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'var(--text-secondary)';
-                        }
+                        position: 'relative',
+                        justifyContent: 'space-between'
                       }}
                     >
-                      <Icon size={15} style={{ flexShrink: 0 }} />
-                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {displayLabel}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <Icon size={18} style={{ flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {displayLabel}
+                        </span>
+                      </div>
+
                       {badge !== null && (
                         <span style={{
-                          background: isActive 
+                          background: active 
                             ? (getBadgeColor(item.id) === '#ef4444' ? '#ef4444' : 'var(--accent-ink)')
                             : (getBadgeColor(item.id) === '#ef4444' ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-soft)'),
-                          color: isActive 
+                          color: active 
                             ? 'white'
                             : (getBadgeColor(item.id) === '#ef4444' ? '#b91c1c' : 'var(--accent-ink)'),
                           borderRadius: '99px',
@@ -515,233 +491,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                           {badge}
                         </span>
                       )}
-                      {isActive && (
-                        <ChevronRight size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
-                      )}
                     </button>
                   );
                 })}
               </div>
-
-              {/* Divider */}
-              <div style={{ height: '1px', background: 'var(--line)', margin: '4px 8px 6px' }} />
-            </>
-          )}
-
-          {/* ── Teacher: "Tổng quan lớp học" section as main dashboard entry ── */}
-          {isTeacher && (
-            <>
-              {/* Dashboard button that just returns to teacher overview */}
-              <button
-                onClick={() => { setActiveTab('dashboard'); setTeacherSubTab(isTeacherSubject ? 'resources' : 'students'); }}
-                className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-                style={{ marginBottom: '2px' }}
-              >
-                <LayoutDashboard size={18} />
-                <span>{isTeacherSubject ? t('Tổng quan Bộ Môn', 'Subject Overview') : isTeacherHomeroom ? t('Tổng quan Lớp 12A1', 'Class 12A1 Overview') : t('Tổng quan lớp học', 'Class Overview')}</span>
-              </button>
-
-              {/* Sub-items — always visible for teacher */}
-              <div style={{
-                marginLeft: '10px',
-                borderLeft: '2px solid var(--accent-soft)',
-                paddingLeft: '8px',
-                marginBottom: '6px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1px'
-              }}>
-                {teacherSubItemsList.map(item => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === 'dashboard' && teacherSubTab === item.id;
-                  const badge = getBadge(item.id);
-                  const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => { setActiveTab('dashboard'); setTeacherSubTab(item.id); }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '7px 10px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        fontSize: '0.8rem',
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? 'var(--accent-ink)' : 'var(--text-secondary)',
-                        background: isActive
-                          ? 'var(--accent-soft)'
-                          : 'transparent',
-                        transition: 'all 0.15s',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'var(--accent-soft)';
-                          e.currentTarget.style.color = 'var(--text-primary)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'var(--text-secondary)';
-                        }
-                      }}
-                    >
-                      <Icon size={15} style={{ flexShrink: 0 }} />
-                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {displayLabel}
-                      </span>
-                      {badge !== null && (
-                        <span style={{
-                          background: isActive 
-                            ? 'var(--accent-ink)'
-                            : 'var(--accent-soft)',
-                          color: isActive 
-                            ? 'white'
-                            : 'var(--accent-ink)',
-                          borderRadius: '99px',
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          flexShrink: 0
-                        }}>
-                          {badge}
-                        </span>
-                      )}
-                      {isActive && (
-                        <ChevronRight size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Divider */}
-              <div style={{ height: '1px', background: 'var(--line)', margin: '4px 8px 6px' }} />
-            </>
-          )}
-
-          {/* ── Parent: "Bảng điểm của con" section as main dashboard entry ── */}
-          {isParent && (
-            <>
-              {/* Dashboard button that just returns to grades overview */}
-              <button
-                onClick={() => { setActiveTab('dashboard'); setParentSubTab('grades'); }}
-                className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-                style={{ marginBottom: '2px' }}
-              >
-                <Award size={18} />
-                <span>{t('Bảng điểm của con', 'Child Report Card')}</span>
-              </button>
-
-              {/* Sub-items — always visible for parent */}
-              <div style={{
-                marginLeft: '10px',
-                borderLeft: '2px solid var(--accent-soft)',
-                paddingLeft: '8px',
-                marginBottom: '6px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1px'
-              }}>
-                {PARENT_SUB_ITEMS.map(item => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === 'dashboard' && parentSubTab === item.id;
-                  const badge = getBadge(item.id);
-                  const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => { setActiveTab('dashboard'); setParentSubTab(item.id); }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '7px 10px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        fontSize: '0.8rem',
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? 'var(--accent-ink)' : 'var(--text-secondary)',
-                        background: isActive
-                          ? 'var(--accent-soft)'
-                          : 'transparent',
-                        transition: 'all 0.15s',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'var(--accent-soft)';
-                          e.currentTarget.style.color = 'var(--text-primary)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!isActive) {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'var(--text-secondary)';
-                        }
-                      }}
-                    >
-                      <Icon size={15} style={{ flexShrink: 0 }} />
-                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {displayLabel}
-                      </span>
-                      {badge !== null && (
-                        <span style={{
-                          background: isActive 
-                            ? 'var(--accent-ink)'
-                            : 'var(--accent-soft)',
-                          color: isActive 
-                            ? 'white'
-                            : 'var(--accent-ink)',
-                          borderRadius: '99px',
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                          padding: '1px 6px',
-                          flexShrink: 0
-                        }}>
-                          {badge}
-                        </span>
-                      )}
-                      {isActive && (
-                        <ChevronRight size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Divider */}
-              <div style={{ height: '1px', background: 'var(--line)', margin: '4px 8px 6px' }} />
-            </>
-          )}
-
-          {/* Other nav items (non-dashboard pages) */}
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const displayLabel = t(item.label, DICT_EN[item.label] || item.label);
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-              >
-                <Icon size={18} />
-                <span>{displayLabel}</span>
-              </button>
-            );
-          })}
+            </div>
+          ))}
         </nav>
       </div>
     </aside>
