@@ -174,101 +174,107 @@ export default function Navbar({ setActiveTab }) {
         {/* Notification Bell */}
         <NotificationCenter setActiveTab={setActiveTab} />
 
-        {userSession && (
-          <div ref={dropdownRef} style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setShowUserDropdown(!showUserDropdown)}
-              style={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '5px 14px 5px 6px',
-                borderRadius: '24px',
-                background: 'rgba(241, 245, 249, 0.85)',
-                border: showUserDropdown ? '1.5px solid var(--accent)' : '1px solid rgba(203, 213, 225, 0.6)',
-                boxShadow: showUserDropdown ? '0 0 0 3px rgba(79, 70, 229, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
-                fontFamily: 'inherit',
-                transition: 'all 0.2s',
-                textAlign: 'left',
-              }}
-              title="Tài khoản cá nhân"
-            >
-              {userSession.avatarUrl ? (
-                <img 
-                  src={userSession.avatarUrl} 
-                  alt={userSession.displayName || userSession.username}
-                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                />
-              ) : (
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
-                  {(userSession.displayName || userSession.username).charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div style={{ overflow: 'hidden', lineHeight: 1.25 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary, #1e293b)', whiteSpace: 'nowrap' }}>
-                  {userSession.displayName || userSession.username}
-                </div>
-                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>
-                  {getProfileSub()}
-                </div>
-              </div>
-            </button>
-            {showUserDropdown && (
-              <div 
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '8px',
-                  background: 'var(--surface, #fff)',
-                  border: '1px solid var(--border-card, #cbd5e1)',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
-                  padding: '6px',
-                  zIndex: 100,
-                  minWidth: '155px'
-                }}
-                className="animate-fade"
-              >
-                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--line, #f1f5f9)', marginBottom: '4px' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)' }}>Vai trò</div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>
-                    {currentRole === 'admin' ? 'Ban Giám Hiệu' : currentRole === 'teacher_subject' ? 'GV Bộ Môn' : currentRole === 'teacher_homeroom' ? 'GV Chủ Nhiệm' : currentRole === 'teacher' ? 'Giáo Viên' : currentRole === 'student' ? 'Học Sinh' : 'Phụ Huynh'}
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowUserDropdown(false);
-                    logout();
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: 'var(--accent-danger, #ef4444)',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'background 0.2s',
-                    fontFamily: 'inherit',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <LogOut size={14} />
-                  <span>Đăng xuất</span>
-                </button>
+        {/* User profile dropdown - always available */}
+        <div ref={dropdownRef} style={{ position: 'relative' }}>
+          <button 
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+            style={{
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '5px 14px 5px 6px',
+              borderRadius: '24px',
+              background: 'rgba(241, 245, 249, 0.85)',
+              border: showUserDropdown ? '1.5px solid var(--accent)' : '1px solid rgba(203, 213, 225, 0.6)',
+              boxShadow: showUserDropdown ? '0 0 0 3px rgba(79, 70, 229, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s',
+              textAlign: 'left',
+            }}
+            title="Tài khoản cá nhân"
+          >
+            {userSession?.avatarUrl ? (
+              <img 
+                src={userSession.avatarUrl} 
+                alt={userSession.displayName || userSession.username}
+                style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+              />
+            ) : (
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
+                {(userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'BGH' : currentRole.startsWith('teacher') ? 'GV' : currentRole === 'student' ? 'HS' : 'PH')).substring(0, 2).toUpperCase()}
               </div>
             )}
-          </div>
-        )}
+            <div style={{ overflow: 'hidden', lineHeight: 1.25 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary, #1e293b)', whiteSpace: 'nowrap' }}>
+                {userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'Hiệu trưởng BGH' : currentRole.startsWith('teacher') ? 'Thầy Minh Triết' : currentRole === 'student' ? (activeStudent?.name || 'Học sinh') : 'Phụ huynh')}
+              </div>
+              <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>
+                {getProfileSub()}
+              </div>
+            </div>
+          </button>
+          {showUserDropdown && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '8px',
+                background: 'var(--surface, #fff)',
+                border: '1px solid var(--border-card, #cbd5e1)',
+                borderRadius: '12px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+                padding: '6px',
+                zIndex: 100,
+                minWidth: '165px'
+              }}
+              className="animate-fade"
+            >
+              <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--line, #f1f5f9)', marginBottom: '4px' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)' }}>Vai trò hiện tại</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>
+                  {currentRole === 'admin' ? 'Ban Giám Hiệu' : currentRole === 'teacher_subject' ? 'GV Bộ Môn' : currentRole === 'teacher_homeroom' ? 'GV Chủ Nhiệm' : currentRole === 'teacher' ? 'Giáo Viên' : currentRole === 'student' ? 'Học Sinh' : 'Phụ Huynh'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  logout();
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '8px',
+                  color: 'var(--accent-danger, #ef4444)',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#ef4444';
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                  e.currentTarget.style.color = 'var(--accent-danger, #ef4444)';
+                }}
+              >
+                <LogOut size={15} />
+                <span>{t('Đăng xuất', 'Log out')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </header>
   );

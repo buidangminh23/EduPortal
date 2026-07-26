@@ -1502,6 +1502,13 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     try {
       localStorage.removeItem('userSession');
+      localStorage.removeItem('mock_sb_session');
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('mock_sb_session')) {
+          localStorage.removeItem(key);
+        }
+      });
+      setUserSession(null);
       setMockSession(null);
     } catch (e) {
       console.error(e);
@@ -1513,6 +1520,7 @@ export const AppProvider = ({ children }) => {
     }
     window.location.reload();
   };
+
 
   const addStudent = (student) => {
     const randAvatar = studentAvatars[Math.floor(Math.random() * studentAvatars.length)];

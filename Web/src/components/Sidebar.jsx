@@ -36,8 +36,10 @@ import {
   Camera,
   Sparkles,
   Compass,
-  Calculator
+  Calculator,
+  LogOut
 } from 'lucide-react';
+
 
 // Section-based nav items for Student Dashboard
 const STUDENT_SECTIONS = [
@@ -302,8 +304,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     leaveRequests,
     teacherLeaveRequests,
     lessonPlans,
+    logout,
     t
   } = useContext(AppContext);
+
 
   const isStudent = currentRole === 'student';
   const isTeacherSubject = currentRole === 'teacher_subject';
@@ -424,12 +428,47 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
         {/* Workspace Card */}
         <div className="sidebar-mission-card">
-          <div className="mission-top">
-            <span className="mission-dot" />
-            <span>Workspace</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+            <div>
+              <div className="mission-top">
+                <span className="mission-dot" />
+                <span>Workspace</span>
+              </div>
+              <strong>{getProfileSub()}</strong>
+              <p>{getRoleSnapshot()}</p>
+            </div>
+            <button
+              onClick={logout}
+              title="Đăng xuất khỏi hệ thống"
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: '#ef4444',
+                padding: '6px 10px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.2s',
+                marginTop: '2px',
+                flexShrink: 0
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#ef4444';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                e.currentTarget.style.color = '#ef4444';
+              }}
+            >
+              <LogOut size={13} />
+              <span>Thoát</span>
+            </button>
           </div>
-          <strong>{getProfileSub()}</strong>
-          <p>{getRoleSnapshot()}</p>
         </div>
 
         {/* Categorized Navigation Menu */}
@@ -497,7 +536,42 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               </div>
             </div>
           ))}
+
+          {/* Logout Button at bottom of Sidebar */}
+          <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--line, rgba(255,255,255,0.1))' }}>
+            <button
+              onClick={logout}
+              style={{
+                width: '100%',
+                color: '#ef4444',
+                fontWeight: 700,
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '10px',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                transition: 'all 0.2s',
+                fontFamily: 'inherit'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#ef4444';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                e.currentTarget.style.color = '#ef4444';
+              }}
+            >
+              <LogOut size={18} />
+              <span>{t('Đăng xuất hệ thống', 'Log out system')}</span>
+            </button>
+          </div>
         </nav>
+
       </div>
     </aside>
   );
