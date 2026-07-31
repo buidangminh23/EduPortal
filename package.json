@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd Web && npm install && npm run build"
+    "build": "cd Web && npm install && npm run build",
+    "test": "cd Web && npm test"
   }
 }
