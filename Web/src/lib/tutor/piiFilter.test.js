@@ -40,12 +40,22 @@ describe('filterPII', () => {
     expect(filterPII('bài tập về nhà trang 42')).toBe('bài tập về nhà trang 42');
   });
 
-  // Characterisation test, NOT an endorsement. The phone pattern is
-  // /(?:0|\+84)[3|5|7|8|9][0-9]{8}/ — inside a character class the "|" is a literal
-  // character, not alternation, so "0|" followed by 8 digits also matches.
-  // This documents today's behaviour so a fix to the regex shows up as a
-  // deliberate change here rather than an unnoticed side effect.
-  it('currently also matches a literal pipe where a digit is expected (known regex quirk)', () => {
-    expect(filterPII('0|12345678')).toBe('[PHONE_REDACTED]');
+  // Regression guard. The pattern used to be [3|5|7|8|9], where "|" inside a
+  // character class is a literal pipe rather than alternation, so "0|12345678"
+  // was wrongly redacted as a phone number. Now [35789].
+  it('does not treat a literal pipe as a mobile prefix digit', () => {
+    expect(filterPII('0|12345678')).toBe('0|12345678');
+  });
+
+  it('still matches every valid Vietnamese mobile prefix', () => {
+    for (const prefix of ['3', '5', '7', '8', '9']) {
+      expect(filterPII(`0${prefix}12345678`)).toBe('[PHONE_REDACTED]');
+      expect(filterPII(`+84${prefix}12345678`)).toBe('[PHONE_REDACTED]');
+    }
+  });
+
+  it('ignores prefixes that are not valid Vietnamese mobiles', () => {
+    expect(filterPII('0412345678')).toBe('0412345678');
+    expect(filterPII('0612345678')).toBe('0612345678');
   });
 });
