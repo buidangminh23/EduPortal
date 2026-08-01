@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
+import { currentSchoolDay } from '../config/demoClock';
 import { 
   Users, 
   MessageSquare, 
@@ -1216,7 +1217,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </thead>
             <tbody>
               {classStudents.map(std => {
-                const log = attendanceLogs ? attendanceLogs.find(l => l.studentId === std.id && l.date === '2026-06-03') : null;
+                const log = attendanceLogs ? attendanceLogs.find(l => l.studentId === std.id && l.date === currentSchoolDay()) : null;
                 return (
                   <tr key={std.id}>
                     <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{std.id}</td>

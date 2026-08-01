@@ -56,13 +56,13 @@ const STUDENT_SECTIONS = [
     ]
   },
   {
-    title: 'TRỢ LÝ AI & HỌC LIỆU',
+    title: 'TRỢ LÝ HỌC TẬP & HỌC LIỆU',
     items: [
       { id: 'library',            label: 'Học Liệu & Flashcards',  icon: Library,         isSubTab: true },
       { id: 'mock_exams',         label: 'Thi Thử Đại Học',       icon: ClipboardList,   isSubTab: true },
-      { id: 'study_plan',         label: 'Kế Hoạch Ôn Thi AI',    icon: Target,          isSubTab: true },
-      { id: 'competency_heatmap', label: 'Bản Đồ Năng Lực AI',   icon: Activity,        isSubTab: true },
-      { id: 'essay_grader',       label: 'AI Chấm Bài Luận',     icon: FileText,        isSubTab: false },
+      { id: 'study_plan',         label: 'Kế Hoạch Ôn Thi',    icon: Target,          isSubTab: true },
+      { id: 'competency_heatmap', label: 'Bản Đồ Năng Lực',   icon: Activity,        isSubTab: true },
+      { id: 'essay_grader',       label: 'Chấm Bài Luận Tự Động',     icon: FileText,        isSubTab: false },
       { id: 'weblab',             label: 'Phòng Thí Nghiệm Ảo',  icon: FlaskConical,    isSubTab: false },
       { id: 'casio580',           label: 'Máy Tính Casio fx-580', icon: Calculator,      isSubTab: true },
     ]
@@ -71,7 +71,7 @@ const STUDENT_SECTIONS = [
     title: 'TƯ VẤN & THÀNH TÍCH',
     items: [
       { id: 'counseling',         label: 'Tư Vấn & Hướng Nghiệp', icon: Brain,           isSubTab: true },
-      { id: 'university_matchmaker', label: 'Định Hướng Đại Học AI', icon: GraduationCap, isSubTab: true },
+      { id: 'university_matchmaker', label: 'Đối Chiếu Điểm Chuẩn ĐH', icon: GraduationCap, isSubTab: true },
       { id: 'gamification',       label: 'Thành Tích & Xếp Hạng', icon: Trophy,          isSubTab: false },
       { id: 'portfolio',          label: 'Học Bạ Số & CV',       icon: BookMarked,      isSubTab: false },
     ]
@@ -105,15 +105,15 @@ const TEACHER_SECTIONS = [
     ]
   },
   {
-    title: 'CÔNG CỤ AI & GIÁO ÁN',
+    title: 'CÔNG CỤ HỖ TRỢ & GIÁO ÁN',
     items: [
       { id: 'lesson_plans',       label: 'Kế Hoạch Giáo Án',       icon: FileText,        isSubTab: true },
-      { id: 'ai_planner',         label: 'Trợ Lý Soạn Bài AI',    icon: Sparkles,        isSubTab: true },
-      { id: 'ai_tutor_trainer',   label: 'Huấn Luyện Gia Sư AI',  icon: Compass,         isSubTab: true },
+      { id: 'ai_planner',         label: 'Trợ Lý Soạn Bài',    icon: Sparkles,        isSubTab: true },
+      { id: 'ai_tutor_trainer',   label: 'Huấn Luyện Trợ Lý Học Tập',  icon: Compass,         isSubTab: true },
       { id: 'resources',          label: 'Học Liệu Bài Giảng',     icon: BookOpen,        isSubTab: true },
       { id: 'exam_repository',    label: 'Kho Đề Thi',           icon: BookMarked,      isSubTab: false },
-      { id: 'essay_grader',       label: 'AI Chấm Bài Luận',     icon: FileText,        isSubTab: false },
-      { id: 'ai_risk',            label: 'Học Sinh Nguy Cơ AI',  icon: AlertTriangle,   isSubTab: false },
+      { id: 'essay_grader',       label: 'Chấm Bài Luận Tự Động',     icon: FileText,        isSubTab: false },
+      { id: 'ai_risk',            label: 'Cảnh Báo Học Sinh Nguy Cơ',  icon: AlertTriangle,   isSubTab: false },
     ]
   },
   {
@@ -145,9 +145,9 @@ const ADMIN_SECTIONS = [
     ]
   },
   {
-    title: 'CÔNG CỤ AI & PHÂN TÍCH',
+    title: 'CÔNG CỤ PHÂN TÍCH',
     items: [
-      { id: 'ai_risk',            label: 'Phân Tích Nguy Cơ AI', icon: AlertTriangle,   isSubTab: false },
+      { id: 'ai_risk',            label: 'Phân Tích Nguy Cơ', icon: AlertTriangle,   isSubTab: false },
       { id: 'class_comparison',   label: 'So Sánh Các Lớp',      icon: Activity,        isSubTab: false },
       { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',  icon: Calendar,        isSubTab: false },
       { id: 'exam_repository',    label: 'Kho Đề Thi Trường',    icon: BookMarked,      isSubTab: false },
@@ -194,7 +194,7 @@ const PARENT_SECTIONS = [
       { id: 'meeting_booking',    label: 'Đặt Lịch Gặp Mặt',    icon: CalendarCheck,   isSubTab: false },
       { id: 'leaves',             label: 'Xin Nghỉ Phép',         icon: Calendar,        isSubTab: true },
       { id: 'evaluations',        label: 'Đánh Giá Giáo Viên',    icon: Star,            isSubTab: true },
-      { id: 'ai_guidance',        label: 'Định Hướng AI',         icon: Sparkles,        isSubTab: true },
+      { id: 'ai_guidance',        label: 'Định Hướng Nghề Nghiệp',         icon: Sparkles,        isSubTab: true },
     ]
   }
 ];
@@ -202,14 +202,14 @@ const PARENT_SECTIONS = [
 const DICT_EN = {
   // Section Headers
   'HỌC TẬP & THÔNG TIN TRƯỜNG': 'ACADEMICS & SCHOOL NEWS',
-  'TRỢ LÝ AI & HỌC LIỆU': 'AI TOOLS & MATERIALS',
+  'TRỢ LÝ HỌC TẬP & HỌC LIỆU': 'STUDY TOOLS & MATERIALS',
   'TƯ VẤN & THÀNH TÍCH': 'COUNSELING & AWARDS',
   'ĐỜI SỐNG & CỘNG ĐỒNG': 'SCHOOL LIFE & COMMUNITY',
   'QUẢN LÝ LỚP & GIẢNG DẠY': 'CLASS & TEACHING',
-  'CÔNG CỤ AI & GIÁO ÁN': 'AI TOOLS & LESSON PLANS',
+  'CÔNG CỤ HỖ TRỢ & GIÁO ÁN': 'TEACHING TOOLS & LESSON PLANS',
   'LIÊN LẠC PHỤ HUYNH & HÀNH CHÍNH': 'PARENT RELATIONS & ADMIN',
   'QUẢN TRỊ TRƯỜNG HỌC': 'SCHOOL ADMINISTRATION',
-  'CÔNG CỤ AI & PHÂN TÍCH': 'AI & ACADEMIC ANALYTICS',
+  'CÔNG CỤ PHÂN TÍCH': 'ACADEMIC ANALYTICS',
   'VẬN HÀNH & TRUYỀN THÔNG': 'OPERATIONS & COMMUNICATIONS',
   'THEO DÕI HỌC TẬP & THÔNG TIN': 'CHILD ACADEMICS & NEWS',
   'TÀI CHÍNH & BÁN TRÚ': 'FINANCES & BOARDING',
@@ -223,19 +223,19 @@ const DICT_EN = {
   'Bài Tập Về Nhà': 'Homework & Assignments',
   'Học Liệu & Flashcards': 'Materials & Flashcards',
   'Thi Thử Đại Học': 'Mock Entrance Exam',
-  'Kế Hoạch Ôn Thi AI': 'AI Study Plan',
-  'Bản Đồ Năng Lực AI': 'AI Competency Heatmap',
+  'Kế Hoạch Ôn Thi': 'Study Plan',
+  'Bản Đồ Năng Lực': 'Competency Heatmap',
   'Điểm Danh Chuyên Cần': 'Attendance Tracking',
   'Điểm Rèn Luyện': 'Conduct & Behavior',
   'Chat Nhóm Lớp': 'Class Group Chat',
   'Cuộc Thi Thách Đấu': 'Challenge Competitions',
   'Câu Lạc Bộ': 'Student Clubs',
   'Tư Vấn & Hướng Nghiệp': 'Counseling & Career',
-  'Định Hướng Đại Học AI': 'AI University Matchmaker',
+  'Đối Chiếu Điểm Chuẩn ĐH': 'University Benchmark Match',
   'Bán Trú & Dinh Dưỡng': 'Boarding & Meals',
   'Thẻ HS & Ví Điện Tử': 'Student ID & Wallet',
   'Máy Tính Casio fx-580': 'Casio fx-580 Calculator',
-  'AI Chấm Bài Luận': 'AI Essay Grader',
+  'Chấm Bài Luận Tự Động': 'Automated Essay Feedback',
   'Phòng Thí Nghiệm Ảo': 'Virtual Science Lab',
   'Thành Tích & Xếp Hạng': 'Leaderboard & Badges',
   'Học Bạ Số & CV': 'Digital Portfolio & CV',
@@ -247,11 +247,11 @@ const DICT_EN = {
   'Sơ Đồ Chỗ Ngồi Lớp': 'Class Seating Chart',
   'Bầu Chọn Ban Cán Sự': 'Class Officer Voting',
   'Kế Hoạch Giáo Án': 'Lesson Plans',
-  'Trợ Lý Soạn Bài AI': 'AI Lesson Assistant',
-  'Huấn Luyện Gia Sư AI': 'AI Tutor Trainer',
+  'Trợ Lý Soạn Bài': 'Lesson Planning Assistant',
+  'Huấn Luyện Trợ Lý Học Tập': 'Tutor Knowledge Training',
   'Học Liệu Bài Giảng': 'Lecture Materials',
   'Kho Đề Thi': 'Exam Repository',
-  'Học Sinh Nguy Cơ AI': 'AI Student Risk Analysis',
+  'Cảnh Báo Học Sinh Nguy Cơ': 'At-Risk Student Alerts',
   'Nhắn Tin Phụ Huynh': 'Parent Messaging',
   'Hỏi Đáp Phụ Huynh': 'Parent Q&A',
   'Lịch Hẹn Gặp Mặt': 'Meeting Schedule',
@@ -263,7 +263,7 @@ const DICT_EN = {
   'Quản Lý Giáo Viên': 'Teacher Management',
   'Quản Lý Học Sinh': 'Student Management',
   'Sổ Đầu Bài Điện Tử': 'Digital Class Journal',
-  'Phân Tích Nguy Cơ AI': 'AI Risk Analysis',
+  'Phân Tích Nguy Cơ': 'Risk Analysis',
   'So Sánh Các Lớp': 'Class Comparison',
   'Xếp TKB Thông Minh': 'Smart Timetable Generator',
   'Kho Đề Thi Trường': 'School Exam Repository',
@@ -280,7 +280,7 @@ const DICT_EN = {
   'Đặt Lịch Gặp Mặt': 'Book Parent-Teacher Meeting',
   'Xin Nghỉ Phép': 'Request Leave',
   'Đánh Giá Giáo Viên': 'Teacher Evaluation',
-  'Định Hướng AI': 'AI Guidance'
+  'Định Hướng Nghề Nghiệp': 'Career Guidance'
 };
 
 export default function Sidebar({ activeTab, setActiveTab }) {

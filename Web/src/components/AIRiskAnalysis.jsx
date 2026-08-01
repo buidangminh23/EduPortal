@@ -110,7 +110,7 @@ export default function AIRiskAnalysis() {
         <div>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-ink)' }}>
             <AlertTriangle size={24} />
-            <span>Phân Tích Nguy Cơ Học Lực AI</span>
+            <span>Cảnh Báo Học Sinh Cần Quan Tâm</span>
           </h2>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             Hệ thống tự động chấm điểm nguy cơ học tập dựa trên điểm số, chuyên cần và học phí.
@@ -311,7 +311,7 @@ export default function AIRiskAnalysis() {
             <div style={{ background: 'linear-gradient(135deg, var(--accent-soft) 0%, rgba(255,255,255,0.4) 100%)', border: '1px solid rgba(79, 70, 229, 0.15)', borderRadius: '16px', padding: '16px' }}>
               <h4 style={{ margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-ink)' }}>
                 <Sparkles size={16} />
-                <span>Khuyến nghị từ AI Advisor</span>
+                <span>Khuyến nghị theo quy tắc</span>
               </h4>
               <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-primary)', fontStyle: 'italic' }}>
                 &ldquo;{selectedStudent.risk.recommendations}&rdquo;

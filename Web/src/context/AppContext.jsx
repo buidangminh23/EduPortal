@@ -5,6 +5,11 @@ import { resolveTutorResponse } from '../lib/tutor/resolve';
 import { generateScaffoldedResponse } from '../lib/tutor/llmClient';
 import { GDPT2018_BASE_KNOWLEDGE } from '../data/gdpt2018BaseKnowledge';
 import { isTopicInSyllabusScope } from '../lib/tutor/syllabusScope';
+import { INVOICE_STATUS } from '../lib/domain/fees';
+import { buildTuitionPurpose } from '../lib/domain/vietqr';
+import { validateAttendanceEntry } from '../lib/domain/attendance';
+import { currentSchoolDay } from '../config/demoClock';
+import { safeStorage } from '../lib/safeStorage';
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -1940,20 +1945,32 @@ export const AppProvider = ({ children }) => {
   };
 
   // Actions for RFID Điểm Danh
-  const logAttendance = (studentId, status, checkInTime) => {
+  const logAttendance = (studentId, status, checkInTime, date = currentSchoolDay()) => {
     const student = students.find(s => s.id === studentId);
-    if (!student) return;
-    setAttendanceLogs(prev => [
-      ...prev,
-      {
-        id: `AT${String(Date.now()).slice(-4)}`,
+    if (!student) return { ok: false, errors: ['Không tìm thấy học sinh.'] };
+
+    const check = validateAttendanceEntry({ studentId, date, status }, { today: currentSchoolDay() });
+    if (!check.valid) return { ok: false, errors: check.errors };
+
+    // One record per student per day: re-scanning a card corrects the existing
+    // entry instead of stacking a second one on top of it.
+    setAttendanceLogs(prev => {
+      const existing = prev.findIndex(l => l.studentId === studentId && l.date === date);
+      const entry = {
+        id: existing >= 0 ? prev[existing].id : `AT${String(Date.now()).slice(-6)}`,
         studentId,
         studentName: student.name,
         status,
         checkInTime,
-        date: '2026-06-03' // Mock today date
-      }
-    ]);
+        date
+      };
+      if (existing < 0) return [...prev, entry];
+      const next = [...prev];
+      next[existing] = entry;
+      return next;
+    });
+
+    return { ok: true, errors: [] };
   };
 
   // Actions for Câu Lạc Bộ
@@ -2343,11 +2360,52 @@ export const AppProvider = ({ children }) => {
     setTeacherAttendance(prev => [...prev, { id, teacherId, teacherName, date, checkInTime: time, status, pin }]);
   };
 
-  // ── Payment Simulation Action ────────────────────────────────────────────
-  const processPayment = (studentId, feeId) => {
+  // ── Tuition payment ───────────────────────────────────────────────────────
+  // Two steps, because the app cannot see the school's bank account: the payer
+  // declares a transfer, then the school confirms it against a statement.
+  // `paid` stays false until that confirmation, so every screen that counts
+  // outstanding fees keeps telling the truth in between.
+
+  const updateFee = (studentId, feeId, patch) => {
     setStudents(prev => prev.map(s => s.id === studentId
-      ? { ...s, feeStatus: s.feeStatus.map(f => f.id === feeId ? { ...f, paid: true } : f) } : s));
-    addNotification({ type: 'fee', title: 'Thanh toán thành công', body: `Học phí đã được thanh toán thành công qua VietQR`, targetRole: 'parent', targetId: studentId });
+      ? { ...s, feeStatus: s.feeStatus.map(f => f.id === feeId ? { ...f, ...patch } : f) } : s));
+  };
+
+  const declareFeeTransfer = (studentId, feeId, reference) => {
+    const fee = students.find(s => s.id === studentId)?.feeStatus?.find(f => f.id === feeId);
+    if (!fee || fee.paid || fee.status === INVOICE_STATUS.PENDING) return;
+
+    updateFee(studentId, feeId, {
+      status: INVOICE_STATUS.PENDING,
+      declaredAt: new Date().toISOString(),
+      paymentReference: reference || buildTuitionPurpose(studentId, feeId)
+    });
+    addNotification({
+      type: 'fee',
+      title: 'Phụ huynh báo đã chuyển khoản',
+      body: `${fee.name} — chờ kế toán đối soát sao kê.`,
+      targetRole: 'admin',
+      targetId: 'admin'
+    });
+  };
+
+  const confirmFeePayment = (studentId, feeId, confirmedBy) => {
+    const fee = students.find(s => s.id === studentId)?.feeStatus?.find(f => f.id === feeId);
+    if (!fee || fee.paid) return;
+
+    updateFee(studentId, feeId, {
+      paid: true,
+      status: INVOICE_STATUS.PAID,
+      paidAt: new Date().toISOString(),
+      confirmedBy: confirmedBy || null
+    });
+    addNotification({
+      type: 'fee',
+      title: 'Đã xác nhận thanh toán',
+      body: `${fee.name} đã được nhà trường đối soát và ghi nhận.`,
+      targetRole: 'parent',
+      targetId: studentId
+    });
   };
 
   // ── Wellness Hub Actions ──────────────────────────────────────────────────
@@ -3034,7 +3092,8 @@ export const AppProvider = ({ children }) => {
       schoolAlbums, setSchoolAlbums,
       classChats, setClassChats,
       tournaments, setTournaments,
-      processPayment,
+      declareFeeTransfer,
+      confirmFeePayment,
       globalSearch,
       reviewQueue, setReviewQueue,
       groupEntries, setGroupEntries,

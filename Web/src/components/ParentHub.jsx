@@ -10,10 +10,12 @@ import {
   Calendar,
   BookOpen,
   Sparkles,
+  Clock,
   Utensils
 } from 'lucide-react';
 import VietQRPayment from './VietQRPayment';
 import ParentOverview from './dash/ParentOverview';
+import { INVOICE_LABEL, INVOICE_STATUS } from '../lib/domain/fees';
 
 
 export default function ParentHub({ setActiveTab }) {
@@ -222,18 +224,34 @@ export default function ParentHub({ setActiveTab }) {
                 <div>
                   <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{fee.name}</h4>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mã khoản thu: {fee.id} • Hạn nộp: {fee.deadline}</span>
+                  {fee.status === INVOICE_STATUS.PENDING && fee.paymentReference && (
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                      Nội dung đã chuyển: <strong style={{ fontFamily: 'monospace' }}>{fee.paymentReference}</strong>
+                    </div>
+                  )}
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                   <span style={{ fontSize: '1.2rem', fontWeight: 700, color: fee.paid ? 'var(--text-primary)' : 'var(--accent-danger)' }}>
                     {formatCurrency(fee.amount)}
                   </span>
-                  
-                  {fee.paid ? (
+
+                  {fee.paid && (
                     <span className="badge badge-success" style={{ gap: '4px', padding: '8px 14px' }}>
                       <CheckCircle size={14} /> Đã đóng
                     </span>
-                  ) : (
+                  )}
+
+                  {/* A declared transfer is not a receipt — the school still has
+                      to find it on a statement, so the parent is told to wait
+                      rather than shown a green tick. */}
+                  {!fee.paid && fee.status === INVOICE_STATUS.PENDING && (
+                    <span className="badge badge-warning" style={{ gap: '4px', padding: '8px 14px' }}>
+                      <Clock size={14} /> {INVOICE_LABEL[INVOICE_STATUS.PENDING]}
+                    </span>
+                  )}
+
+                  {!fee.paid && fee.status !== INVOICE_STATUS.PENDING && (
                     <button onClick={() => setShowPayModal(fee)} className="btn btn-danger" style={{ padding: '8px 16px', gap: '6px' }}>
                       <CreditCard size={14} />
                       <span>Nộp tiền ngay</span>

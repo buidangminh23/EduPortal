@@ -1,6 +1,7 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Send, Sparkles, MessageSquare, Paperclip, Image, Camera, X, FileText, CheckCircle2 } from 'lucide-react';
+import { Send, Sparkles, MessageSquare, Paperclip, Camera, X, FileText } from 'lucide-react';
+import RuleBasedNotice from './RuleBasedNotice';
 
 function latexToHtml(tex) {
   if (!tex) return '';
@@ -229,12 +230,18 @@ export default function AITutor() {
       <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
           <Sparkles size={18} color="var(--accent-primary)" />
-          <span>Gia sư Trí Tuệ Nhân Tạo</span>
+          <span>Trợ lý học tập</span>
         </h2>
-        
+
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          Gia sư AI 24/7 có thể giải bài tập, quét nhận diện hình ảnh/file bài tập và kiểm tra kiến thức của bạn ngay lập tức.
+          Tra cứu lời giải mẫu, công thức và hướng dẫn từng bước theo chương trình GDPT 2018, sẵn
+          sàng 24/7.
         </p>
+
+        <RuleBasedNotice
+          what="Trợ lý học tập"
+          how="trả lời bằng kho lời giải và công thức do giáo viên biên soạn, đối chiếu theo từ khoá trong câu hỏi. Không dùng mô hình ngôn ngữ, nên không tự bịa ra nội dung — nhưng cũng chỉ trả lời được những chủ đề đã có trong kho."
+        />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Gợi ý hỏi bài nhanh:</span>

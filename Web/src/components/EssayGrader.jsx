@@ -39,7 +39,7 @@ export default function EssayGrader() {
       setGradingInProgress(false);
       setTitle('');
       setContent('');
-      alert('AI đã hoàn thành chấm điểm nháp bài viết của bạn!');
+      alert('Đã chấm nháp xong bài viết của bạn.');
     }, 1500);
   };
 
@@ -63,7 +63,7 @@ export default function EssayGrader() {
       {/* Title */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.4rem', color: '#1e293b' }}>
-          📝 Trợ Lý AI Chấm Điểm Tự Luận
+          📝 Chấm Bài Luận Tự Động
         </h2>
         <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Hệ thống phân tích ngữ pháp tiếng Anh & Nghị luận văn học kết hợp phê duyệt từ giáo viên bộ môn.
@@ -158,7 +158,7 @@ export default function EssayGrader() {
                 }}
               >
                 <Sparkles size={16} /> 
-                {gradingInProgress ? 'AI đang đọc và chấm điểm nháp...' : 'AI Chấm Điểm Nháp Tự Động'}
+                {gradingInProgress ? 'Đang phân tích bài viết...' : 'Chấm Điểm Nháp Tự Động'}
               </button>
             </form>
           </div>

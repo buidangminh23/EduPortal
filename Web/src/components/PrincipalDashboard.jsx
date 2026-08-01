@@ -1,5 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
+import FeeReconciliation from './FeeReconciliation';
+import { currentSchoolDay } from '../config/demoClock';
 import { 
   Users, 
   TrendingUp,
@@ -115,7 +117,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
   const financeLedger = getFinanceLedger();
 
   // Attendance calculations
-  const todayLogs = attendanceLogs ? attendanceLogs.filter(l => l.date === '2026-06-03') : [];
+  const todayLogs = attendanceLogs ? attendanceLogs.filter(l => l.date === currentSchoolDay()) : [];
   const presentToday = todayLogs.filter(l => l.status === 'present').length;
   const lateToday = todayLogs.filter(l => l.status === 'late').length;
   const totalStudentsCount = students.length;
@@ -256,6 +258,8 @@ export default function PrincipalDashboard({ setActiveTab }) {
 
       {/* Finance manager view */}
       {subTab === 'finance' && (
+        <>
+        <FeeReconciliation />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
           {/* Create Fee Form */}
           <div className="glass-panel">
@@ -356,6 +360,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Announcements & Q&A Oversight tab */}

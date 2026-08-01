@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { safeStorage } from './safeStorage';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -141,31 +142,6 @@ const SEED_PRESETS = [
     is_global: true
   }
 ];
-
-// Safe LocalStorage wrapper to prevent browser security exception crashes
-const safeStorage = {
-  getItem(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Ignore write errors (e.g. private mode limits)
-    }
-  },
-  removeItem(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // Ignore remove errors
-    }
-  }
-};
 
 const generateId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
