@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { currentSchoolDay } from '../config/demoClock';
+import { SUBJECTS, regularSlotsFor, subjectName } from '../config/curriculum';
+import { explainSemesterAverage, toAssessmentRecord } from '../lib/domain/grading';
 import { 
   Users, 
   MessageSquare, 
@@ -29,7 +31,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const { 
     students, 
     parentQAs, 
-    editStudentGrades, 
+    saveSubjectGrades,
     answerParentQuestion,
     leaveRequests,
     approveLeaveRequest,
@@ -67,16 +69,31 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showGradeEntryModal, setShowGradeEntryModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('Math');
-  const [detailedGradesInput, setDetailedGradesInput] = useState({ oral: 0, quiz15m: 0, test1Period: 0, semester: 0 });
+  const [gradeRecord, setGradeRecord] = useState(() => toAssessmentRecord(null, regularSlotsFor('Math')));
+  const [gradeErrors, setGradeErrors] = useState([]);
 
-  const getDetailedGradesForSubject = (student, subject) => {
-    if (!student) return;
-    if (student.gradesDetailed && student.gradesDetailed[subject]) {
-      return student.gradesDetailed[subject];
-    }
-    const score = student.grades[subject] || 0;
-    return { oral: score, quiz15m: score, test1Period: score, semester: score };
+  /**
+   * Loads a subject's marks, upgrading whatever shape they were stored in.
+   * Falls back to the plain average when only that was ever saved.
+   */
+  const getAssessmentRecord = (student, subject) => {
+    const slots = regularSlotsFor(subject);
+    if (!student) return toAssessmentRecord(null, slots);
+    const stored = student.gradesDetailed?.[subject] ?? student.grades?.[subject];
+    return toAssessmentRecord(stored, slots);
   };
+
+  const setRegularMark = (index, value) => {
+    setGradeRecord(prev => {
+      const regular = [...prev.regular];
+      regular[index] = value;
+      return { ...prev, regular };
+    });
+  };
+
+  // Null until every slot the circular needs is filled, so the teacher sees a
+  // dash rather than an average computed from blanks treated as zero.
+  const gradeExplanation = explainSemesterAverage(gradeRecord);
 
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
 
@@ -276,15 +293,21 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const handleGradeSubmit = (e) => {
     e.preventDefault();
     if (!selectedStudent) return;
-    
-    const { oral, quiz15m, test1Period, semester } = detailedGradesInput;
-    const avg = parseFloat(((oral + quiz15m + test1Period * 2 + semester * 3) / 7).toFixed(1));
 
-    // Update with detailed grades and its calculated average
-    editStudentGrades(selectedStudent.id, selectedSubject, avg, detailedGradesInput);
+    const result = saveSubjectGrades(selectedStudent.id, selectedSubject, gradeRecord);
+    if (!result.ok) {
+      setGradeErrors(result.errors);
+      return;
+    }
 
+    const name = selectedStudent.name;
+    setGradeErrors([]);
     setSelectedStudent(null);
-    alert(`Đã cập nhật bảng điểm chi tiết môn ${selectedSubject === 'Math' ? 'Toán' : selectedSubject === 'Literature' ? 'Ngữ văn' : selectedSubject === 'Physics' ? 'Vật lý' : 'Tiếng Anh'} của học sinh ${selectedStudent.name}!`);
+    alert(
+      result.average === null
+        ? `Đã lưu điểm môn ${subjectName(selectedSubject)} của ${name}. Chưa đủ cột để tính ĐTB môn học kỳ.`
+        : `Đã lưu điểm môn ${subjectName(selectedSubject)} của ${name}. ĐTB môn học kỳ: ${result.average}.`
+    );
   };
 
   const handleAnswerSubmit = (qaId) => {
@@ -2190,7 +2213,8 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                             setSelectedStudent(std);
                             setGeneratedComment('');
                             setSelectedSubject('Math');
-                            setDetailedGradesInput(getDetailedGradesForSubject(std, 'Math'));
+                            setGradeRecord(getAssessmentRecord(std, 'Math'));
+                            setGradeErrors([]);
                           }}
                           className="btn btn-secondary btn-sm"
                           style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}
@@ -2233,65 +2257,80 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   onChange={e => {
                     const subject = e.target.value;
                     setSelectedSubject(subject);
-                    setDetailedGradesInput(getDetailedGradesForSubject(selectedStudent, subject));
+                    setGradeRecord(getAssessmentRecord(selectedStudent, subject));
+                    setGradeErrors([]);
                   }}
                   style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', height: '42px' }}
                 >
-                  <option value="Math">Toán học</option>
-                  <option value="Literature">Ngữ văn</option>
-                  <option value="Physics">Vật lý</option>
-                  <option value="English">Tiếng Anh</option>
+                  {SUBJECTS.map(subject => (
+                    <option key={subject.key} value={subject.key}>{subject.name}</option>
+                  ))}
                 </select>
               </div>
 
+              {/* One input per ĐĐGtx the subject actually requires — Thông tư 22
+                  ties that count to the subject's lessons per year, so a fixed
+                  pair of boxes was wrong for every subject over 35 tiết. */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                {gradeRecord.regular.map((mark, index) => (
+                  <div className="form-group" style={{ margin: 0 }} key={`regular-${index}`}>
+                    <label className="form-label" htmlFor={`gtx-${index}`} style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>
+                      Thường xuyên {index + 1} (hs 1)
+                    </label>
+                    <input
+                      id={`gtx-${index}`}
+                      type="number" step="0.1" min="0" max="10" className="form-control"
+                      value={mark ?? ''}
+                      placeholder="Chưa nhập"
+                      onChange={e => setRegularMark(index, e.target.value === '' ? null : Number(e.target.value))}
+                      style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                    />
+                  </div>
+                ))}
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm Miệng (hs 1)</label>
-                  <input 
-                    type="number" step="0.1" min="0" max="10" className="form-control" 
-                    value={detailedGradesInput.oral}
-                    onChange={e => setDetailedGradesInput({...detailedGradesInput, oral: parseFloat(e.target.value) || 0})}
-                    required 
+                  <label className="form-label" htmlFor="gtx-midterm" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Giữa kỳ (hs 2)</label>
+                  <input
+                    id="gtx-midterm"
+                    type="number" step="0.1" min="0" max="10" className="form-control"
+                    value={gradeRecord.midterm ?? ''}
+                    placeholder="Chưa nhập"
+                    onChange={e => setGradeRecord(prev => ({ ...prev, midterm: e.target.value === '' ? null : Number(e.target.value) }))}
                     style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                   />
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm 15 Phút (hs 1)</label>
-                  <input 
-                    type="number" step="0.1" min="0" max="10" className="form-control" 
-                    value={detailedGradesInput.quiz15m}
-                    onChange={e => setDetailedGradesInput({...detailedGradesInput, quiz15m: parseFloat(e.target.value) || 0})}
-                    required 
-                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm 1 Tiết (hs 2)</label>
-                  <input 
-                    type="number" step="0.1" min="0" max="10" className="form-control" 
-                    value={detailedGradesInput.test1Period}
-                    onChange={e => setDetailedGradesInput({...detailedGradesInput, test1Period: parseFloat(e.target.value) || 0})}
-                    required 
-                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Điểm Học Kỳ (hs 3)</label>
-                  <input 
-                    type="number" step="0.1" min="0" max="10" className="form-control" 
-                    value={detailedGradesInput.semester}
-                    onChange={e => setDetailedGradesInput({...detailedGradesInput, semester: parseFloat(e.target.value) || 0})}
-                    required 
+                  <label className="form-label" htmlFor="gtx-final" style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Cuối kỳ (hs 3)</label>
+                  <input
+                    id="gtx-final"
+                    type="number" step="0.1" min="0" max="10" className="form-control"
+                    value={gradeRecord.final ?? ''}
+                    placeholder="Chưa nhập"
+                    onChange={e => setGradeRecord(prev => ({ ...prev, final: e.target.value === '' ? null : Number(e.target.value) }))}
                     style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
                   />
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 500 }}>Điểm trung bình tạm tính:</span>
-                <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10b981' }}>
-                  {((detailedGradesInput.oral + detailedGradesInput.quiz15m + detailedGradesInput.test1Period * 2 + detailedGradesInput.semester * 3) / 7).toFixed(1)}
-                </span>
+              {gradeErrors.length > 0 && (
+                <div role="alert" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
+                  {gradeErrors.map(error => (
+                    <div key={error} style={{ fontSize: '0.8rem', color: '#fca5a5' }}>{error}</div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 500 }}>ĐTB môn học kỳ:</span>
+                  <span style={{ fontSize: '1.45rem', fontWeight: 800, color: gradeExplanation ? '#10b981' : '#94a3b8' }}>
+                    {gradeExplanation ? gradeExplanation.average : '—'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 6, fontFamily: gradeExplanation ? 'monospace' : 'inherit' }}>
+                  {gradeExplanation
+                    ? `${gradeExplanation.formula} — ${gradeExplanation.basis}`
+                    : 'Nhập đủ điểm thường xuyên, giữa kỳ và cuối kỳ để tính được ĐTB môn.'}
+                </div>
               </div>
 
               {/* AI Auto Comment Section */}

@@ -7,8 +7,11 @@ import {
   computeSemesterAverage,
   computeYearAverage,
   explainSemesterAverage,
+  applySubjectRecord,
   requiredRegularAssessments,
   roundGrade,
+  toAssessmentRecord,
+  validateAssessmentRecord,
   validateScore
 } from './grading';
 
@@ -206,6 +209,140 @@ describe('classifyTitle (Điều 15)', () => {
         yearAverages: subjects(8, 9.5, 0, 0)
       })
     ).toBeNull();
+  });
+});
+
+describe('toAssessmentRecord', () => {
+  it('maps the old four-column layout onto the circular\'s weights', () => {
+    const record = toAssessmentRecord(
+      { oral: 8, quiz15m: 7, test1Period: 9, semester: 6 },
+      2
+    );
+    expect(record).toEqual({ regular: [8, 7], midterm: 9, final: 6 });
+  });
+
+  it('gives the same average the old fixed formula produced', () => {
+    const legacy = { oral: 8, quiz15m: 7, test1Period: 9, semester: 6 };
+    const oldFormula = (8 + 7 + 9 * 2 + 6 * 3) / 7;
+    expect(computeSemesterAverage(toAssessmentRecord(legacy, 2))).toBe(roundGrade(oldFormula));
+  });
+
+  it('pads with blanks when the subject needs more regular marks', () => {
+    const record = toAssessmentRecord({ oral: 8, quiz15m: 7, test1Period: 9, semester: 6 }, 4);
+    expect(record.regular).toEqual([8, 7, null, null]);
+  });
+
+  it('keeps a bare stored average as the final mark rather than inventing marks', () => {
+    const record = toAssessmentRecord(8.5, 2);
+    expect(record).toEqual({ regular: [null, null], midterm: null, final: 8.5 });
+  });
+
+  it('passes an already-migrated record through unchanged', () => {
+    const record = { regular: [8, 9], midterm: 7, final: 6 };
+    expect(toAssessmentRecord(record, 2)).toEqual(record);
+  });
+
+  it('resizes an existing record when the subject requirement changes', () => {
+    expect(toAssessmentRecord({ regular: [8, 9, 7, 6], midterm: 7, final: 6 }, 2).regular).toEqual([8, 9]);
+    expect(toAssessmentRecord({ regular: [8], midterm: 7, final: 6 }, 3).regular).toEqual([8, null, null]);
+  });
+
+  it('returns an empty record for nothing stored', () => {
+    expect(toAssessmentRecord(undefined, 3)).toEqual({
+      regular: [null, null, null],
+      midterm: null,
+      final: null
+    });
+  });
+
+  it('drops a stored mark that is out of range instead of trusting it', () => {
+    expect(toAssessmentRecord({ oral: 99, quiz15m: 7, test1Period: 9, semester: 6 }, 2).regular).toEqual([
+      null,
+      7
+    ]);
+  });
+});
+
+describe('validateAssessmentRecord', () => {
+  it('accepts a complete, in-range record', () => {
+    const result = validateAssessmentRecord({ regular: [8, 9], midterm: 7, final: 6 });
+    expect(result).toEqual({ valid: true, errors: [], complete: true });
+  });
+
+  it('accepts a half-filled record, since marks arrive across a term', () => {
+    const result = validateAssessmentRecord({ regular: [8, null], midterm: null, final: null });
+    expect(result.valid).toBe(true);
+    expect(result.complete).toBe(false);
+  });
+
+  it('names the slot that is wrong', () => {
+    const result = validateAssessmentRecord({ regular: [8, 11], midterm: 7, final: 6 });
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toMatch(/thường xuyên 2/);
+  });
+
+  it('rejects a bad mid-term or final', () => {
+    expect(validateAssessmentRecord({ regular: [8], midterm: -1, final: 6 }).errors[0]).toMatch(/giữa kỳ/);
+    expect(validateAssessmentRecord({ regular: [8], midterm: 7, final: 8.25 }).errors[0]).toMatch(/cuối kỳ/);
+  });
+});
+
+describe('applySubjectRecord', () => {
+  const student = {
+    id: 'HS001',
+    grades: { Math: 8.5, Literature: 7.8 },
+    gradesDetailed: {}
+  };
+  const complete = { regular: [8, 9], midterm: 7, final: 6 };
+  const partial = { regular: [8, null], midterm: null, final: null };
+
+  it('derives the subject average from the marks', () => {
+    const { student: next, average } = applySubjectRecord(student, 'Math', complete);
+    expect(average).toBe(computeSemesterAverage(complete));
+    expect(next.grades.Math).toBe(average);
+  });
+
+  it('stores the marks behind the average', () => {
+    const { student: next } = applySubjectRecord(student, 'Math', complete);
+    expect(next.gradesDetailed.Math).toEqual(complete);
+  });
+
+  it('keeps a recorded average when this term\'s entry is still incomplete', () => {
+    const { student: next, average } = applySubjectRecord(student, 'Math', partial);
+    expect(average).toBeNull();
+    expect(next.grades.Math).toBe(8.5);
+  });
+
+  it('still saves the partial marks so nothing typed is lost', () => {
+    const { student: next } = applySubjectRecord(student, 'Math', partial);
+    expect(next.gradesDetailed.Math).toEqual(partial);
+  });
+
+  it('leaves other subjects alone', () => {
+    const { student: next } = applySubjectRecord(student, 'Math', complete);
+    expect(next.grades.Literature).toBe(7.8);
+  });
+
+  it('does not mutate the student it was given', () => {
+    applySubjectRecord(student, 'Math', complete);
+    expect(student.grades.Math).toBe(8.5);
+    expect(student.gradesDetailed).toEqual({});
+  });
+
+  it('rejects an out-of-range mark and changes nothing', () => {
+    const { student: next, errors } = applySubjectRecord(student, 'Math', {
+      regular: [8, 11],
+      midterm: 7,
+      final: 6
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(next).toBe(student);
+  });
+
+  it('replaces the average when marks are edited again', () => {
+    const first = applySubjectRecord(student, 'Math', complete).student;
+    const second = applySubjectRecord(first, 'Math', { regular: [10, 10], midterm: 10, final: 10 }).student;
+    expect(second.grades.Math).toBe(10);
   });
 });
 

@@ -203,6 +203,100 @@ export function classifyTitle({ learningBand, conductBand, yearAverages = [] }) 
 }
 
 /**
+ * Normalises whatever is stored for a subject into the TT22 assessment record
+ * `{ regular: number[], midterm, final }`.
+ *
+ * Two older shapes exist in saved data and both must survive the upgrade:
+ *   - `{ oral, quiz15m, test1Period, semester }` — the fixed four-column layout,
+ *     which mapped 1-tiết to ĐĐGgk and học kỳ to ĐĐGck.
+ *   - a bare number, written when a single average was typed straight in. There
+ *     is no way to recover the individual marks behind it, so it is kept as the
+ *     final assessment and the rest left blank rather than fabricated.
+ *
+ * @param {number} regularSlots How many ĐĐGtx the subject requires.
+ */
+export function toAssessmentRecord(stored, regularSlots = 2) {
+  const blank = { regular: Array.from({ length: regularSlots }, () => null), midterm: null, final: null };
+  if (stored === null || stored === undefined) return blank;
+
+  if (typeof stored === 'number') {
+    return { ...blank, final: validateScore(stored).value };
+  }
+
+  if (Array.isArray(stored.regular)) {
+    const regular = Array.from({ length: regularSlots }, (_, i) =>
+      i < stored.regular.length ? validateScore(stored.regular[i]).value : null
+    );
+    return { regular, midterm: validateScore(stored.midterm).value, final: validateScore(stored.final).value };
+  }
+
+  const legacy = [stored.oral, stored.quiz15m];
+  const regular = Array.from({ length: regularSlots }, (_, i) =>
+    i < legacy.length ? validateScore(legacy[i]).value : null
+  );
+  return {
+    regular,
+    midterm: validateScore(stored.test1Period).value,
+    final: validateScore(stored.semester).value
+  };
+}
+
+/**
+ * Checks a whole subject record before it is saved.
+ *
+ * A partially-filled record is accepted — teachers enter marks across a term,
+ * not in one sitting — but an out-of-range mark never is.
+ *
+ * @returns {{ valid: boolean, errors: string[], complete: boolean }}
+ */
+export function validateAssessmentRecord({ regular = [], midterm, final } = {}) {
+  const errors = [];
+
+  regular.forEach((score, index) => {
+    const result = validateScore(score);
+    if (!result.valid) errors.push(`Điểm thường xuyên ${index + 1}: ${result.error}`);
+  });
+
+  const midtermResult = validateScore(midterm);
+  if (!midtermResult.valid) errors.push(`Điểm giữa kỳ: ${midtermResult.error}`);
+
+  const finalResult = validateScore(final);
+  if (!finalResult.valid) errors.push(`Điểm cuối kỳ: ${finalResult.error}`);
+
+  const complete = computeSemesterAverage({ regular, midterm, final }) !== null;
+  return { valid: errors.length === 0, errors, complete };
+}
+
+/**
+ * Applies a saved assessment record to a student, returning a new student.
+ *
+ * `grades[subject]` is derived, never typed: it is the ĐTBmhk the marks
+ * produce. While the record is incomplete no lawful average exists, and the
+ * previously recorded one is left untouched — marks arrive across a term, and
+ * students carried over from an older system have an average on file with no
+ * component marks behind it. Clearing that because this term's entry is still
+ * in progress would destroy a figure the school cannot recover.
+ *
+ * @returns {{ student: object, average: number|null, errors: string[] }}
+ */
+export function applySubjectRecord(student, subject, record) {
+  const check = validateAssessmentRecord(record);
+  if (!check.valid) return { student, average: null, errors: check.errors };
+
+  const average = computeSemesterAverage(record);
+
+  return {
+    student: {
+      ...student,
+      grades: average === null ? student.grades : { ...student.grades, [subject]: average },
+      gradesDetailed: { ...(student.gradesDetailed || {}), [subject]: record }
+    },
+    average,
+    errors: []
+  };
+}
+
+/**
  * Explains a semester average so a teacher can check the arithmetic without
  * opening the circular. Returns null when the average cannot be computed.
  */

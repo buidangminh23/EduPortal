@@ -4,10 +4,10 @@ import { useAuth } from './AuthContext';
 import { resolveTutorResponse } from '../lib/tutor/resolve';
 import { generateScaffoldedResponse } from '../lib/tutor/llmClient';
 import { GDPT2018_BASE_KNOWLEDGE } from '../data/gdpt2018BaseKnowledge';
-import { isTopicInSyllabusScope } from '../lib/tutor/syllabusScope';
 import { INVOICE_STATUS } from '../lib/domain/fees';
 import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
+import { applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
 import { currentSchoolDay } from '../config/demoClock';
 import { safeStorage } from '../lib/safeStorage';
 
@@ -1553,27 +1553,28 @@ export const AppProvider = ({ children }) => {
     ]);
   };
 
-  const editStudentGrades = (studentId, subject, grade, detailed = null) => {
-    setStudents(prev => prev.map(std => {
-      if (std.id === studentId) {
-        const newDetailed = std.gradesDetailed ? { ...std.gradesDetailed } : {};
-        if (detailed) {
-          newDetailed[subject] = detailed;
-        } else {
-          const num = parseFloat(grade) || 0;
-          newDetailed[subject] = { oral: num, quiz15m: num, test1Period: num, semester: num };
-        }
-        return {
-          ...std,
-          grades: {
-            ...std.grades,
-            [subject]: parseFloat(grade)
-          },
-          gradesDetailed: newDetailed
-        };
-      }
-      return std;
-    }));
+  /**
+   * Saves one subject's assessment record for a student.
+   *
+   * `grades[subject]` is derived here rather than typed: it is the ĐTBmhk the
+   * marks produce under Thông tư 22/2021. Every screen that reads a subject
+   * score keeps reading a plain number, but that number is now the lawful
+   * average instead of whatever someone entered in the average box.
+   *
+   * The rule itself lives in the grading domain (`applySubjectRecord`) so it
+   * stays covered by tests; this only routes it through React state.
+   *
+   * @returns {{ ok: boolean, errors: string[], average: number|null }}
+   */
+  const saveSubjectGrades = (studentId, subject, record) => {
+    const check = validateAssessmentRecord(record);
+    if (!check.valid) return { ok: false, errors: check.errors, average: null };
+
+    setStudents(prev => prev.map(std =>
+      std.id === studentId ? applySubjectRecord(std, subject, record).student : std
+    ));
+
+    return { ok: true, errors: [], average: computeSemesterAverage(record) };
   };
 
   const addTeacher = (teacher) => {
@@ -3028,7 +3029,7 @@ export const AppProvider = ({ children }) => {
       eBooks: initialEbooks,
       logout,
       addStudent,
-      editStudentGrades,
+      saveSubjectGrades,
       addTeacher,
       addAnnouncement,
       addJournalEntry,
