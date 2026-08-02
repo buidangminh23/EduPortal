@@ -1,5 +1,6 @@
 import { MATH_PAPER_META, MATH_PAPER_QUESTIONS } from './examPaperMath';
 import { PHYSICS_PAPER_META, PHYSICS_PAPER_QUESTIONS } from './examPaperPhysics';
+import { CHEMISTRY_PAPER_META, CHEMISTRY_PAPER_QUESTIONS } from './examPaperChemistry';
 import { examFormatFor } from '../config/examFormat';
 
 export const BLOCKS = {
@@ -553,6 +554,14 @@ export const SYSTEM_BLOCK_EXAMS = [
     title: 'Đề thi thử Vật lí — đủ cấu trúc (18 nhiều lựa chọn · 4 đúng/sai · 6 trả lời ngắn)',
     duration: PHYSICS_PAPER_META.durationMinutes,
     questions: PHYSICS_PAPER_QUESTIONS
+  },
+  {
+    id: 'SYS_CHEMISTRY_FULL_01',
+    block: 'SINGLE',
+    subject: 'Chemistry',
+    title: 'Đề thi thử Hoá học — đủ cấu trúc (18 nhiều lựa chọn · 4 đúng/sai · 6 trả lời ngắn)',
+    duration: CHEMISTRY_PAPER_META.durationMinutes,
+    questions: CHEMISTRY_PAPER_QUESTIONS
   },
   {
     id: 'SYS_A00_01',
