@@ -53,7 +53,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO method_presets (id, name, description, system_prompt, guardrails, is_global)
 VALUES
     (
-        'p1000000-0000-0000-0000-000000000001',
+        'd1000000-0000-0000-0000-000000000001',
         'Gợi mở từng bước',
         'Học sinh đã nắm nền. Chỉ hỏi ngược, mỗi lần một bước, không đưa đáp án trực tiếp.',
         'Bạn là một gia sư AI thân thiện, dạy theo phương pháp gợi mở (Socratic method). Khi học sinh hỏi bài, bạn KHÔNG được đưa ra lời giải hay đáp số ngay lập tức. Thay vào đó, hãy phân tích câu hỏi của học sinh thành từng bước nhỏ, hỏi các câu hỏi gợi mở để hướng dẫn học sinh tự suy nghĩ và tự tìm ra câu trả lời từng bước một. Bạn chỉ xác nhận và chuyển sang bước tiếp theo khi học sinh đã trả lời đúng bước trước đó.',
@@ -61,7 +61,7 @@ VALUES
         true
     ),
     (
-        'p2000000-0000-0000-0000-000000000002',
+        'd2000000-0000-0000-0000-000000000002',
         'Mẫu rồi luyện',
         'Học sinh mới học hoặc yếu. Giải mẫu đầy đủ bài đầu tiên, các bài sau sẽ ẩn bớt các bước để học sinh tự điền.',
         'Bạn là một gia sư AI kiên nhẫn. Đầu tiên, hãy cung cấp một lời giải mẫu đầy đủ chi tiết cho bài toán tương tự hoặc chính bài toán đó. Sau đó, hãy đưa ra một bài tập tương tự và yêu cầu học sinh tự giải quyết từng phần, hỗ trợ khi các em gặp khó khăn.',
@@ -69,7 +69,7 @@ VALUES
         true
     ),
     (
-        'p3000000-0000-0000-0000-000000000003',
+        'd3000000-0000-0000-0000-000000000003',
         'Chắc lý thuyết trước',
         'Chuyên đề nặng định nghĩa. Đi từ định nghĩa, điều kiện, công thức rồi mới sang ví dụ áp dụng.',
         'Bạn là một gia sư AI coi trọng nền tảng. Khi giải quyết bài toán, trước tiên hãy hỏi học sinh hoặc nhắc nhở học sinh về các khái niệm, định nghĩa và công thức lý thuyết liên quan. Đảm bảo học sinh hiểu rõ bản chất lý thuyết trước khi bắt đầu áp dụng tính toán số học.',
@@ -77,7 +77,7 @@ VALUES
         true
     ),
     (
-        'p4000000-0000-0000-0000-000000000004',
+        'd4000000-0000-0000-0000-000000000004',
         'Ôn thi tốc độ',
         'Học sinh cuối cấp luyện đề. Nhận dạng dạng bài, chỉ ra bẫy hay gặp và đưa ra hướng đi cực ngắn.',
         'Bạn là một gia sư ôn thi cấp tốc THPT. Hãy hướng dẫn học sinh cách nhận diện nhanh dạng toán từ các từ khóa, các lỗi sai phổ biến (bẫy đề thi) cần tránh, và các công thức giải nhanh để chọn nhanh kết quả trắc nghiệm.',
@@ -86,18 +86,18 @@ VALUES
     )
 ON CONFLICT (id) DO NOTHING;
 
--- 6. Seed Students (For Demo, we seed the static student Nguyễn Hoàng Nam 's0000000-0000-0000-0000-000000000001')
+-- 6. Seed Students (For Demo, we seed the static student Nguyễn Hoàng Nam '50000000-0000-0000-0000-000000000001')
 INSERT INTO auth.users (id, email, raw_user_meta_data)
 VALUES 
-    ('s0000000-0000-0000-0000-000000000001', 'nam.nh@school.edu.vn', '{"full_name": "Nguyễn Hoàng Nam"}'::jsonb)
+    ('50000000-0000-0000-0000-000000000001', 'nam.nh@school.edu.vn', '{"full_name": "Nguyễn Hoàng Nam"}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO profiles (id, school_id, role, full_name, avatar_url)
 VALUES
-    ('s0000000-0000-0000-0000-000000000001', 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d', 'student', 'Nguyễn Hoàng Nam', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80')
+    ('50000000-0000-0000-0000-000000000001', 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d', 'student', 'Nguyễn Hoàng Nam', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO enrollments (student_id, class_id)
 VALUES
-    ('s0000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001')
+    ('50000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001')
 ON CONFLICT DO NOTHING;

@@ -39,10 +39,10 @@ CREATE TABLE assessment_records (
     CONSTRAINT assessment_final_range CHECK (final IS NULL OR (final >= 0 AND final <= 10)),
     CONSTRAINT assessment_average_range CHECK (average IS NULL OR (average >= 0 AND average <= 10)),
     -- Guards the array too: a client bug cannot store 15 as a mark.
+    -- Written with ALL rather than a subquery over unnest(), because a CHECK
+    -- constraint may not contain a subquery.
     CONSTRAINT assessment_regular_range CHECK (
-        regular IS NULL OR NOT EXISTS (
-            SELECT 1 FROM unnest(regular) AS mark WHERE mark < 0 OR mark > 10
-        )
+        regular IS NULL OR (0 <= ALL (regular) AND 10 >= ALL (regular))
     ),
     CONSTRAINT assessment_regular_count CHECK (array_length(regular, 1) IS NULL OR array_length(regular, 1) <= 4)
 );
@@ -97,10 +97,27 @@ CREATE TABLE attendance_records (
 
     -- One record per student per day: re-scanning a card corrects the entry
     -- rather than stacking a second one, matching logAttendance in the client.
-    UNIQUE (student_id, date),
-    -- Attendance is a record of what happened, so it cannot be filed ahead.
-    CONSTRAINT attendance_not_future CHECK (date <= CURRENT_DATE)
+    UNIQUE (student_id, date)
 );
+
+-- Attendance is a record of what happened, so it cannot be filed ahead. This
+-- is a trigger rather than a CHECK because CURRENT_DATE is STABLE, not
+-- IMMUTABLE, and Postgres will not accept it in a constraint.
+CREATE OR REPLACE FUNCTION reject_future_attendance()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.date > CURRENT_DATE THEN
+        RAISE EXCEPTION 'Không thể điểm danh cho ngày trong tương lai (%).', NEW.date;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER attendance_not_future
+    BEFORE INSERT OR UPDATE ON attendance_records
+    FOR EACH ROW EXECUTE FUNCTION reject_future_attendance();
 
 CREATE INDEX attendance_records_date_idx ON attendance_records(school_id, date);
 
@@ -306,3 +323,16 @@ CREATE POLICY "documents_storage_delete"
         AND (storage.foldername(name))[1] = auth_school_id()::text
         AND ((storage.foldername(name))[2] = auth.uid()::text OR auth_role() = 'admin')
     );
+
+-- ── Grants ─────────────────────────────────────────────────────────────────
+-- Without these the API roles are refused at the table and the policies above
+-- never run. RLS narrows what these grants expose, row by row.
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+    assessment_records,
+    comment_results,
+    attendance_records,
+    leave_requests,
+    invoices,
+    documents
+TO authenticated;

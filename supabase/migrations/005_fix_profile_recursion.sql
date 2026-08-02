@@ -198,3 +198,30 @@ REVOKE EXECUTE ON FUNCTION can_view_student(UUID) FROM public;
 REVOKE EXECUTE ON FUNCTION can_edit_student(UUID) FROM public;
 GRANT EXECUTE ON FUNCTION can_view_student(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION can_edit_student(UUID) TO authenticated;
+
+-- Tables created in a migration carry no privileges for the API roles, so
+-- without this the client is refused at the table before RLS is ever consulted:
+-- "permission denied for table". RLS then narrows these grants to rows.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE guardians TO authenticated;
+
+-- The same omission covers every table from 001-004: they were given policies
+-- but never grants, so the whole original schema was unreachable from a client.
+-- Nobody hit it because the app has only ever run against the in-browser mock.
+GRANT SELECT ON TABLE schools TO authenticated;
+GRANT SELECT, UPDATE ON TABLE profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+    subject_groups,
+    group_members,
+    classes,
+    teaching_assignments,
+    enrollments,
+    method_presets,
+    tutor_configs,
+    knowledge_entries,
+    worked_solutions,
+    topic_rules,
+    conversations,
+    messages,
+    review_queue,
+    golden_tests
+TO authenticated;

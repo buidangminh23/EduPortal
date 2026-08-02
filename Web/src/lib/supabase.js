@@ -62,7 +62,7 @@ const SEED_PROFILES = [
     created_at: new Date().toISOString()
   },
   {
-    id: 's0000000-0000-0000-0000-000000000001',
+    id: '50000000-0000-0000-0000-000000000001',
     school_id: 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d',
     role: 'student',
     full_name: 'Nguyễn Hoàng Nam',
@@ -71,7 +71,7 @@ const SEED_PROFILES = [
     created_at: new Date().toISOString()
   },
   {
-    id: 'p0000000-0000-0000-0000-000000000001',
+    id: 'b0000000-0000-0000-0000-000000000001',
     school_id: 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d',
     role: 'parent',
     full_name: 'Nguyễn Văn Hùng',
@@ -105,12 +105,12 @@ const SEED_ASSIGNMENTS = [
 ];
 
 const SEED_ENROLLMENTS = [
-  { student_id: 's0000000-0000-0000-0000-000000000001', class_id: 'c1000000-0000-0000-0000-000000000001' }
+  { student_id: '50000000-0000-0000-0000-000000000001', class_id: 'c1000000-0000-0000-0000-000000000001' }
 ];
 
 const SEED_PRESETS = [
   {
-    id: 'p1000000-0000-0000-0000-000000000001',
+    id: 'd1000000-0000-0000-0000-000000000001',
     name: 'Gợi mở từng bước',
     description: 'Học sinh đã nắm nền. Chỉ hỏi ngược, mỗi lần một bước, không đưa đáp án trực tiếp.',
     system_prompt: 'Bạn là một gia sư AI thân thiện, dạy theo phương pháp gợi mở (Socratic method). Khi học sinh hỏi bài, bạn KHÔNG được đưa ra lời giải hay đáp số ngay lập tức. Thay vào đó, hãy phân tích câu hỏi của học sinh thành từng bước nhỏ, hỏi các câu hỏi gợi mở để hướng dẫn học sinh tự suy nghĩ và tự tìm ra câu trả lời từng bước một. Bạn chỉ xác nhận và chuyển sang bước tiếp theo khi học sinh đã trả lời đúng bước trước đó.',
@@ -118,7 +118,7 @@ const SEED_PRESETS = [
     is_global: true
   },
   {
-    id: 'p2000000-0000-0000-0000-000000000002',
+    id: 'd2000000-0000-0000-0000-000000000002',
     name: 'Mẫu rồi luyện',
     description: 'Học sinh mới học hoặc yếu. Giải mẫu đầy đủ bài đầu tiên, các bài sau sẽ ẩn bớt các bước để học sinh tự điền.',
     system_prompt: 'Bạn là một gia sư AI kiên nhẫn. Đầu tiên, hãy cung cấp một lời giải mẫu đầy đủ chi tiết cho bài toán tương tự hoặc chính bài toán đó. Sau đó, hãy đưa ra một bài tập tương tự và yêu cầu học sinh tự giải quyết từng phần, hỗ trợ khi các em gặp khó khăn.',
@@ -126,7 +126,7 @@ const SEED_PRESETS = [
     is_global: true
   },
   {
-    id: 'p3000000-0000-0000-0000-000000000003',
+    id: 'd3000000-0000-0000-0000-000000000003',
     name: 'Chắc lý thuyết trước',
     description: 'Chuyên đề nặng định nghĩa. Đi từ định nghĩa, điều kiện, công thức rồi mới sang ví dụ áp dụng.',
     system_prompt: 'Bạn là một gia sư AI coi trọng nền tảng. Khi giải quyết bài toán, trước tiên hãy hỏi học sinh hoặc nhắc nhở học sinh về các khái niệm, định nghĩa và công thức lý thuyết liên quan. Đảm bảo học sinh hiểu rõ bản chất lý thuyết trước khi bắt đầu áp dụng tính toán số học.',
@@ -134,7 +134,7 @@ const SEED_PRESETS = [
     is_global: true
   },
   {
-    id: 'p4000000-0000-0000-0000-000000000004',
+    id: 'd4000000-0000-0000-0000-000000000004',
     name: 'Ôn thi tốc độ',
     description: 'Học sinh cuối cấp luyện đề. Nhận dạng dạng bài, chỉ ra bẫy hay gặp và đưa ra hướng đi cực ngắn.',
     system_prompt: 'Bạn là một gia sư ôn thi cấp tốc THPT. Hãy hướng dẫn học sinh cách nhận diện nhanh dạng toán từ các từ khóa, các lỗi sai phổ biến (bẫy đề thi) cần tránh, và các công thức giải nhanh để chọn nhanh kết quả trắc nghiệm.',
