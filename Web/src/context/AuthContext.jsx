@@ -43,13 +43,16 @@ export function AuthProvider({ children }) {
           setProfile(prof);
           setRole(prof.role);
           
-          // Legacy session compatibility: Write userSession in localStorage for older components
+          // Legacy session compatibility: Write userSession in localStorage for older components.
+          // The class is left empty rather than filled with the demo's 12A1 — a
+          // real student's class comes from their enrolment, and inventing one
+          // here would put a stranger's class on their own record.
           const legacySession = {
-            username: prof.email.split('@')[0],
+            username: prof.email ? prof.email.split('@')[0] : '',
             role: prof.role,
             displayName: prof.full_name,
             avatarUrl: prof.avatar_url,
-            class: prof.role === 'student' ? '12A1' : null,
+            class: prof.class_name ?? null,
             studentId: prof.role === 'student' ? prof.id : null,
             email: prof.email
           };
@@ -81,6 +84,27 @@ export function AuthProvider({ children }) {
     return { data, error };
   };
 
+  /**
+   * Signs in with a Google credential, verified by Supabase.
+   *
+   * The token is passed through untouched. Anything that reads it here and
+   * acts on what it says is trusting a string the browser handed it; only the
+   * side holding Google's public keys can tell a real assertion from a typed
+   * one.
+   */
+  const signInWithGoogleToken = async (credential) => {
+    if (!credential) {
+      return { data: null, error: { message: 'Google không trả về thông tin đăng nhập.' } };
+    }
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential
+    });
+    setLoading(false);
+    return { data, error };
+  };
+
   const signOut = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
@@ -94,6 +118,7 @@ export function AuthProvider({ children }) {
     role,
     loading,
     signInWithPassword,
+    signInWithGoogleToken,
     signOut
   };
 

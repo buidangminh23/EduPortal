@@ -6,6 +6,8 @@ import Login from './components/Login';
 import LandingPage from './components/LandingPage';
 import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
+import UnconfiguredScreen from './components/UnconfiguredScreen';
+import { isUnconfigured } from './lib/appMode';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Filter, Sparkles, Eye, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
@@ -56,6 +58,12 @@ function App() {
     }, 0);
     return () => clearTimeout(timer);
   }, [currentRole]);
+
+  // A build that was given neither a database nor an explicit demo flag stops
+  // here, before it can offer anyone a login screen it cannot honour.
+  if (isUnconfigured) {
+    return <UnconfiguredScreen />;
+  }
 
   // If no active session, render the LandingPage or Login Portal
   if (!userSession) {

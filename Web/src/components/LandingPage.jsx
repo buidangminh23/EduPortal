@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { GraduationCap, Award, BookOpen, Users, ArrowRight, Sparkles, Video, MessageSquare } from 'lucide-react';
+import { isDemoMode } from '../lib/appMode';
+import { demoSessionFor } from '../lib/demoSession';
 
 const mockFeatures = [
   { id: 1, title: 'AI Gia Sư 24/7', desc: 'Hỏi đáp bài tập, tự ôn luyện lý thuyết mọi môn học với trợ lý ảo thông minh.', icon: Sparkles, color: 'var(--amber)' },
@@ -45,18 +47,16 @@ export default function LandingPage({ onLogin }) {
     setShowAllNews(false);
   };
 
+  /**
+   * Opens the demo as a student, in one click.
+   *
+   * The persona is defined once in demoSession.js and shared with the login
+   * screen, so the two cannot drift apart — this used to hold its own copy,
+   * which is how a second place ended up able to manufacture a session.
+   */
   const handleDirectDemoLogin = () => {
-    const session = {
-      username: 'hoangnam',
-      role: 'student',
-      displayName: 'Nguyễn Hoàng Nam',
-      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-      class: '12A1',
-      studentId: 'HS001',
-      email: 'nam.nh@school.edu.vn'
-    };
     localStorage.removeItem('eduportal_logged_out');
-    localStorage.setItem('userSession', JSON.stringify(session));
+    localStorage.setItem('userSession', JSON.stringify(demoSessionFor('student')));
     window.location.reload();
   };
 
@@ -85,9 +85,11 @@ export default function LandingPage({ onLogin }) {
         </div>
         
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn" style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
-            Vào nhanh Demo
-          </button>
+          {isDemoMode && (
+            <button className="btn" style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
+              Vào nhanh Demo
+            </button>
+          )}
           <button className="btn btn-primary" onClick={onLogin}>
             Đăng nhập hệ thống
           </button>
@@ -122,9 +124,11 @@ export default function LandingPage({ onLogin }) {
               <span>Vào Đăng Nhập</span>
               <ArrowRight size={18} />
             </button>
-            <button className="btn" style={{ padding: '12px 28px', fontSize: '1rem', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
-              <span>Khám Phá Demo Ngay</span>
-            </button>
+            {isDemoMode && (
+              <button className="btn" style={{ padding: '12px 28px', fontSize: '1rem', background: 'var(--accent-soft)', color: 'var(--accent-ink)', fontWeight: 700 }} onClick={handleDirectDemoLogin}>
+                <span>Khám Phá Demo Ngay</span>
+              </button>
+            )}
           </div>
         </div>
       </section>

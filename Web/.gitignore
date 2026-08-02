@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment. `.env.example` and `.env.development` are committed on purpose —
+# one is a template, the other only carries the demo flag. Anything that could
+# hold a real Supabase key stays out, because a leaked key is not fixed by a
+# revert.
+.env
+.env.*
+!.env.example
+!.env.development

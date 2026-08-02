@@ -1,15 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { safeStorage } from './safeStorage';
+import { isRealMode, supabaseUrl, supabaseAnonKey } from './appMode';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Check if credentials are valid and not placeholders
-const isRealSupabase = 
-  supabaseUrl && 
-  supabaseAnonKey && 
-  supabaseUrl !== 'your_supabase_project_url_here' && 
-  supabaseAnonKey !== 'your_supabase_anon_key_here';
+// Which of the two clients is live is decided in appMode.js, deliberately and
+// in one place. This module used to decide it as a side effect of reading two
+// environment variables, which meant a missing variable silently swapped real
+// authentication for a simulator.
+const isRealSupabase = isRealMode;
 
 const supabaseClient = isRealSupabase ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
@@ -346,54 +343,20 @@ class MockAuthClient {
     return { data: { session: this.getSessionSync() }, error: null };
   }
 
-  async signInWithPassword({ email, password }) {
-    let profiles = [];
-    try {
-      profiles = JSON.parse(safeStorage.getItem('mock_sb_profiles') || '[]');
-    } catch {
-      profiles = [];
-    }
-
-    let matchedProfile = profiles.find(p => p.email === email);
-    if (!matchedProfile) {
-      const mappedEmail = 
-        email === 'minhtriet' ? 'triet.nm@school.edu.vn' :
-        email === 'hoangnam' ? 'nam.nh@school.edu.vn' :
-        email === 'phuhuynh_nam' ? 'hung.nv@parent.school.edu.vn' :
-        email === 'hieutruong' ? 'hieutruong@school.edu.vn' : null;
-        
-      if (mappedEmail) {
-        matchedProfile = profiles.find(p => p.email === mappedEmail);
-      }
-    }
-
-    if (!matchedProfile) {
-      return { data: null, error: { message: 'Tài khoản không tồn tại!' } };
-    }
-
-    const validPassword = 
-      matchedProfile.role === 'teacher' ? 'teacher123' :
-      matchedProfile.role === 'student' ? 'student123' :
-      matchedProfile.role === 'parent' ? 'parent123' :
-      matchedProfile.role === 'admin' ? 'admin123' : '123';
-
-    if (password !== validPassword) {
-      return { data: null, error: { message: 'Mật khẩu không chính xác!' } };
-    }
-
-    const session = {
-      user: {
-        id: matchedProfile.id,
-        email: matchedProfile.email,
-        user_metadata: { full_name: matchedProfile.full_name }
-      },
-      access_token: 'mock-jwt-token-' + matchedProfile.id,
-      expires_at: Math.floor(Date.now() / 1000) + 3600
+  /**
+   * Refuses, always.
+   *
+   * This used to accept a password derived from the account's role, so every
+   * teacher in the country shared `teacher123`. There is now no password to get
+   * right: the demo does not authenticate, it just shows you the product from a
+   * chosen point of view. Kept as a method so any caller that still reaches for
+   * it fails loudly instead of finding a way in.
+   */
+  async signInWithPassword() {
+    return {
+      data: null,
+      error: { message: 'Bản demo không có tài khoản đăng nhập. Hãy chọn vai trò để xem thử.' }
     };
-
-    safeStorage.setItem('mock_sb_session', JSON.stringify(session));
-    this.notifyListeners('SIGNED_IN', session);
-    return { data: session, error: null };
   }
 
   async signOut() {
@@ -424,4 +387,7 @@ if (!isRealSupabase) {
 }
 
 export const supabase = isRealSupabase ? supabaseClient : mockSupabase;
+
+// True when records live in this browser rather than in Postgres. Named for
+// what it means to the caller — where the data is — not for how it got that way.
 export const isMockMode = !isRealSupabase;
