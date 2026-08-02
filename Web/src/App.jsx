@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login';
 import LandingPage from './components/LandingPage';
 import AppCommandDock from './components/AppCommandDock';
+import StoreErrorBanner from './components/StoreErrorBanner';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Filter, Sparkles, Eye, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
@@ -221,6 +222,7 @@ function App() {
         
         {/* Main Content Viewport */}
         <main className="content-pane">
+          <StoreErrorBanner />
           <Suspense fallback={<AppLoadingState />}>
             {renderTabContent()}
           </Suspense>

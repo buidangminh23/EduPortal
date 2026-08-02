@@ -9,8 +9,19 @@ import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
 import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
 import { currentSchoolDay } from '../config/demoClock';
+import { getRepository, resetRepository } from '../lib/db';
 import { safeStorage } from '../lib/safeStorage';
 
+
+/**
+ * Semester the gradebook is currently writing to.
+ *
+ * The app keeps semester 1 in `gradesSem1` and the working semester in
+ * `grades`, with no way to switch — so every write lands in semester 2. Named
+ * here rather than left as a bare 2 so the day a term selector arrives, there
+ * is one place that stops being a constant.
+ */
+const CURRENT_SEMESTER = 2;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
@@ -886,6 +897,28 @@ export const AppProvider = ({ children }) => {
 
   const { profile, signOut: authSignOut } = useAuth();
 
+  /**
+   * Last failed write, or null. Surfaced so a teacher learns their marks did
+   * not save — a write that fails silently is worse than one that refuses,
+   * because the screen keeps showing the number they typed.
+   */
+  const [storeError, setStoreError] = useState(null);
+
+  /**
+   * Sends a change to wherever records live, without blocking the render.
+   *
+   * Errors are captured rather than thrown: the calling action has already
+   * updated the projection, and an unhandled rejection here would leave the UI
+   * looking correct with nothing recorded.
+   */
+  const persist = useCallback((operation, what) => {
+    const repo = getRepository(profile?.school_id ?? null);
+    Promise.resolve()
+      .then(() => operation(repo))
+      .then(() => setStoreError(null))
+      .catch((error) => setStoreError({ what, message: error?.message || 'Lỗi không rõ.' }));
+  }, [profile?.school_id]);
+
   const defaultDemoSession = {
     username: 'hoangnam',
     role: 'student',
@@ -1516,6 +1549,10 @@ export const AppProvider = ({ children }) => {
         }
       });
       setMockSession(null);
+      // The adapter carries the previous user's tenant. Dropping it here means
+      // the next sign-in builds a fresh one rather than writing the new user's
+      // records under the old school.
+      resetRepository();
     } catch (e) {
       console.error(e);
     }
@@ -1570,12 +1607,78 @@ export const AppProvider = ({ children }) => {
     const check = validateAssessmentRecord(record);
     if (!check.valid) return { ok: false, errors: check.errors, average: null };
 
+    const average = computeSemesterAverage(record);
+
     setStudents(prev => prev.map(std =>
       std.id === studentId ? applySubjectRecord(std, subject, record).student : std
     ));
 
-    return { ok: true, errors: [], average: computeSemesterAverage(record) };
+    // React state is the render projection; the repository is where the record
+    // actually lives. The screen updates immediately and the write settles
+    // after, so a slow database never blocks a teacher mid-column.
+    persist(
+      (repo) => repo.saveAssessment({
+        studentId,
+        subject,
+        semester: CURRENT_SEMESTER,
+        regular: record.regular,
+        midterm: record.midterm,
+        final: record.final,
+        average,
+        updatedBy: profile?.id ?? null
+      }),
+      `lưu điểm môn ${subject}`
+    );
+
+    return { ok: true, errors: [], average };
   };
+
+  /**
+   * Loads stored marks over the seeded ones, once the session is known.
+   *
+   * Runs after the seed rather than instead of it, so a fresh demo still has
+   * something to look at while a real deployment sees its own records. Only
+   * subjects present in the store are touched — a seeded subject nobody has
+   * entered marks for is left alone rather than blanked.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    const repo = getRepository(profile?.school_id ?? null);
+
+    Promise.resolve()
+      .then(() => repo.listAssessments({ semester: CURRENT_SEMESTER }))
+      .then((rows) => {
+        if (cancelled || !rows?.length) return;
+
+        const bySubject = rows.reduce((acc, row) => {
+          (acc[row.student_id] ||= {})[row.subject] = row;
+          return acc;
+        }, {});
+
+        setStudents(prev => prev.map(std => {
+          const stored = bySubject[std.id];
+          if (!stored) return std;
+
+          const grades = { ...std.grades };
+          const gradesDetailed = { ...(std.gradesDetailed || {}) };
+          Object.entries(stored).forEach(([subject, row]) => {
+            gradesDetailed[subject] = {
+              regular: row.regular ?? [],
+              midterm: row.midterm ?? null,
+              final: row.final ?? null
+            };
+            if (Number.isFinite(Number(row.average))) grades[subject] = Number(row.average);
+          });
+
+          return { ...std, grades, gradesDetailed };
+        }));
+      })
+      .catch((error) => {
+        if (!cancelled) setStoreError({ what: 'tải sổ điểm', message: error?.message || 'Lỗi không rõ.' });
+      });
+
+    return () => { cancelled = true; };
+  }, [profile?.school_id]);
 
   /**
    * Records Đạt / Chưa đạt for a nhận xét-only subject.
@@ -1593,6 +1696,13 @@ export const AppProvider = ({ children }) => {
     setStudents(prev => prev.map(std =>
       std.id === studentId ? applySubjectComment(std, subject, semester, result).student : std
     ));
+
+    persist(
+      (repo) => repo.saveCommentResult({
+        studentId, subject, semester, result, updatedBy: profile?.id ?? null
+      }),
+      `lưu nhận xét môn ${subject}`
+    );
 
     return { ok: true, errors: [] };
   };
@@ -1723,10 +1833,21 @@ export const AppProvider = ({ children }) => {
   // NEW ACTION: Submit Leave Request
   const submitLeaveRequest = (studentId, date, reason) => {
     const student = students.find(s => s.id === studentId);
+    const id = `L${String(Date.now()).slice(-4)}`;
+
+    // A single-day absence is still a range, so both ends carry the same date.
+    // Multi-day leave is a later change to the form, not to the record shape.
+    persist(
+      (repo) => repo.createLeaveRequest({
+        id, studentId, fromDate: date, toDate: date, reason, requestedBy: profile?.id ?? null
+      }),
+      'gửi đơn xin nghỉ'
+    );
+
     setLeaveRequests(prev => [
       ...prev,
       {
-        id: `L${String(Date.now()).slice(-4)}`,
+        id,
         studentId,
         studentName: student.name,
         class: student.class,
@@ -1740,6 +1861,11 @@ export const AppProvider = ({ children }) => {
 
   // NEW ACTION: Approve Leave Request
   const approveLeaveRequest = (requestId, status) => {
+    persist(
+      (repo) => repo.decideLeaveRequest({ id: requestId, status, decidedBy: profile?.id ?? null }),
+      'duyệt đơn xin nghỉ'
+    );
+
     setLeaveRequests(prev => prev.map(req => {
       if (req.id === requestId) {
         return { ...req, status };
@@ -1990,6 +2116,13 @@ export const AppProvider = ({ children }) => {
       next[existing] = entry;
       return next;
     });
+
+    persist(
+      (repo) => repo.saveAttendance({
+        studentId, date, status, checkInTime, note: null, recordedBy: profile?.id ?? null
+      }),
+      'ghi điểm danh'
+    );
 
     return { ok: true, errors: [] };
   };
@@ -2396,11 +2529,17 @@ export const AppProvider = ({ children }) => {
     const fee = students.find(s => s.id === studentId)?.feeStatus?.find(f => f.id === feeId);
     if (!fee || fee.paid || fee.status === INVOICE_STATUS.PENDING) return;
 
+    const paymentReference = reference || buildTuitionPurpose(studentId, feeId);
+
     updateFee(studentId, feeId, {
       status: INVOICE_STATUS.PENDING,
       declaredAt: new Date().toISOString(),
-      paymentReference: reference || buildTuitionPurpose(studentId, feeId)
+      paymentReference
     });
+    persist(
+      (repo) => repo.declareTransfer({ id: feeId, reference: paymentReference }),
+      'ghi nhận báo chuyển khoản'
+    );
     addNotification({
       type: 'fee',
       title: 'Phụ huynh báo đã chuyển khoản',
@@ -2420,6 +2559,10 @@ export const AppProvider = ({ children }) => {
       paidAt: new Date().toISOString(),
       confirmedBy: confirmedBy || null
     });
+    persist(
+      (repo) => repo.confirmPayment({ id: feeId, confirmedBy: confirmedBy || profile?.id || null }),
+      'xác nhận đã thu học phí'
+    );
     addNotification({
       type: 'fee',
       title: 'Đã xác nhận thanh toán',
@@ -3051,6 +3194,7 @@ export const AppProvider = ({ children }) => {
       addStudent,
       saveSubjectGrades,
       saveSubjectComment,
+      storeError,
       addTeacher,
       addAnnouncement,
       addJournalEntry,
