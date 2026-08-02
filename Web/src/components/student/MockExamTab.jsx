@@ -3,6 +3,16 @@ import { AppContext } from '../../context/AppContext';
 import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES, QUESTIONS } from '../../data/mockExamsData';
 import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
+  MAX_SUBJECT_SCORE,
+  examFormatFor,
+  formatQuestionCount,
+  pointsForQuestion,
+  trueFalsePoints
+} from '../../config/examFormat';
+
+/** Weight used when a subject has no published paper to weight against. */
+const FALLBACK_QUESTION_POINTS = 0.25;
+import {
   Award,
   ArrowRight,
   Sparkles,
@@ -68,44 +78,43 @@ export default function MockExamTab({ student }) {
       let rawPoints = 0;
       let totalRawMax = 0;
 
+      // Weight each question the way the real paper does. Counting every
+      // question as one raw mark made a đúng/sai question — worth a full point
+      // against 0,25 for a multiple-choice one — count the same as the easiest
+      // question on the paper.
       subjQuestions.forEach(q => {
         const qType = q.type || 'single';
         const userAns = answers[q.id];
+        const weight = pointsForQuestion(subj, qType) || FALLBACK_QUESTION_POINTS;
+        totalRawMax += weight;
 
-        if (qType === 'single') {
-          totalRawMax += 1;
-          if (userAns === q.correctKey) {
-            rawPoints += 1;
-          }
-        } else if (qType === 'tf') {
-          totalRawMax += 1;
+        if (qType === 'tf') {
           if (userAns && typeof userAns === 'object') {
-            let numCorrect = 0;
-            q.statements?.forEach(st => {
-              if (userAns[st.id] === st.correct) {
-                numCorrect++;
-              }
-            });
-            // MoET official True/False scoring scale: 1 -> 0.1, 2 -> 0.25, 3 -> 0.5, 4 -> 1.0
-            if (numCorrect === 1) rawPoints += 0.1;
-            else if (numCorrect === 2) rawPoints += 0.25;
-            else if (numCorrect === 3) rawPoints += 0.5;
-            else if (numCorrect === 4) rawPoints += 1.0;
+            const numCorrect = (q.statements || []).filter(st => userAns[st.id] === st.correct).length;
+            rawPoints += trueFalsePoints(numCorrect, weight);
           }
-        } else if (qType === 'short') {
-          totalRawMax += 1;
-          if (userAns && String(userAns).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase()) {
-            rawPoints += 1;
-          }
+          return;
         }
+
+        const isCorrect = qType === 'short'
+          ? userAns && String(userAns).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase()
+          : userAns === q.correctKey;
+        if (isCorrect) rawPoints += weight;
       });
 
-      const scaledSubjectScore = totalRawMax > 0 ? (rawPoints / totalRawMax) * 10.0 : 0;
+      // The question bank is far smaller than a real paper, so earned points
+      // are scaled to 10. `isFullPaper` records whether that scaling happened,
+      // so a shortened set is never passed off as a real sitting.
+      const format = examFormatFor(subj);
+      const scaledSubjectScore = totalRawMax > 0 ? (rawPoints / totalRawMax) * MAX_SUBJECT_SCORE : 0;
       subjectBreakdown[subj] = {
-        rawPoints,
-        totalRawMax,
+        rawPoints: Math.round(rawPoints * 100) / 100,
+        totalRawMax: Math.round(totalRawMax * 100) / 100,
         subjectScore: Math.round(scaledSubjectScore * 100) / 100,
-        total: subjQuestions.length
+        total: subjQuestions.length,
+        officialQuestionCount: formatQuestionCount(format),
+        officialDuration: format?.durationMinutes ?? null,
+        isFullPaper: formatQuestionCount(format) === subjQuestions.length
       };
     });
 
