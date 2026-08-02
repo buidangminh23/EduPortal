@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { MessageSquare, BarChart3, BookOpen, ArrowUp, ArrowDown, CheckCircle, Check, Clock, Wallet, Bus, User, Phone, X } from 'lucide-react';
 import { SectionCard, Pill, Bar, Avatar } from './DashUI';
+import { LEARNING_BAND, summariseTranscript } from '../../lib/domain/grading';
+import { subjectName } from '../../config/curriculum';
 
 const CHILD = { name: 'Nguyễn Minh An', classroom: '10A2', studentId: 'HS24-1042', avatar: 'https://i.pravatar.cc/120?img=12', gpa: 8.6, conduct: 'Tốt', rank: 3, attendance: 98 };
 
@@ -27,6 +29,37 @@ const WEEK = [
 ];
 const ATT_MAP = { present: ['mint', 'Có mặt'], late: ['amber', 'Đi muộn'], absent: ['coral', 'Vắng'] };
 
+const BAND_COLOR = {
+  [LEARNING_BAND.GOOD]: '#10b981',
+  [LEARNING_BAND.FAIR]: '#3b82f6',
+  [LEARNING_BAND.PASS]: '#f59e0b',
+  [LEARNING_BAND.FAIL]: '#ef4444'
+};
+
+const formatMark = (value) => (Number.isFinite(value) ? value.toFixed(1) : '—');
+
+/**
+ * One classification line.
+ *
+ * When the gradebook does not hold enough subjects the row states that, rather
+ * than printing a band. Thông tư 22 needs at least six subjects, so applying it
+ * to a partial record would report Chưa đạt for a student with straight tens.
+ */
+function BandRow({ label, result }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', minWidth: 130 }}>{label}</span>
+      {result.band ? (
+        <strong style={{ color: BAND_COLOR[result.band], fontSize: '0.95rem' }}>{result.band}</strong>
+      ) : (
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          Chưa xếp loại — {result.reason}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function ParentOverview({ childName, childClass, student, onSubTabChange, onMainTabChange }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const subjectKeyMap = {
@@ -35,6 +68,14 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
     'Vật lý': 'Physics',
     'Tiếng Anh': 'English',
   };
+  // Report every subject the student actually holds marks for, not a fixed
+  // four. The bands in Thông tư 22 count across the whole timetable, so
+  // classifying over a hardcoded subset would understate a full record the
+  // moment the school adds a subject.
+  const transcript = summariseTranscript({
+    semester1: student?.gradesSem1,
+    semester2: student?.grades
+  });
   const gradeValues = student?.grades ? Object.values(student.grades).filter(v => typeof v === 'number') : [];
   const calculatedGpa = gradeValues.length
     ? Number((gradeValues.reduce((sum, score) => sum + score, 0) / gradeValues.length).toFixed(1))
@@ -197,24 +238,32 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
               <table className="premium-table">
                 <thead>
                   <tr>
-                    <th>Môn học</th>
-                    <th>HK I</th>
-                    <th>HK II</th>
+                    <th scope="col">Môn học</th>
+                    <th scope="col">HK I</th>
+                    <th scope="col">HK II</th>
+                    <th scope="col">Cả năm</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {subjects.map(subject => {
-                    const gradeKey = subjectKeyMap[subject.name];
-                    return (
-                      <tr key={subject.name}>
-                        <td style={{ fontWeight: 700 }}>{subject.name}</td>
-                        <td>{gradeKey && student?.gradesSem1?.[gradeKey] ? student.gradesSem1[gradeKey].toFixed(1) : '-'}</td>
-                        <td>{gradeKey && student?.grades?.[gradeKey] ? student.grades[gradeKey].toFixed(1) : subject.grade.toFixed(1)}</td>
-                      </tr>
-                    );
-                  })}
+                  {transcript.subjects.map(row => (
+                    <tr key={row.key}>
+                      <td style={{ fontWeight: 700 }}>{subjectName(row.key)}</td>
+                      <td>{formatMark(row.semester1)}</td>
+                      <td>{formatMark(row.semester2)}</td>
+                      <td style={{ fontWeight: 700 }}>{formatMark(row.year)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+            </div>
+
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <BandRow label="Xếp loại HK I" result={transcript.bands.semester1} />
+              <BandRow label="Xếp loại HK II" result={transcript.bands.semester2} />
+              <BandRow label="Xếp loại cả năm" result={transcript.bands.year} />
+              <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Xếp loại theo Thông tư 22/2021/TT-BGDĐT, Điều 9 khoản 2.
+              </p>
             </div>
             <button className="btn btn-primary" onClick={() => setShowTranscript(false)} style={{ width: '100%', marginTop: 16 }}>Đã xem</button>
           </div>

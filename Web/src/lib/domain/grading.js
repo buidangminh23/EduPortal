@@ -147,7 +147,25 @@ function countAtLeast(averages, threshold) {
 }
 
 /**
+ * Whether enough subjects carry a mark for the bands to mean anything.
+ *
+ * Every band in Điều 9 khoản 2 is phrased "... trong đó có ít nhất 06 môn",
+ * so the rule presupposes a full timetable. Applied to a partial set it does
+ * not report a weaker result — it reports Chưa đạt, because the six-subject
+ * clause can never be satisfied. A student with straight tens across four
+ * subjects would be labelled failing. Callers must check this before showing
+ * a band to anyone.
+ */
+export function canClassifyLearning(subjectAverages) {
+  return (subjectAverages || []).filter(Number.isFinite).length >= MIN_SUBJECTS_AT_HIGHLIGHT;
+}
+
+/**
  * Xếp loại kết quả học tập — Điều 9 khoản 2.
+ *
+ * Returns null when the bands cannot lawfully be applied — no subject graded,
+ * or fewer than the six the clause requires. Null means "không xếp loại được",
+ * never "Chưa đạt"; conflating the two mislabels good students as failing.
  *
  * @param {number[]} subjectAverages ĐTBmhk (or ĐTBmcn) of every graded subject.
  * @param {{ commentOnlyFailures?: number }} options Number of comment-assessed
@@ -155,7 +173,7 @@ function countAtLeast(averages, threshold) {
  */
 export function classifyLearning(subjectAverages, { commentOnlyFailures = 0 } = {}) {
   const averages = (subjectAverages || []).filter(Number.isFinite);
-  if (averages.length === 0) return null;
+  if (!canClassifyLearning(averages)) return null;
 
   const lowest = Math.min(...averages);
 
@@ -184,6 +202,39 @@ export function classifyLearning(subjectAverages, { commentOnlyFailures = 0 } = 
   }
 
   return LEARNING_BAND.FAIL;
+}
+
+/**
+ * Classifies, and says why when it cannot.
+ *
+ * The report card needs the distinction: "chưa xếp loại được vì mới có 4/6
+ * môn" is a statement about the school's records, while "Chưa đạt" is a
+ * statement about the student. Showing the second in place of the first would
+ * tell a parent their child is failing because of a gap in the gradebook.
+ *
+ * @returns {{ band: string|null, gradedSubjects: number, requiredSubjects: number,
+ *   sufficient: boolean, reason: string|null }}
+ */
+export function explainLearningBand(subjectAverages, options = {}) {
+  const averages = (subjectAverages || []).filter(Number.isFinite);
+  const sufficient = canClassifyLearning(averages);
+
+  let reason = null;
+  if (averages.length === 0) {
+    reason = 'Chưa có môn nào đủ điểm để tính điểm trung bình môn.';
+  } else if (!sufficient) {
+    reason =
+      `Mới có ${averages.length}/${MIN_SUBJECTS_AT_HIGHLIGHT} môn đủ điểm. ` +
+      'Thông tư 22 xếp loại dựa trên ít nhất 6 môn, nên chưa đủ căn cứ xếp loại.';
+  }
+
+  return {
+    band: sufficient ? classifyLearning(averages, options) : null,
+    gradedSubjects: averages.length,
+    requiredSubjects: MIN_SUBJECTS_AT_HIGHLIGHT,
+    sufficient,
+    reason
+  };
 }
 
 /**
@@ -265,6 +316,39 @@ export function validateAssessmentRecord({ regular = [], midterm, final } = {}) 
 
   const complete = computeSemesterAverage({ regular, midterm, final }) !== null;
   return { valid: errors.length === 0, errors, complete };
+}
+
+/**
+ * Builds a report card: per-subject averages for both semesters and the year,
+ * plus the band each of those three columns supports.
+ *
+ * Bands come back as explanations rather than bare strings so the report card
+ * can distinguish "chưa xếp loại được" from "Chưa đạt" — see explainLearningBand.
+ *
+ * @param {{ semester1?: Record<string, number>, semester2?: Record<string, number> }} marks
+ * @param {string[]} subjectKeys Subjects to report, in display order.
+ */
+export function summariseTranscript({ semester1 = {}, semester2 = {} } = {}, subjectKeys = []) {
+  const keys = subjectKeys.length > 0
+    ? subjectKeys
+    : [...new Set([...Object.keys(semester1), ...Object.keys(semester2)])];
+
+  const subjects = keys.map((key) => {
+    const first = Number.isFinite(semester1[key]) ? semester1[key] : null;
+    const second = Number.isFinite(semester2[key]) ? semester2[key] : null;
+    return { key, semester1: first, semester2: second, year: computeYearAverage(first, second) };
+  });
+
+  const column = (field) => subjects.map((subject) => subject[field]).filter(Number.isFinite);
+
+  return {
+    subjects,
+    bands: {
+      semester1: explainLearningBand(column('semester1')),
+      semester2: explainLearningBand(column('semester2')),
+      year: explainLearningBand(column('year'))
+    }
+  };
 }
 
 /**

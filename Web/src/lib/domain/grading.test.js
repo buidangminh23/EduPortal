@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   LEARNING_BAND,
   TITLE,
+  canClassifyLearning,
   classifyLearning,
+  explainLearningBand,
   classifyTitle,
   computeSemesterAverage,
   computeYearAverage,
@@ -10,6 +12,7 @@ import {
   applySubjectRecord,
   requiredRegularAssessments,
   roundGrade,
+  summariseTranscript,
   toAssessmentRecord,
   validateAssessmentRecord,
   validateScore
@@ -176,6 +179,57 @@ describe('classifyLearning (Điều 9 khoản 2)', () => {
   it('returns null when no subject has been graded', () => {
     expect(classifyLearning([])).toBeNull();
   });
+
+  it('refuses to classify on fewer subjects than the clause requires', () => {
+    // Straight tens across four subjects. The six-subject clause can never be
+    // met, so the bands must not be applied at all — returning Chưa đạt here
+    // would label a top student as failing.
+    expect(classifyLearning([10, 10, 10, 10])).toBeNull();
+    expect(classifyLearning([9.5, 9.0, 8.5, 9.8])).toBeNull();
+  });
+
+  it('starts classifying once the sixth subject has a mark', () => {
+    expect(classifyLearning(subjects(5, 9.0, 0, 0))).toBeNull();
+    expect(classifyLearning(subjects(6, 9.0, 0, 0))).toBe(LEARNING_BAND.GOOD);
+  });
+});
+
+describe('canClassifyLearning', () => {
+  it('needs six graded subjects', () => {
+    expect(canClassifyLearning(subjects(5, 8, 0, 0))).toBe(false);
+    expect(canClassifyLearning(subjects(6, 8, 0, 0))).toBe(true);
+  });
+
+  it('ignores subjects with no average yet', () => {
+    expect(canClassifyLearning([8, 9, null, undefined, Number.NaN, 7])).toBe(false);
+  });
+});
+
+describe('explainLearningBand', () => {
+  it('gives the band once there is enough to go on', () => {
+    const result = explainLearningBand(subjects(6, 8.0, 2, 6.5));
+    expect(result).toMatchObject({ band: LEARNING_BAND.GOOD, sufficient: true, reason: null });
+  });
+
+  it('says how far short the records fall instead of returning a band', () => {
+    const result = explainLearningBand([10, 10, 10, 10]);
+    expect(result.band).toBeNull();
+    expect(result.sufficient).toBe(false);
+    expect(result.gradedSubjects).toBe(4);
+    expect(result.requiredSubjects).toBe(6);
+    expect(result.reason).toMatch(/4\/6 môn/);
+  });
+
+  it('distinguishes an empty gradebook from an incomplete one', () => {
+    expect(explainLearningBand([]).reason).toMatch(/Chưa có môn nào/);
+    expect(explainLearningBand([8, 9]).reason).toMatch(/2\/6 môn/);
+  });
+
+  it('still reports Chưa đạt when the records are complete and the marks are bad', () => {
+    const result = explainLearningBand(subjects(7, 9.0, 1, 3.4));
+    expect(result.sufficient).toBe(true);
+    expect(result.band).toBe(LEARNING_BAND.FAIL);
+  });
 });
 
 describe('classifyTitle (Điều 15)', () => {
@@ -284,6 +338,66 @@ describe('validateAssessmentRecord', () => {
   it('rejects a bad mid-term or final', () => {
     expect(validateAssessmentRecord({ regular: [8], midterm: -1, final: 6 }).errors[0]).toMatch(/giữa kỳ/);
     expect(validateAssessmentRecord({ regular: [8], midterm: 7, final: 8.25 }).errors[0]).toMatch(/cuối kỳ/);
+  });
+});
+
+describe('summariseTranscript', () => {
+  const marks = {
+    semester1: { Math: 7, Literature: 8 },
+    semester2: { Math: 8, Literature: 9 }
+  };
+
+  it('reports each subject across both semesters and the year', () => {
+    const { subjects } = summariseTranscript(marks, ['Math', 'Literature']);
+    expect(subjects[0]).toEqual({ key: 'Math', semester1: 7, semester2: 8, year: 7.7 });
+  });
+
+  it('weights semester 2 double in the year column', () => {
+    const { subjects } = summariseTranscript(marks, ['Literature']);
+    expect(subjects[0].year).toBe(computeYearAverage(8, 9));
+  });
+
+  it('leaves the year blank when a semester is missing', () => {
+    const { subjects } = summariseTranscript({ semester2: { Math: 8 } }, ['Math']);
+    expect(subjects[0]).toEqual({ key: 'Math', semester1: null, semester2: 8, year: null });
+  });
+
+  it('keeps the requested display order and includes ungraded subjects', () => {
+    const { subjects } = summariseTranscript(marks, ['Literature', 'Math', 'Physics']);
+    expect(subjects.map((s) => s.key)).toEqual(['Literature', 'Math', 'Physics']);
+    expect(subjects[2]).toEqual({ key: 'Physics', semester1: null, semester2: null, year: null });
+  });
+
+  it('falls back to whatever subjects the marks mention', () => {
+    const { subjects } = summariseTranscript(marks);
+    expect(subjects.map((s) => s.key).sort()).toEqual(['Literature', 'Math']);
+  });
+
+  it('withholds a band while too few subjects are graded', () => {
+    const { bands } = summariseTranscript(marks, ['Math', 'Literature']);
+    expect(bands.semester2.band).toBeNull();
+    expect(bands.semester2.reason).toMatch(/2\/6 môn/);
+  });
+
+  it('bands each column once six subjects are on file', () => {
+    const full = Object.fromEntries(
+      ['A', 'B', 'C', 'D', 'E', 'F'].map((key) => [key, 9])
+    );
+    const { bands } = summariseTranscript({ semester1: full, semester2: full });
+    expect(bands.semester1.band).toBe(LEARNING_BAND.GOOD);
+    expect(bands.semester2.band).toBe(LEARNING_BAND.GOOD);
+    expect(bands.year.band).toBe(LEARNING_BAND.GOOD);
+  });
+
+  it('bands a semester even when the year column is not computable yet', () => {
+    const full = Object.fromEntries(['A', 'B', 'C', 'D', 'E', 'F'].map((key) => [key, 9]));
+    const { bands } = summariseTranscript({ semester2: full });
+    expect(bands.semester2.band).toBe(LEARNING_BAND.GOOD);
+    expect(bands.year.band).toBeNull();
+  });
+
+  it('tolerates being called with nothing', () => {
+    expect(summariseTranscript().subjects).toEqual([]);
   });
 });
 
