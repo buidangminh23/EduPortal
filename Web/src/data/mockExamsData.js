@@ -1,4 +1,5 @@
 import { MATH_PAPER_META, MATH_PAPER_QUESTIONS } from './examPaperMath';
+import { PHYSICS_PAPER_META, PHYSICS_PAPER_QUESTIONS } from './examPaperPhysics';
 import { examFormatFor } from '../config/examFormat';
 
 export const BLOCKS = {
@@ -544,6 +545,14 @@ export const SYSTEM_BLOCK_EXAMS = [
     title: 'Đề thi thử Toán — đủ cấu trúc (12 nhiều lựa chọn · 4 đúng/sai · 6 trả lời ngắn)',
     duration: MATH_PAPER_META.durationMinutes,
     questions: MATH_PAPER_QUESTIONS
+  },
+  {
+    id: 'SYS_PHYSICS_FULL_01',
+    block: 'SINGLE',
+    subject: 'Physics',
+    title: 'Đề thi thử Vật lí — đủ cấu trúc (18 nhiều lựa chọn · 4 đúng/sai · 6 trả lời ngắn)',
+    duration: PHYSICS_PAPER_META.durationMinutes,
+    questions: PHYSICS_PAPER_QUESTIONS
   },
   {
     id: 'SYS_A00_01',
