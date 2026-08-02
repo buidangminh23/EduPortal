@@ -3,8 +3,43 @@ import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { currentSchoolDay } from '../config/demoClock';
-import { SUBJECTS, regularSlotsFor, subjectName } from '../config/curriculum';
-import { explainSemesterAverage, toAssessmentRecord } from '../lib/domain/grading';
+import { SCORED_SUBJECTS, regularSlotsFor, subjectName } from '../config/curriculum';
+import {
+  LEARNING_BAND,
+  explainLearningBand,
+  explainSemesterAverage,
+  toAssessmentRecord
+} from '../lib/domain/grading';
+
+/** Conduct points every student starts the term on. */
+const CONDUCT_BASE_POINTS = 100;
+const CONDUCT_GOOD = 90;
+const CONDUCT_FAIR = 70;
+
+/** Draft wording per band. The teacher edits it before it reaches a học bạ. */
+const COMMENT_BY_BAND = {
+  [LEARNING_BAND.GOOD]:
+    'kết quả học tập mức Tốt, tiếp thu nhanh và tích cực xây dựng bài. Duy trì nề nếp học tập đều đặn.',
+  [LEARNING_BAND.FAIR]:
+    'kết quả học tập mức Khá, nắm được kiến thức cơ bản. Cần đầu tư thêm cho các môn còn yếu để tiến bộ rõ hơn.',
+  [LEARNING_BAND.PASS]:
+    'kết quả học tập mức Đạt. Còn hổng kiến thức ở một số môn, cần tăng cường ôn tập và hỏi bài khi chưa hiểu.',
+  [LEARNING_BAND.FAIL]:
+    'kết quả học tập chưa đạt yêu cầu ở một số môn. Cần kế hoạch phụ đạo và phối hợp chặt với gia đình.'
+};
+
+/**
+ * Drafts a report-card comment from the classification, not from ad-hoc
+ * thresholds, so the wording never contradicts the band shown on the học bạ.
+ */
+function buildReportComment(name, learning, conduct) {
+  const conductLine = ` Kết quả rèn luyện: ${conduct}.`;
+
+  if (!learning.band) {
+    return `Học sinh ${name}: ${learning.reason} Bổ sung đủ điểm các môn để xếp loại theo Thông tư 22.${conductLine}`;
+  }
+  return `Học sinh ${name} ${COMMENT_BY_BAND[learning.band]}${conductLine}`;
+}
 import { 
   Users, 
   MessageSquare, 
@@ -174,23 +209,19 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
   const handleGenerateComment = () => {
     if (!selectedStudent) return;
-    const m = selectedStudent.grades.Math || 0;
-    const l = selectedStudent.grades.Literature || 0;
-    const p = selectedStudent.grades.Physics || 0;
-    const e = selectedStudent.grades.English || 0;
-    const avg = (m + l + p + e) / 4;
-    const logs = conductLogs ? conductLogs.filter(cl => cl.studentId === selectedStudent.id) : [];
-    const conductScore = 100 + logs.reduce((sum, curr) => sum + curr.points, 0);
-    const conduct = conductScore >= 90 ? 'Tốt' : conductScore >= 70 ? 'Khá' : 'Trung bình';
 
-    const commentText = avg >= 8.5 && conduct === 'Tốt'
-      ? `Học sinh ${selectedStudent.name} học lực giỏi toàn diện, tích cực xây dựng bài, đặc biệt xuất sắc ở các môn học tự nhiên. Ý thức thi đua rất tốt, gương mẫu trong học tập và rèn luyện.`
-      : avg >= 8.0 && conduct === 'Tốt'
-      ? `Học sinh ${selectedStudent.name} có học lực Giỏi, tiếp thu bài nhanh, chăm ngoan. Chấp hành nghiêm chỉnh nội quy nhà trường và nề nếp thi đua của lớp.`
-      : avg >= 6.5 && conduct !== 'Yếu'
-      ? `Học sinh ${selectedStudent.name} có học lực Khá, tiếp thu bài ổn định. Cần rèn luyện thêm tính kiên trì ở các môn tự nhiên. Hạnh kiểm ngoan ngoãn, lễ phép với thầy cô.`
-      : `Học sinh ${selectedStudent.name} học lực trung bình, còn hổng kiến thức căn bản ở một số môn. Cần tăng cường học nhóm và chú ý nghe giảng. Cần cố gắng rèn nề nếp thêm.`;
-    setGeneratedComment(commentText);
+    // Classify over every subject the student holds a mark for, using the same
+    // TT22 bands the report card shows. The previous version averaged four
+    // hardcoded subjects and reported "học lực Giỏi" — a scale Thông tư 22
+    // replaced — so the draft comment contradicted the học bạ beside it.
+    const averages = Object.values(selectedStudent.grades || {}).filter(Number.isFinite);
+    const learning = explainLearningBand(averages);
+
+    const logs = conductLogs ? conductLogs.filter(cl => cl.studentId === selectedStudent.id) : [];
+    const conductScore = CONDUCT_BASE_POINTS + logs.reduce((sum, curr) => sum + curr.points, 0);
+    const conduct = conductScore >= CONDUCT_GOOD ? 'Tốt' : conductScore >= CONDUCT_FAIR ? 'Khá' : 'Cần cố gắng';
+
+    setGeneratedComment(buildReportComment(selectedStudent.name, learning, conduct));
   };
 
   const createBlankQuestion = (subj = 'Math') => ({
@@ -2262,7 +2293,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   }}
                   style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', height: '42px' }}
                 >
-                  {SUBJECTS.map(subject => (
+                  {SCORED_SUBJECTS.map(subject => (
                     <option key={subject.key} value={subject.key}>{subject.name}</option>
                   ))}
                 </select>
@@ -2336,21 +2367,21 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
               {/* AI Auto Comment Section */}
               <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="form-label" style={{ color: '#cbd5e1', margin: 0 }}>AI Gợi ý nhận xét học bạ</label>
+                  <label className="form-label" style={{ color: '#cbd5e1', margin: 0 }}>Nhận xét học bạ (bản nháp)</label>
                   <button 
                     type="button" 
                     onClick={handleGenerateComment} 
                     className="btn btn-secondary btn-sm"
                     style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'var(--accent)', border: 'none', color: '#fff' }}
                   >
-                    Sinh nhận xét AI
+                    Soạn nháp
                   </button>
                 </div>
                 <textarea 
                   className="form-control" 
                   value={generatedComment}
                   onChange={e => setGeneratedComment(e.target.value)}
-                  placeholder="Bấm nút 'Sinh nhận xét AI' để hệ thống tự động soạn thảo nhận xét..." 
+                  placeholder="Bấm nút 'Soạn nháp' để hệ thống tự động soạn thảo nhận xét..." 
                   style={{ minHeight: '80px', background: '#27272a', borderColor: '#52525b', color: '#ffffff', fontSize: '0.85rem', lineHeight: 1.4 }}
                 />
                 {generatedComment && (
