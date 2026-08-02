@@ -21,7 +21,7 @@ const QUICK_CREDS = {
 };
 
 export default function Login({ onBack }) {
-  const { setCurrentRole, setUserSession } = useContext(AppContext);
+  const { setUserSession } = useContext(AppContext);
   const { signInWithPassword } = useAuth();
   const [role, setRole] = useState('student');
   const [username, setUsername] = useState(QUICK_CREDS.student.username);
@@ -63,15 +63,19 @@ export default function Login({ onBack }) {
           parentId: role === 'parent' ? 'parent_HS001' : null
         };
         
+        // The session already carries the chosen role, so it is established in
+        // one call. Writing storage directly and then asking the context to set
+        // the role separately is what used to replace the Google account with
+        // the demo student.
+        setUserSession(session);
         localStorage.setItem('userSession', JSON.stringify(session));
-        setCurrentRole(role);
         window.location.reload();
       }
     } catch (err) {
       console.error('Google Sign-In Error:', err);
       alert('Đã xảy ra lỗi khi đăng nhập bằng Google. Vui lòng thử lại!');
     }
-  }, [role, setCurrentRole]);
+  }, [role, setUserSession]);
 
   useEffect(() => {
     let script = document.getElementById('google-gsi-script');
@@ -157,9 +161,6 @@ export default function Login({ onBack }) {
     localStorage.setItem('userSession', JSON.stringify(session));
     if (setUserSession) {
       setUserSession(session);
-    }
-    if (setCurrentRole) {
-      setCurrentRole(selRole);
     }
     window.location.reload();
   };

@@ -955,20 +955,32 @@ export const AppProvider = ({ children }) => {
 
   const currentRole = userSession?.role || '';
 
-  const setUserSession = (session) => {
-    setMockSession(session);
-    if (session) {
-      safeStorage.setItem('userSession', JSON.stringify(session));
+  // State is the session; storage is a copy of it kept so a refresh does not
+  // sign the user out. Mirroring here rather than in each setter means the two
+  // can no longer disagree — which they did, because a setter could write
+  // storage while another overwrote the state a moment later.
+  useEffect(() => {
+    if (mockSession) {
+      safeStorage.setItem('userSession', JSON.stringify(mockSession));
     } else {
       safeStorage.removeItem('userSession');
       safeStorage.removeItem('mock_sb_session');
     }
-  };
+  }, [mockSession]);
 
+  const setUserSession = (session) => setMockSession(session);
+
+  /**
+   * Changes which role the current session is viewed as, keeping who it is.
+   *
+   * The previous session comes from the state updater rather than from the
+   * `userSession` closure, which is a render-time snapshot. Called in the same
+   * tick as `setUserSession` — which is exactly what signing in did — that
+   * snapshot was still the pre-login value, so the account just established was
+   * replaced by the demo student: sign in as a teacher, land as Nguyễn Hoàng Nam.
+   */
   const setCurrentRole = (newRole) => {
-    const base = userSession || defaultDemoSession;
-    const updated = { ...base, role: newRole };
-    setUserSession(updated);
+    setMockSession(previous => ({ ...(previous ?? defaultDemoSession), role: newRole }));
   };
 
 
