@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GraduationCap, Award, BookOpen, Users, ArrowRight, Sparkles, Video, MessageSquare } from 'lucide-react';
-import { isDemoMode } from '../lib/appMode';
+import { isDemoMode, describeMode } from '../lib/appMode';
 import { demoSessionFor } from '../lib/demoSession';
 import { SCHOOL } from '../config/school';
 
@@ -61,8 +61,32 @@ export default function LandingPage({ onLogin }) {
     window.location.reload();
   };
 
+  const mode = describeMode();
+
   return (
     <div style={{ background: 'var(--bg-app)', minHeight: '100vh', width: '100%' }}>
+      {/* A demo carries the school's name so it means something to them when
+          shown. That is also what makes it mistakable for the school's real
+          portal, so the public page says what it is before anyone scrolls —
+          the login screen's notice is too late for a visitor who arrived from
+          a search engine. */}
+      {isDemoMode && (
+        <div
+          role="status"
+          style={{
+            background: '#fef3c7',
+            color: '#78350f',
+            borderBottom: '1px solid #fcd34d',
+            padding: '10px 20px',
+            textAlign: 'center',
+            fontSize: '0.88rem',
+            lineHeight: 1.5
+          }}
+        >
+          <strong>{mode.title}.</strong> {mode.detail}
+        </div>
+      )}
+
       {/* Navbar Header */}
       <header style={{ 
         display: 'flex', 
