@@ -1,3 +1,5 @@
+import { MATH_PAPER_META, MATH_PAPER_QUESTIONS } from './examPaperMath';
+
 export const BLOCKS = {
   A00: { name: 'Khối A00', subjects: ['Math', 'Physics', 'Chemistry'] },
   A01: { name: 'Khối A01', subjects: ['Math', 'Physics', 'English'] },
@@ -601,6 +603,18 @@ export const QUESTIONS = {
 
 // Assemble sequential block exams
 export const SYSTEM_BLOCK_EXAMS = [
+  // The one paper here that is actually complete: 22 questions across the three
+  // parts, timed at the real 90 phút. The khối papers below predate the current
+  // format — they bundle three subjects at 45 phút and carry 5–7 questions each,
+  // so they practise the question types without being a real sitting.
+  {
+    id: 'SYS_MATH_FULL_01',
+    block: 'SINGLE',
+    subject: 'Math',
+    title: 'Đề thi thử Toán — đủ cấu trúc (12 nhiều lựa chọn · 4 đúng/sai · 6 trả lời ngắn)',
+    duration: MATH_PAPER_META.durationMinutes,
+    questions: MATH_PAPER_QUESTIONS
+  },
   {
     id: 'SYS_A00_01',
     block: 'A00',

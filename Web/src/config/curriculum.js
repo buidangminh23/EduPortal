@@ -1,5 +1,8 @@
 /**
- * The subject list a school teaches, following Chương trình GDPT 2018 for THPT.
+ * The subject list a school teaches, following the upper-secondary programme
+ * currently in force — Chương trình GDPT 2018, named for the year it was issued
+ * rather than the year it is taught. It reached lớp 12 in 2024-2025 and is what
+ * students sit today; there is no later programme to follow.
  *
  * Two fields carry legal weight and are not cosmetic:
  *

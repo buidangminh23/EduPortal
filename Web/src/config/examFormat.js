@@ -1,7 +1,9 @@
 /**
  * Structure of the THPT graduation exam papers, as sat from 2025 onward.
  *
- * The paper changed shape with the first GDPT 2018 cohort: candidates take four
+ * This is the format used from kỳ thi tốt nghiệp THPT 2025 onward — the current
+ * one. It replaced the single-part all-multiple-choice paper when the first
+ * cohort on the GDPT 2018 programme reached lớp 12: candidates take four
  * subjects (Toán and Ngữ văn compulsory, plus two chosen), and the multiple-
  * choice papers carry three parts rather than one.
  *
