@@ -11,6 +11,14 @@
  * from real data without having to know how the app was configured.
  */
 
+/**
+ * The school every demo persona belongs to, and the profile rows they stand
+ * for. These are the ids the seeded database actually uses, so anything the
+ * demo writes is filed under a person who exists in it rather than under a
+ * constant copied into a component.
+ */
+export const DEMO_SCHOOL_ID = 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
 const AVATAR = {
   student: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
   teacher: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
@@ -25,6 +33,7 @@ const AVATAR = {
  */
 export const DEMO_PERSONAS = {
   student: {
+    profileId: '50000000-0000-0000-0000-000000000001',
     username: 'hoangnam',
     displayName: 'Nguyễn Hoàng Nam',
     email: 'nam.nh@school.edu.vn',
@@ -33,6 +42,8 @@ export const DEMO_PERSONAS = {
     studentId: 'HS001'
   },
   teacher_subject: {
+    profileId: 'e1000000-0000-0000-0000-000000000001',
+    subject: 'Toán học',
     username: 'minhtriet',
     displayName: 'Nguyễn Minh Triết',
     email: 'triet.nm@school.edu.vn',
@@ -41,6 +52,8 @@ export const DEMO_PERSONAS = {
     studentId: null
   },
   teacher_homeroom: {
+    profileId: 'e2000000-0000-0000-0000-000000000002',
+    subject: 'Ngữ văn',
     username: 'hongvan',
     displayName: 'Trần Thị Hồng Vân',
     email: 'van.tth@school.edu.vn',
@@ -49,6 +62,7 @@ export const DEMO_PERSONAS = {
     studentId: null
   },
   parent: {
+    profileId: 'b0000000-0000-0000-0000-000000000001',
     username: 'phuhuynh_nam',
     displayName: 'Nguyễn Văn Hùng (PH Nam)',
     email: 'hung.nv@parent.school.edu.vn',
@@ -59,6 +73,7 @@ export const DEMO_PERSONAS = {
     parentId: 'parent_HS001'
   },
   admin: {
+    profileId: 'a0000000-0000-0000-0000-000000000001',
     username: 'hieutruong',
     displayName: 'Thầy Nguyễn Văn Hùng (Hiệu Trưởng)',
     email: 'hieutruong@school.edu.vn',
