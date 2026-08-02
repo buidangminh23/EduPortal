@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
+import { SCHOOL } from '../config/school';
 import { Camera, Image as ImageIcon, Heart, Calendar, Plus, X, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const mockAlbums = [
@@ -16,7 +17,7 @@ const albumPhotos = {
   AL01: [
     { id: 'P01_1', title: 'Chào cờ khai giảng', emoji: '🇻🇳', desc: 'Toàn trường nghiêm trang làm lễ chào cờ đầu năm học mới.' },
     { id: 'P01_2', title: 'Thầy Hiệu trưởng phát biểu', emoji: '🗣️', desc: 'Thầy Hiệu trưởng đọc diễn văn khai giảng và chúc mừng năm học mới.' },
-    { id: 'P01_3', title: 'Học sinh lớp 10 mới nhập trường', emoji: '🎒', desc: 'Chào đón các em học sinh khối 10 gia nhập đại gia đình Nguyễn Du.' },
+    { id: 'P01_3', title: 'Học sinh lớp 10 mới nhập trường', emoji: '🎒', desc: 'Chào đón các em học sinh khối 10 gia nhập đại gia đình nhà trường.' },
     { id: 'P01_4', title: 'Tiết mục văn nghệ chào mừng', emoji: '💃', desc: 'Tiết mục múa đặc sắc do CLB văn nghệ biểu diễn.' },
     { id: 'P01_5', title: 'Tiếng trống khai trường', emoji: '🥁', desc: 'Tiếng trống giòn giã vang lên báo hiệu một năm học mới bắt đầu.' },
     { id: 'P01_6', title: 'Thả bóng bay ước mơ', emoji: '🎈', desc: 'Học sinh thả những quả bóng bay chứa đựng ước mơ lên bầu trời xanh.' }
@@ -154,7 +155,7 @@ export default function SchoolGallery() {
                 <span>Album Ảnh Sự Kiện Trường</span>
               </h2>
               <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                Lưu giữ những khoảnh khắc đẹp trong các hoạt động của học sinh THPT Nguyễn Du.
+                Lưu giữ những khoảnh khắc đẹp trong các hoạt động của học sinh {SCHOOL.shortName}.
               </p>
             </div>
             

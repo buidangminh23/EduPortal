@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { Wallet, Sparkles, RefreshCw } from 'lucide-react';
+import { Wallet, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
+import { SCHOOL, BANK_ACCOUNT, isDemoBankAccount } from '../../config/school';
+import { findBankByBin } from '../../lib/domain/vietqr';
 
 export default function WalletIdTab({ student }) {
   const { studentWallets, spendStudentWallet, topUpStudentWallet } = useContext(AppContext);
@@ -85,8 +87,8 @@ export default function WalletIdTab({ student }) {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>EduPortal School</span>
-                <span style={{ fontSize: '0.68rem', background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '99px' }}>THPT Quốc Gia</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>{SCHOOL.shortName}</span>
+                <span style={{ fontSize: '0.68rem', background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '99px' }}>Thẻ học sinh</span>
               </div>
 
               <div style={{ display: 'flex', gap: '14px', alignItems: 'center', margin: '14px 0' }}>
@@ -341,14 +343,27 @@ export default function WalletIdTab({ student }) {
                 </div>
 
                 <div style={{ fontSize: '0.76rem', color: '#475569', width: '100%' }}>
+                  {isDemoBankAccount && (
+                    <div
+                      role="alert"
+                      style={{
+                        display: 'flex', gap: 6, alignItems: 'flex-start', marginBottom: 8,
+                        padding: '8px 10px', borderRadius: 8,
+                        border: '1px solid #fca5a5', background: '#fef2f2', color: '#991b1b'
+                      }}
+                    >
+                      <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span>Tài khoản mẫu — <strong>đừng chuyển tiền thật vào đây</strong>. Nhà trường cần cấu hình tài khoản nhận trước khi dùng.</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Ngân hàng:</span> <strong>MB Bank (Quân Đội)</strong>
+                    <span>Ngân hàng:</span> <strong>{findBankByBin(BANK_ACCOUNT.bin)?.shortName || `BIN ${BANK_ACCOUNT.bin}`}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Số TK:</span> <strong>190356789012</strong>
+                    <span>Số TK:</span> <strong>{BANK_ACCOUNT.accountNumber}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Tên TK:</span> <strong>EDUPORTAL SCHOOL</strong>
+                    <span>Tên TK:</span> <strong>{BANK_ACCOUNT.accountName}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '6px', marginTop: '4px' }}>
                     <span>Nội dung:</span> <strong style={{ color: '#ef4444' }}>NAP VIS {student.id} {topUpAmount}</strong>

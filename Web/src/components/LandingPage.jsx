@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GraduationCap, Award, BookOpen, Users, ArrowRight, Sparkles, Video, MessageSquare } from 'lucide-react';
 import { isDemoMode } from '../lib/appMode';
 import { demoSessionFor } from '../lib/demoSession';
+import { SCHOOL } from '../config/school';
 
 const mockFeatures = [
   { id: 1, title: 'AI Gia Sư 24/7', desc: 'Hỏi đáp bài tập, tự ôn luyện lý thuyết mọi môn học với trợ lý ảo thông minh.', icon: Sparkles, color: 'var(--amber)' },
@@ -22,7 +23,7 @@ const mockNews = [
   },
   {
     id: 'N2',
-    title: 'Học sinh Nguyễn Du xuất sắc đạt giải Nhất kì thi Tin học trẻ',
+    title: 'Học sinh nhà trường xuất sắc đạt giải Nhất kì thi Tin học trẻ',
     date: '2026-05-28',
     summary: 'Chúc mừng em Nguyễn Hoàng Nam lớp 12A1 đã đạt giải Nhất trong kì thi Tin học trẻ cấp tỉnh vừa qua...',
     detail: 'Thành tích của em Nguyễn Hoàng Nam là kết quả từ quá trình tự học, tham gia câu lạc bộ công nghệ và được giáo viên bộ môn hỗ trợ liên tục qua hệ thống học liệu số.'
@@ -80,7 +81,7 @@ export default function LandingPage({ onLogin }) {
           </div>
           <div>
             <span style={{ fontWeight: 800, fontSize: '1.2rem', background: 'linear-gradient(135deg, #4f46e5, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>EduPortal</span>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>THPT Nguyễn Du</div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{SCHOOL.shortName}</div>
           </div>
         </div>
         
@@ -114,7 +115,7 @@ export default function LandingPage({ onLogin }) {
           </span>
           <h1 style={{ fontSize: '3rem', fontWeight: 800, lineHeight: 1.2, color: 'var(--text-primary)', marginBottom: '20px' }}>
             Chào Mừng Đến Với Cổng Thông Tin <br/>
-            <span style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Trường THPT Nguyễn Du</span>
+            <span style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{SCHOOL.name}</span>
           </h1>
           <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '30px' }}>
             Nền tảng số kết nối toàn diện nhà trường, giáo viên, phụ huynh và học sinh. Tối ưu dạy và học, quản lý lớp học bằng trợ lý AI hiện đại.
@@ -380,19 +381,22 @@ export default function LandingPage({ onLogin }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', color: '#fff' }}>
               <GraduationCap size={24} />
-              <span style={{ fontWeight: 800, fontSize: '1.25rem' }}>THPT Nguyễn Du</span>
+              <span style={{ fontWeight: 800, fontSize: '1.25rem' }}>{SCHOOL.shortName}</span>
             </div>
-            <p style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
-              Trường Trung học phổ thông Nguyễn Du. Kiến tạo tương lai số học đường, phát triển toàn diện tài năng của học sinh.
-            </p>
+            {SCHOOL.tagline && (
+              <p style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>{SCHOOL.tagline}</p>
+            )}
           </div>
 
           <div>
             <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, marginBottom: '16px' }}>Liên hệ hành chính</h4>
             <div style={{ fontSize: '0.88rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span>📍 Địa chỉ: 123 Đường Nguyễn Du, Quận 1, TP. Hồ Chí Minh</span>
-              <span>📞 Điện thoại: (028) 38.123.456</span>
-              <span>✉️ Email: contact@nguyendu.edu.vn</span>
+              {SCHOOL.address && <span>📍 Địa chỉ: {SCHOOL.address}</span>}
+              {SCHOOL.phone && <span>📞 Điện thoại: {SCHOOL.phone}</span>}
+              {SCHOOL.email && <span>✉️ Email: {SCHOOL.email}</span>}
+              {!SCHOOL.address && !SCHOOL.phone && !SCHOOL.email && (
+                <span style={{ opacity: 0.75 }}>Chưa cập nhật thông tin liên hệ.</span>
+              )}
             </div>
           </div>
 
@@ -414,7 +418,7 @@ export default function LandingPage({ onLogin }) {
           textAlign: 'center', 
           fontSize: '0.8rem' 
         }}>
-          © {new Date().getFullYear()} Trường THPT Nguyễn Du. Bảo lưu mọi quyền. Phát triển bởi EduPortal.
+          © {new Date().getFullYear()} {SCHOOL.name}. Bảo lưu mọi quyền. Phát triển bởi EduPortal.
         </div>
       </footer>
     </div>

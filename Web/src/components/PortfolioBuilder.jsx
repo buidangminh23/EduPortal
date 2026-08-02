@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
+import { SCHOOL } from '../config/school';
 import { 
   Shield, Globe, Lock, CheckCircle, Award as Medal, Plus, Trash, ShieldAlert
 } from 'lucide-react';
@@ -382,7 +383,7 @@ export default function PortfolioBuilder() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b' }}>Học bạ Số điện tử</h3>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Lớp {student?.class} | Trường THPT Nguyễn Du</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Lớp {student?.class} | {SCHOOL.name}</div>
                 </div>
               </div>
 

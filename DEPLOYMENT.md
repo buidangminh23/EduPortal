@@ -45,7 +45,9 @@ Tài liệu này hướng dẫn chi tiết từng bước để đưa hệ thố
    - `002_tutor.sql`: Khởi tạo bảng lưu trữ cấu hình AI Tutor, bộ quy tắc môn học, lời giải mẫu.
    - `003_conversations.sql`: Khởi tạo bảng lưu trữ lịch sử chat & tin nhắn với AI Tutor.
    - `004_review_golden.sql`: Khởi tạo bảng đánh giá và bài kiểm tra mẫu.
-3. *(Tùy chọn)* Chạy tiếp nội dung file `supabase/seed.sql` để nạp dữ liệu mẫu ban đầu.
+   - `005_fix_profile_recursion.sql`: **Bắt buộc.** Sửa policy đệ quy trên `profiles` (thiếu file này thì đăng nhập hỏng ngay lần đọc hồ sơ đầu tiên), thêm bảng `guardians` và cấp quyền cho toàn bộ bảng ở 001–004.
+   - `006_academics.sql`: Bảng điểm, nhận xét, điểm danh, đơn xin nghỉ, hoá đơn học phí và kho tài liệu.
+3. **KHÔNG chạy `supabase/seed.sql` trên cơ sở dữ liệu thật.** File đó tạo tài khoản đăng nhập được ở miền `school.edu.vn` — miền nhà trường không sở hữu — và một trường tên "THPT Nguyễn Du". Nó chỉ dành cho môi trường thử. Dữ liệu thật của trường nhập qua giao diện quản trị.
 
 ### 3. Cấu Hình Biến Môi Trường (Environment Variables) Trên Vercel
 1. Trong Supabase Dashboard, truy cập **Project Settings** -> **API**.

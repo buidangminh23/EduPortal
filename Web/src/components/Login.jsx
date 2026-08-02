@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Shield, GraduationCap, User, Users, ArrowRight, ArrowLeft, Settings, AlertTriangle, Eye } from 'lucide-react';
 import { isDemoMode, isRealMode, describeMode } from '../lib/appMode';
 import { demoSessionFor } from '../lib/demoSession';
+import { SCHOOL } from '../config/school';
 
 const ROLES = [
   { id: 'student', label: 'Học sinh', sub: 'Lớp & điểm số', icon: User, color: 'blue' },
@@ -44,7 +45,14 @@ export default function Login({ onBack }) {
   const mode = describeMode();
 
 
-  const [clientId, setClientId] = useState(() => localStorage.getItem('google_client_id') || '1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
+  // Whose Google project sign-ins go through. This was a personal OAuth client
+  // hardcoded here, which for a school would have meant routing their staff's
+  // Google identities through somebody else's project. It is deployment
+  // configuration; the localStorage override stays as a way to try a different
+  // client without a rebuild.
+  const [clientId, setClientId] = useState(
+    () => localStorage.getItem('google_client_id') || import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+  );
   const [showConfig, setShowConfig] = useState(false);
   const [configClientId, setConfigClientId] = useState(clientId);
   const googleBtnRef = useRef(null);
@@ -77,6 +85,10 @@ export default function Login({ onBack }) {
   useEffect(() => {
     // Nothing to sign in to in the demo, so the button is not offered there.
     if (!isRealMode) return undefined;
+    // Without a client id, initialising Google would only produce a broken
+    // button and a console error. A deployment that has not set one simply
+    // does not offer Google sign-in.
+    if (!clientId) return undefined;
 
     let script = document.getElementById('google-gsi-script');
     if (!script) {
@@ -196,7 +208,7 @@ export default function Login({ onBack }) {
           </div>
         </div>
 
-        <div style={{ fontSize: '0.8rem', opacity: .7, position: 'relative', zIndex: 2 }}>© 2026 EduPortal · Trường THPT Nguyễn Du</div>
+        <div style={{ fontSize: '0.8rem', opacity: .7, position: 'relative', zIndex: 2 }}>© 2026 EduPortal · {SCHOOL.name}</div>
       </div>
 
       {/* Form side */}
@@ -320,7 +332,7 @@ export default function Login({ onBack }) {
             </button>
           </form>
 
-          {isRealMode && (
+          {isRealMode && clientId && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0' }}>
                 <div style={{ flex: 1, height: 1, background: 'rgba(148,163,184,0.18)' }} />
@@ -368,8 +380,8 @@ export default function Login({ onBack }) {
                       <li>Chọn loại ứng dụng là <strong>Web application</strong>.</li>
                       <li>Thêm mục <strong>Authorized JavaScript origins</strong>:
                         <ul style={{ margin: '2px 0 0 12px', padding: 0, listStyle: 'disc' }}>
-                          <li><code>http://localhost:5173</code> (cho chạy local)</li>
-                          <li><code>https://edu-portal-bay.vercel.app</code> (cho Vercel của bạn)</li>
+                          <li><code>{window.location.origin}</code> (chính trang này)</li>
+                          <li><code>http://localhost:5173</code> (khi chạy máy cá nhân)</li>
                         </ul>
                       </li>
                       <li>Bấm <strong>Create</strong>, copy mã Client ID thu được dán vào ô dưới:</li>
@@ -407,13 +419,17 @@ export default function Login({ onBack }) {
                     <button
                       type="button"
                       onClick={() => {
-                        setConfigClientId('1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
-                        saveClientId('1038930467776-vd2j31eocbe2c5skgl2i3635m47g3k27.apps.googleusercontent.com');
+                        // Clearing the override falls back to whatever this
+                        // deployment was configured with, rather than to a
+                        // client id belonging to whoever wrote the code.
+                        localStorage.removeItem('google_client_id');
+                        setConfigClientId(import.meta.env.VITE_GOOGLE_CLIENT_ID || '');
+                        window.location.reload();
                       }}
                       className="btn btn-secondary"
                       style={{ flex: 1, padding: '5px', fontSize: 11, height: 'auto', borderRadius: 6, border: '1px solid var(--line)' }}
                     >
-                      Khôi phục mặc định
+                      Dùng cấu hình của hệ thống
                     </button>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { Users, GraduationCap, CheckCircle, Star, BarChart3, Bell, Clock, Calendar, Wallet, Edit3, AlertTriangle, LayoutGrid } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
+import { SCHOOL } from '../../config/school';
 import { Stat, SectionCard, Bar } from './DashUI';
 
 const SCHOOL_STATS = [
@@ -90,7 +91,7 @@ export default function AdminOverview({
       <div className="page-head">
         <div>
           <h2 className="page-title">Tổng quan nhà trường 🏫</h2>
-          <p className="page-sub">Trường THPT Nguyễn Du · Năm học 2025–2026 · Học kỳ II</p>
+          <p className="page-sub">{SCHOOL.name} · Năm học 2025–2026 · Học kỳ II</p>
         </div>
         <div className="flex gap-12">
           <button className="btn btn-ghost" onClick={handleExportReport}><BarChart3 size={17} /> Xuất báo cáo</button>

@@ -1,3 +1,17 @@
+-- DEMO DATA ONLY. Do not run this against a school's real database.
+--
+-- It creates a school called "Trường THPT Nguyễn Du" on the domain
+-- school.edu.vn, and five rows in auth.users at that same domain — accounts
+-- that can sign in. On a real deployment that means working logins on a domain
+-- the school does not own, sitting alongside its actual staff and students.
+--
+-- The `ON CONFLICT (domain) DO UPDATE SET name` below makes it worse than a
+-- no-op if the school ever registered that domain: it would rename their
+-- school row.
+--
+-- For a real school, run migrations 001-006 and enter data through the admin
+-- interface. This file exists so a local stack has something to look at.
+
 -- 1. Seed School
 INSERT INTO schools (id, name, domain, sgk_series)
 VALUES (

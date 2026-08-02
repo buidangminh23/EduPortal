@@ -98,8 +98,18 @@ export default function EduMeet() {
   const chartRef = useRef(null);
 
   // ── Kết nối backend (AI + WebRTC signaling) ──
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:8080';
-  const WS_URL = SERVER_URL.replace(/^http/, 'ws');
+  //
+  // The fallback used to be http://localhost:8080, which is the developer's own
+  // machine. Served from the school's domain over https, the browser blocks it
+  // twice over: as mixed content, and as a request to a host that is not the
+  // school's. Falling back to this page's own origin means an unconfigured
+  // deployment fails against itself — visibly, in one place — instead of
+  // silently pointing every visitor at their own laptop.
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL
+    || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+  // http→ws and https→wss, in that order: replacing /^http/ alone would turn
+  // https into wss only by luck of the s that follows.
+  const WS_URL = SERVER_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
   const streamRef = useRef(null);
   const recordedBlobRef = useRef(null);
   const signalRef = useRef(null);

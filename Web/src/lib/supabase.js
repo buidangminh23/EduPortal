@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { safeStorage } from './safeStorage';
 import { isRealMode, supabaseUrl, supabaseAnonKey } from './appMode';
+import { SCHOOL } from '../config/school';
 
 // Which of the two clients is live is decided in appMode.js, deliberately and
 // in one place. This module used to decide it as a side effect of reading two
@@ -14,8 +15,8 @@ const supabaseClient = isRealSupabase ? createClient(supabaseUrl, supabaseAnonKe
 const SEED_SCHOOLS = [
   {
     id: 'a7b3c2d4-1e5f-4a6b-8c7d-9e0f1a2b3c4d',
-    name: 'Trường THPT Nguyễn Du',
-    domain: 'school.edu.vn',
+    name: SCHOOL.name,
+    domain: SCHOOL.domain,
     sgk_series: 'canh_dieu',
     created_at: new Date().toISOString()
   }
