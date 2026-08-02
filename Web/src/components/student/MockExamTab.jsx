@@ -1,6 +1,20 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES, QUESTIONS } from '../../data/mockExamsData';
+
+/**
+ * The full paper for a subject, if one has been written.
+ *
+ * Toán, Vật lí and Hoá học have complete papers — the real 2025+ structure,
+ * every answer re-derived under test. They were reachable only from the khối
+ * list; the per-subject buttons handed out the 5-7 question practice bank
+ * instead, so "Bắt đầu thi Môn Toán học · Format Bộ GD&ĐT 2025+ · 50 phút"
+ * opened a six-question exam. Subjects without a written paper still fall back
+ * to the practice bank, and the card says which one you are getting.
+ */
+function fullPaperFor(subjectKey) {
+  return SYSTEM_BLOCK_EXAMS.find(e => e.block === 'SINGLE' && e.subject === subjectKey) || null;
+}
 import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
   MAX_SUBJECT_SCORE,
@@ -336,19 +350,25 @@ export default function MockExamTab({ student }) {
   const ALL_SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Literature', 'History', 'Geography'];
 
   const handleStartSubjectExam = (subjectKey) => {
-    const subjQuestions = QUESTIONS[subjectKey] || [];
-    const mockExamObj = {
+    const paper = fullPaperFor(subjectKey);
+    const mockExamObj = paper || {
       id: `SYS_SUBJ_${subjectKey}`,
       block: 'SINGLE',
-      title: `Đề thi thử Tốt nghiệp THPT Môn ${SUBJECT_NAMES[subjectKey] || subjectKey}`,
+      subject: subjectKey,
+      title: `Đề luyện Môn ${SUBJECT_NAMES[subjectKey] || subjectKey} — bộ rút gọn`,
       duration: 50,
-      questions: subjQuestions
+      questions: QUESTIONS[subjectKey] || []
     };
+    // The clock follows the paper. Toán is 90 phút in the real exam, not 50,
+    // and running it on a 50-minute timer would fail a student for the
+    // scaffolding's sake.
+    const minutes = mockExamObj.duration || 50;
+
     setActiveExam(mockExamObj);
     setSelectedSubjectTab(subjectKey);
     setExamMode('taking');
     setExamAnswers({});
-    setExamSecondsLeft(50 * 60);
+    setExamSecondsLeft(minutes * 60);
     setCurrentQuestionIndex(0);
     setReviewingPastAttempt(null);
   };
@@ -425,7 +445,10 @@ export default function MockExamTab({ student }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                 {ALL_SUBJECTS.map(subjKey => {
-                  const qCount = (QUESTIONS[subjKey] || []).length;
+                  const paper = fullPaperFor(subjKey);
+                  const qCount = (paper?.questions || QUESTIONS[subjKey] || []).length;
+                  const minutes = paper?.duration || 50;
+                  const isFullPaper = Boolean(paper);
                   return (
                     <div
                       key={subjKey}
@@ -454,13 +477,20 @@ export default function MockExamTab({ student }) {
                           Môn {SUBJECT_NAMES[subjKey]}
                         </h4>
                         <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
-                          Thời gian: <strong>50 phút</strong> | Cấu trúc: <strong>{qCount} câu hỏi</strong> (Trắc nghiệm 4 lựa chọn, Đúng/Sai, Điền số)
+                          Thời gian: <strong>{minutes} phút</strong> | Cấu trúc: <strong>{qCount} câu hỏi</strong> (Trắc nghiệm 4 lựa chọn, Đúng/Sai, Điền số)
+                          {!isFullPaper && qCount > 0 && (
+                            <><br /><em style={{ color: '#b45309' }}>Bộ rút gọn — chưa có đề đủ cấu trúc cho môn này.</em></>
+                          )}
+                          {qCount === 0 && (
+                            <><br /><em style={{ color: '#b45309' }}>Chưa soạn câu hỏi cho môn này.</em></>
+                          )}
                         </p>
                       </div>
 
                       <button
                         onClick={() => handleStartSubjectExam(subjKey)}
                         className="btn btn-primary"
+                        disabled={qCount === 0}
                         style={{
                           width: '100%',
                           justify: 'center',
@@ -468,10 +498,15 @@ export default function MockExamTab({ student }) {
                           borderRadius: '10px',
                           fontWeight: 700,
                           fontSize: '0.9rem',
-                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                          cursor: qCount === 0 ? 'not-allowed' : 'pointer',
+                          background: qCount === 0
+                            ? 'linear-gradient(135deg, #94a3b8, #64748b)'
+                            : 'linear-gradient(135deg, #6366f1, #4f46e5)'
                         }}
                       >
-                        Bắt đầu thi Môn {SUBJECT_NAMES[subjKey]} <ArrowRight size={16} />
+                        {qCount === 0
+                          ? <>Chưa có đề Môn {SUBJECT_NAMES[subjKey]}</>
+                          : <>Bắt đầu thi Môn {SUBJECT_NAMES[subjKey]} <ArrowRight size={16} /></>}
                       </button>
                     </div>
                   );

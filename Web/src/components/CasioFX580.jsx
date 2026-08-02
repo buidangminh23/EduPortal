@@ -56,7 +56,7 @@ const UNIT_CONVERSIONS = [
   { group: 'Chiều dài', groupEn: 'Length', from: 'in', to: 'cm', ratio: 2.54 },
   { group: 'Chiều dài', groupEn: 'Length', from: 'ft', to: 'm', ratio: 0.3048 },
   { group: 'Chiều dài', groupEn: 'Length', from: 'yd', to: 'm', ratio: 0.9144 },
-  { group: 'Chiều dài', groupEn: 'Length', from: 'mile', groupEn: 'Length', to: 'km', ratio: 1.609344 },
+  { group: 'Chiều dài', groupEn: 'Length', from: 'mile', to: 'km', ratio: 1.609344 },
   { group: 'Vận tốc', groupEn: 'Velocity', from: 'km/h', to: 'm/s', ratio: 1 / 3.6 },
   { group: 'Vận tốc', groupEn: 'Velocity', from: 'knot', to: 'km/h', ratio: 1.852 },
   { group: 'Khối lượng', groupEn: 'Mass', from: 'lb', to: 'kg', ratio: 0.45359237 },
@@ -226,7 +226,11 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         osc.start();
         osc.stop(audioCtxRef.current.currentTime + 0.02);
       }
-    } catch (e) {}
+    } catch {
+      // Browsers refuse to start an AudioContext before the user has
+      // interacted with the page. A calculator that stays silent is fine; one
+      // that throws on the first keypress is not.
+    }
   };
 
   const commitActiveTemplateToDisplayExpr = (targetPos = 'right') => {
@@ -737,11 +741,9 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         case 'sin': token = 'sin('; break;
         case 'cos': token = 'cos('; break;
         case 'tan': token = 'tan('; break;
-        case 'log': token = 'log_('; break;
         case 'ln': token = 'ln('; break;
         case 'x²': token = '^2'; break;
         case 'x³': token = '^3'; break;
-        case 'xⁿ': token = '^'; break;
         case 'x⁻¹': token = '⁻¹'; break;
         case '√': token = '√('; break;
         case 'π': token = 'π'; break;
@@ -984,7 +986,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
       }
       return NaN;
     } catch (err) {
-      throw new Error('Cú pháp không hợp lệ');
+      throw new Error('Cú pháp không hợp lệ', { cause: err });
     }
   };
 

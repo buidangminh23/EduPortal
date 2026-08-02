@@ -81,7 +81,7 @@ export class ErrorBoundary extends React.Component {
               Hệ thống EduPortal đã ghi nhận sự cố giao diện này. Bạn có thể thử tải lại trang hoặc quay lại trang chủ.
             </p>
 
-            {process.env.NODE_ENV !== 'production' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <pre style={{
                 textAlign: 'left',
                 background: 'rgba(15, 23, 42, 0.9)',
