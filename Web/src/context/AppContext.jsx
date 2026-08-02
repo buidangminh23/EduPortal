@@ -7,7 +7,7 @@ import { GDPT2018_BASE_KNOWLEDGE } from '../data/gdpt2018BaseKnowledge';
 import { INVOICE_STATUS } from '../lib/domain/fees';
 import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
-import { applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
+import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
 import { currentSchoolDay } from '../config/demoClock';
 import { safeStorage } from '../lib/safeStorage';
 
@@ -1577,6 +1577,26 @@ export const AppProvider = ({ children }) => {
     return { ok: true, errors: [], average: computeSemesterAverage(record) };
   };
 
+  /**
+   * Records Đạt / Chưa đạt for a nhận xét-only subject.
+   *
+   * These subjects carry no number, so they never touch `grades`. They reach
+   * the học bạ through `commentResults`, and a Chưa đạt is what feeds
+   * `commentOnlyFailures` into the classification.
+   *
+   * @returns {{ ok: boolean, errors: string[] }}
+   */
+  const saveSubjectComment = (studentId, subject, semester, result) => {
+    const check = applySubjectComment({}, subject, semester, result);
+    if (check.errors.length > 0) return { ok: false, errors: check.errors };
+
+    setStudents(prev => prev.map(std =>
+      std.id === studentId ? applySubjectComment(std, subject, semester, result).student : std
+    ));
+
+    return { ok: true, errors: [] };
+  };
+
   const addTeacher = (teacher) => {
     const randAvatar = teacherAvatars[Math.floor(Math.random() * teacherAvatars.length)];
     setTeachers(prev => [
@@ -3030,6 +3050,7 @@ export const AppProvider = ({ children }) => {
       logout,
       addStudent,
       saveSubjectGrades,
+      saveSubjectComment,
       addTeacher,
       addAnnouncement,
       addJournalEntry,

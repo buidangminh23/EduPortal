@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { currentSchoolDay } from '../config/demoClock';
-import { SCORED_SUBJECTS, regularSlotsFor, subjectName } from '../config/curriculum';
+import { COMMENT_SUBJECTS, SCORED_SUBJECTS, isScored, regularSlotsFor, subjectName } from '../config/curriculum';
 import {
+  COMMENT_RESULT,
   LEARNING_BAND,
   explainLearningBand,
   explainSemesterAverage,
@@ -67,6 +68,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     students, 
     parentQAs, 
     saveSubjectGrades,
+    saveSubjectComment,
     answerParentQuestion,
     leaveRequests,
     approveLeaveRequest,
@@ -106,6 +108,8 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const [selectedSubject, setSelectedSubject] = useState('Math');
   const [gradeRecord, setGradeRecord] = useState(() => toAssessmentRecord(null, regularSlotsFor('Math')));
   const [gradeErrors, setGradeErrors] = useState([]);
+  /** Đạt / Chưa đạt per semester, for subjects graded by nhận xét only. */
+  const [commentDraft, setCommentDraft] = useState({ semester1: null, semester2: null });
 
   /**
    * Loads a subject's marks, upgrading whatever shape they were stored in.
@@ -126,9 +130,23 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     });
   };
 
+  /** Existing Đạt / Chưa đạt for a nhận xét subject, both semesters. */
+  const getCommentDraft = (student, subject) => ({
+    semester1: student?.commentResults?.[subject]?.semester1 ?? null,
+    semester2: student?.commentResults?.[subject]?.semester2 ?? null
+  });
+
+  /** Loads whichever form the subject needs, and clears any stale errors. */
+  const loadSubject = (student, subject) => {
+    setGradeRecord(getAssessmentRecord(student, subject));
+    setCommentDraft(getCommentDraft(student, subject));
+    setGradeErrors([]);
+  };
+
   // Null until every slot the circular needs is filled, so the teacher sees a
   // dash rather than an average computed from blanks treated as zero.
   const gradeExplanation = explainSemesterAverage(gradeRecord);
+  const subjectIsScored = isScored(selectedSubject);
 
   const [replies, setReplies] = useState({}); // state for tracking reply text per QA item
 
@@ -321,9 +339,40 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const myTeacherLeaves = teacherLeaveRequests ? teacherLeaveRequests.filter(r => r.teacherId === 'T01') : [];
 
 
+  const saveCommentSubject = (name) => {
+    for (const semester of ['semester1', 'semester2']) {
+      const outcome = saveSubjectComment(
+        selectedStudent.id,
+        selectedSubject,
+        semester,
+        commentDraft[semester]
+      );
+      if (!outcome.ok) {
+        setGradeErrors(outcome.errors);
+        return false;
+      }
+    }
+
+    const summary = ['semester1', 'semester2']
+      .map((s, i) => `HK ${i + 1}: ${commentDraft[s] || 'chưa đánh giá'}`)
+      .join(' · ');
+    alert(`Đã lưu đánh giá môn ${subjectName(selectedSubject)} của ${name}. ${summary}.`);
+    return true;
+  };
+
   const handleGradeSubmit = (e) => {
     e.preventDefault();
     if (!selectedStudent) return;
+    const name = selectedStudent.name;
+
+    // Nhận xét-only subjects take Đạt / Chưa đạt and never touch the marks,
+    // so they save through a different action entirely.
+    if (!subjectIsScored) {
+      if (!saveCommentSubject(name)) return;
+      setGradeErrors([]);
+      setSelectedStudent(null);
+      return;
+    }
 
     const result = saveSubjectGrades(selectedStudent.id, selectedSubject, gradeRecord);
     if (!result.ok) {
@@ -331,7 +380,6 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       return;
     }
 
-    const name = selectedStudent.name;
     setGradeErrors([]);
     setSelectedStudent(null);
     alert(
@@ -2244,8 +2292,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                             setSelectedStudent(std);
                             setGeneratedComment('');
                             setSelectedSubject('Math');
-                            setGradeRecord(getAssessmentRecord(std, 'Math'));
-                            setGradeErrors([]);
+                            loadSubject(std, 'Math');
                           }}
                           className="btn btn-secondary btn-sm"
                           style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}
@@ -2281,27 +2328,85 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label" style={{ color: '#cbd5e1', fontWeight: 600 }}>Môn học nhập điểm</label>
+                <label className="form-label" style={{ color: '#cbd5e1', fontWeight: 600 }}>Môn học</label>
                 <select
                   className="form-control"
                   value={selectedSubject}
                   onChange={e => {
                     const subject = e.target.value;
                     setSelectedSubject(subject);
-                    setGradeRecord(getAssessmentRecord(selectedStudent, subject));
-                    setGradeErrors([]);
+                    loadSubject(selectedStudent, subject);
                   }}
                   style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', height: '42px' }}
                 >
-                  {SCORED_SUBJECTS.map(subject => (
-                    <option key={subject.key} value={subject.key}>{subject.name}</option>
-                  ))}
+                  {/* Grouped so it is obvious which subjects take marks and
+                      which take Đạt / Chưa đạt, before the form switches. */}
+                  <optgroup label="Đánh giá bằng điểm số">
+                    {SCORED_SUBJECTS.map(subject => (
+                      <option key={subject.key} value={subject.key}>{subject.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Đánh giá bằng nhận xét">
+                    {COMMENT_SUBJECTS.map(subject => (
+                      <option key={subject.key} value={subject.key}>{subject.name}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
+
+              {/* Nhận xét-only subjects: Đạt / Chưa đạt per semester, no marks.
+                  Điều 5 khoản 1 gives these subjects no number at all, so a
+                  numeric form here would invite a mark that cannot be recorded. */}
+              {!subjectIsScored && (
+                <div style={{ marginBottom: 20 }}>
+                  {['semester1', 'semester2'].map((semester, index) => (
+                    <fieldset
+                      key={semester}
+                      style={{ border: 'none', padding: 0, margin: '0 0 14px' }}
+                    >
+                      <legend style={{ color: '#cbd5e1', fontSize: '0.82rem', padding: 0, marginBottom: 8 }}>
+                        Học kỳ {index + 1}
+                      </legend>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {[COMMENT_RESULT.PASS, COMMENT_RESULT.FAIL, null].map(option => {
+                          const active = commentDraft[semester] === option;
+                          const label = option || 'Chưa đánh giá';
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => setCommentDraft(prev => ({ ...prev, [semester]: option }))}
+                              style={{
+                                padding: '8px 16px',
+                                borderRadius: 10,
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                background: active ? 'rgba(99,102,241,0.25)' : '#27272a',
+                                border: `1px solid ${active ? '#6366f1' : '#52525b'}`,
+                                color: active ? '#c7d2fe' : '#cbd5e1'
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  ))}
+                  <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: 0 }}>
+                    Môn này đánh giá bằng nhận xét, không có điểm số và không tính vào ĐTB.
+                    Kết quả cả năm lấy theo học kỳ II. Một môn nhận xét bị Chưa đạt sẽ hạ mức
+                    xếp loại học tập.
+                  </p>
+                </div>
+              )}
 
               {/* One input per ĐĐGtx the subject actually requires — Thông tư 22
                   ties that count to the subject's lessons per year, so a fixed
                   pair of boxes was wrong for every subject over 35 tiết. */}
+              {subjectIsScored && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 {gradeRecord.regular.map((mark, index) => (
                   <div className="form-group" style={{ margin: 0 }} key={`regular-${index}`}>
@@ -2341,6 +2446,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   />
                 </div>
               </div>
+              )}
 
               {gradeErrors.length > 0 && (
                 <div role="alert" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
@@ -2350,6 +2456,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                 </div>
               )}
 
+              {subjectIsScored && (
               <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 500 }}>ĐTB môn học kỳ:</span>
@@ -2363,8 +2470,9 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                     : 'Nhập đủ điểm thường xuyên, giữa kỳ và cuối kỳ để tính được ĐTB môn.'}
                 </div>
               </div>
+              )}
 
-              {/* AI Auto Comment Section */}
+              {/* Report-card comment drafter */}
               <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <label className="form-label" style={{ color: '#cbd5e1', margin: 0 }}>Nhận xét học bạ (bản nháp)</label>

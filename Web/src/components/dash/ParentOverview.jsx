@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { MessageSquare, BarChart3, BookOpen, ArrowUp, ArrowDown, CheckCircle, Check, Clock, Wallet, Bus, User, Phone, X } from 'lucide-react';
 import { SectionCard, Pill, Bar, Avatar } from './DashUI';
 import { LEARNING_BAND, summariseTranscript } from '../../lib/domain/grading';
-import { subjectName } from '../../config/curriculum';
+import { COMMENT_SUBJECTS, subjectName } from '../../config/curriculum';
 
 const CHILD = { name: 'Nguyễn Minh An', classroom: '10A2', studentId: 'HS24-1042', avatar: 'https://i.pravatar.cc/120?img=12', gpa: 8.6, conduct: 'Tốt', rank: 3, attendance: 98 };
 
@@ -36,7 +36,7 @@ const BAND_COLOR = {
   [LEARNING_BAND.FAIL]: '#ef4444'
 };
 
-const formatMark = (value) => (Number.isFinite(value) ? value.toFixed(1) : '—');
+const formatMark = (value) => (typeof value === 'string' ? value : Number.isFinite(value) ? value.toFixed(1) : '—');
 
 /**
  * One classification line.
@@ -68,13 +68,21 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
     'Vật lý': 'Physics',
     'Tiếng Anh': 'English',
   };
-  // Report every subject the student actually holds marks for, not a fixed
+  // Report every subject the student actually holds a result for, not a fixed
   // four. The bands in Thông tư 22 count across the whole timetable, so
   // classifying over a hardcoded subset would understate a full record the
   // moment the school adds a subject.
+  //
+  // Every nhận xét subject is listed even before it is assessed, so a parent
+  // can see what is still outstanding rather than wondering why Giáo dục thể
+  // chất is missing from the học bạ.
+  const commentResults = Object.fromEntries(
+    COMMENT_SUBJECTS.map(subject => [subject.key, student?.commentResults?.[subject.key] || {}])
+  );
   const transcript = summariseTranscript({
     semester1: student?.gradesSem1,
-    semester2: student?.grades
+    semester2: student?.grades,
+    comments: commentResults
   });
   const gradeValues = student?.grades ? Object.values(student.grades).filter(v => typeof v === 'number') : [];
   const calculatedGpa = gradeValues.length

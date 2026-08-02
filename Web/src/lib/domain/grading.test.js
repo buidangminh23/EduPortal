@@ -6,9 +6,13 @@ import {
   classifyLearning,
   explainLearningBand,
   classifyTitle,
+  COMMENT_RESULT,
+  commentResultForYear,
+  isValidCommentResult,
   computeSemesterAverage,
   computeYearAverage,
   explainSemesterAverage,
+  applySubjectComment,
   applySubjectRecord,
   requiredRegularAssessments,
   roundGrade,
@@ -349,7 +353,7 @@ describe('summariseTranscript', () => {
 
   it('reports each subject across both semesters and the year', () => {
     const { subjects } = summariseTranscript(marks, ['Math', 'Literature']);
-    expect(subjects[0]).toEqual({ key: 'Math', semester1: 7, semester2: 8, year: 7.7 });
+    expect(subjects[0]).toEqual({ key: 'Math', kind: 'score', semester1: 7, semester2: 8, year: 7.7 });
   });
 
   it('weights semester 2 double in the year column', () => {
@@ -359,13 +363,13 @@ describe('summariseTranscript', () => {
 
   it('leaves the year blank when a semester is missing', () => {
     const { subjects } = summariseTranscript({ semester2: { Math: 8 } }, ['Math']);
-    expect(subjects[0]).toEqual({ key: 'Math', semester1: null, semester2: 8, year: null });
+    expect(subjects[0]).toEqual({ key: 'Math', kind: 'score', semester1: null, semester2: 8, year: null });
   });
 
   it('keeps the requested display order and includes ungraded subjects', () => {
     const { subjects } = summariseTranscript(marks, ['Literature', 'Math', 'Physics']);
     expect(subjects.map((s) => s.key)).toEqual(['Literature', 'Math', 'Physics']);
-    expect(subjects[2]).toEqual({ key: 'Physics', semester1: null, semester2: null, year: null });
+    expect(subjects[2]).toEqual({ key: 'Physics', kind: 'score', semester1: null, semester2: null, year: null });
   });
 
   it('falls back to whatever subjects the marks mention', () => {
@@ -398,6 +402,141 @@ describe('summariseTranscript', () => {
 
   it('tolerates being called with nothing', () => {
     expect(summariseTranscript().subjects).toEqual([]);
+  });
+});
+
+describe('nhận xét-only subjects (Điều 5 khoản 1)', () => {
+  it('recognises only the two outcomes the circular defines', () => {
+    expect(isValidCommentResult(COMMENT_RESULT.PASS)).toBe(true);
+    expect(isValidCommentResult(COMMENT_RESULT.FAIL)).toBe(true);
+    expect(isValidCommentResult(null)).toBe(true);
+    expect(isValidCommentResult('Khá')).toBe(false);
+    expect(isValidCommentResult(8)).toBe(false);
+  });
+
+  it('settles the year on semester II', () => {
+    expect(commentResultForYear(COMMENT_RESULT.PASS)).toBe(COMMENT_RESULT.PASS);
+    expect(commentResultForYear(COMMENT_RESULT.FAIL)).toBe(COMMENT_RESULT.FAIL);
+  });
+
+  it('leaves the year open until semester II is recorded', () => {
+    expect(commentResultForYear(null)).toBeNull();
+    expect(commentResultForYear(undefined)).toBeNull();
+  });
+});
+
+describe('summariseTranscript with nhận xét subjects', () => {
+  const sixMarks = Object.fromEntries(['A', 'B', 'C', 'D', 'E', 'F'].map((k) => [k, 9]));
+
+  it('reports a nhận xét subject as its outcome, not a number', () => {
+    const { subjects } = summariseTranscript({
+      comments: { PhysicalEducation: { semester1: COMMENT_RESULT.PASS, semester2: COMMENT_RESULT.PASS } }
+    });
+    expect(subjects[0]).toEqual({
+      key: 'PhysicalEducation',
+      kind: 'comment',
+      semester1: COMMENT_RESULT.PASS,
+      semester2: COMMENT_RESULT.PASS,
+      year: COMMENT_RESULT.PASS
+    });
+  });
+
+  it('keeps nhận xét subjects out of the average arithmetic', () => {
+    // Six marks alone classify as Tốt; adding a passing nhận xét subject must
+    // not change that, because it carries no number.
+    const withComment = summariseTranscript({
+      semester2: sixMarks,
+      comments: { Music: { semester2: COMMENT_RESULT.PASS } }
+    });
+    expect(withComment.bands.semester2.band).toBe(LEARNING_BAND.GOOD);
+    expect(withComment.bands.semester2.gradedSubjects).toBe(6);
+  });
+
+  it('lets one Chưa đạt nhận xét subject pull Tốt down to Đạt', () => {
+    const { bands } = summariseTranscript({
+      semester2: sixMarks,
+      comments: { Music: { semester2: COMMENT_RESULT.FAIL } }
+    });
+    expect(bands.semester2.band).toBe(LEARNING_BAND.PASS);
+  });
+
+  it('fails the student on a second Chưa đạt nhận xét subject', () => {
+    const { bands } = summariseTranscript({
+      semester2: sixMarks,
+      comments: {
+        Music: { semester2: COMMENT_RESULT.FAIL },
+        FineArts: { semester2: COMMENT_RESULT.FAIL }
+      }
+    });
+    expect(bands.semester2.band).toBe(LEARNING_BAND.FAIL);
+  });
+
+  it('counts failures per column, so a recovered semester is not punished', () => {
+    const { bands } = summariseTranscript({
+      semester1: sixMarks,
+      semester2: sixMarks,
+      comments: {
+        Music: { semester1: COMMENT_RESULT.FAIL, semester2: COMMENT_RESULT.PASS }
+      }
+    });
+    expect(bands.semester1.band).toBe(LEARNING_BAND.PASS);
+    expect(bands.semester2.band).toBe(LEARNING_BAND.GOOD);
+  });
+
+  it('lists a nhận xét subject that has not been assessed yet', () => {
+    const { subjects } = summariseTranscript({ comments: { Music: {} } });
+    expect(subjects[0]).toMatchObject({ kind: 'comment', semester1: null, semester2: null, year: null });
+  });
+});
+
+describe('applySubjectComment', () => {
+  const student = { id: 'HS001', grades: { Math: 8 }, commentResults: {} };
+
+  it('records the outcome for the semester given', () => {
+    const { student: next } = applySubjectComment(student, 'Music', 'semester2', COMMENT_RESULT.PASS);
+    expect(next.commentResults.Music).toEqual({ semester2: COMMENT_RESULT.PASS });
+  });
+
+  it('keeps the other semester when one is edited', () => {
+    const first = applySubjectComment(student, 'Music', 'semester1', COMMENT_RESULT.FAIL).student;
+    const both = applySubjectComment(first, 'Music', 'semester2', COMMENT_RESULT.PASS).student;
+    expect(both.commentResults.Music).toEqual({
+      semester1: COMMENT_RESULT.FAIL,
+      semester2: COMMENT_RESULT.PASS
+    });
+  });
+
+  it('leaves other subjects and the marks untouched', () => {
+    const next = applySubjectComment(student, 'Music', 'semester2', COMMENT_RESULT.PASS).student;
+    expect(next.grades).toEqual({ Math: 8 });
+  });
+
+  it('clears an entry when passed null, so a mis-click can be undone', () => {
+    const set = applySubjectComment(student, 'Music', 'semester2', COMMENT_RESULT.FAIL).student;
+    const cleared = applySubjectComment(set, 'Music', 'semester2', null).student;
+    expect(cleared.commentResults.Music.semester2).toBeNull();
+  });
+
+  it('rejects an outcome the circular does not define', () => {
+    const { student: next, errors } = applySubjectComment(student, 'Music', 'semester2', 'Khá');
+    expect(errors).toHaveLength(1);
+    expect(next).toBe(student);
+  });
+
+  it('rejects an unknown semester', () => {
+    const { errors } = applySubjectComment(student, 'Music', 'semester3', COMMENT_RESULT.PASS);
+    expect(errors[0]).toMatch(/Học kỳ/);
+  });
+
+  it('does not mutate the student it was given', () => {
+    applySubjectComment(student, 'Music', 'semester2', COMMENT_RESULT.PASS);
+    expect(student.commentResults).toEqual({});
+  });
+
+  it('works on a student that has never held a nhận xét result', () => {
+    const bare = { id: 'HS002' };
+    const { student: next } = applySubjectComment(bare, 'Music', 'semester1', COMMENT_RESULT.PASS);
+    expect(next.commentResults.Music.semester1).toBe(COMMENT_RESULT.PASS);
   });
 });
 

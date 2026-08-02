@@ -57,6 +57,35 @@ export const TITLE = {
 };
 
 /**
+ * The two outcomes a nhận xét-only subject can carry — Điều 5 khoản 1.
+ *
+ * Kept as its own scale rather than reusing the 0–10 marks: these subjects have
+ * no average, and forcing them into a number would let them drag the ĐTB.
+ */
+export const COMMENT_RESULT = {
+  PASS: 'Đạt',
+  FAIL: 'Chưa đạt'
+};
+
+const COMMENT_VALUES = Object.values(COMMENT_RESULT);
+
+/** Whether a stored nhận xét value is one the circular recognises. */
+export function isValidCommentResult(value) {
+  return value === null || value === undefined || COMMENT_VALUES.includes(value);
+}
+
+/**
+ * Cả năm for a nhận xét-only subject — Điều 9 khoản 1 điểm a.
+ *
+ * The year follows semester II: a student who ends the year Đạt is Đạt,
+ * regardless of a weaker first semester. Returns null until semester II is in,
+ * because the year cannot be settled before then.
+ */
+export function commentResultForYear(semester2Result) {
+  return COMMENT_VALUES.includes(semester2Result) ? semester2Result : null;
+}
+
+/**
  * Rounds to one decimal place, half away from zero.
  *
  * The epsilon guards against binary representation making a value such as
@@ -328,25 +357,54 @@ export function validateAssessmentRecord({ regular = [], midterm, final } = {}) 
  * @param {{ semester1?: Record<string, number>, semester2?: Record<string, number> }} marks
  * @param {string[]} subjectKeys Subjects to report, in display order.
  */
-export function summariseTranscript({ semester1 = {}, semester2 = {} } = {}, subjectKeys = []) {
+export function summariseTranscript(
+  { semester1 = {}, semester2 = {}, comments = {} } = {},
+  subjectKeys = []
+) {
   const keys = subjectKeys.length > 0
     ? subjectKeys
-    : [...new Set([...Object.keys(semester1), ...Object.keys(semester2)])];
+    : [...new Set([
+        ...Object.keys(semester1),
+        ...Object.keys(semester2),
+        ...Object.keys(comments)
+      ])];
 
+  // A key listed in `comments` is graded by nhận xét; everything else carries
+  // marks. That keeps the split with the caller, which is what holds the
+  // curriculum, rather than hardcoding subject names into the domain.
   const subjects = keys.map((key) => {
+    if (comments[key]) {
+      const first = comments[key].semester1 ?? null;
+      const second = comments[key].semester2 ?? null;
+      return {
+        key,
+        kind: 'comment',
+        semester1: first,
+        semester2: second,
+        year: commentResultForYear(second)
+      };
+    }
+
     const first = Number.isFinite(semester1[key]) ? semester1[key] : null;
     const second = Number.isFinite(semester2[key]) ? semester2[key] : null;
-    return { key, semester1: first, semester2: second, year: computeYearAverage(first, second) };
+    return { key, kind: 'score', semester1: first, semester2: second, year: computeYearAverage(first, second) };
   });
 
-  const column = (field) => subjects.map((subject) => subject[field]).filter(Number.isFinite);
+  const marksIn = (field) =>
+    subjects.filter((s) => s.kind === 'score').map((s) => s[field]).filter(Number.isFinite);
+
+  const failuresIn = (field) =>
+    subjects.filter((s) => s.kind === 'comment' && s[field] === COMMENT_RESULT.FAIL).length;
+
+  const bandFor = (field) =>
+    explainLearningBand(marksIn(field), { commentOnlyFailures: failuresIn(field) });
 
   return {
     subjects,
     bands: {
-      semester1: explainLearningBand(column('semester1')),
-      semester2: explainLearningBand(column('semester2')),
-      year: explainLearningBand(column('year'))
+      semester1: bandFor('semester1'),
+      semester2: bandFor('semester2'),
+      year: bandFor('year')
     }
   };
 }
@@ -376,6 +434,37 @@ export function applySubjectRecord(student, subject, record) {
       gradesDetailed: { ...(student.gradesDetailed || {}), [subject]: record }
     },
     average,
+    errors: []
+  };
+}
+
+/**
+ * Records a nhận xét outcome for one subject and semester, returning a new
+ * student. Passing null clears the entry, which is how a mistake is undone.
+ *
+ * @param {'semester1'|'semester2'} semester
+ * @returns {{ student: object, errors: string[] }}
+ */
+export function applySubjectComment(student, subject, semester, result) {
+  if (semester !== 'semester1' && semester !== 'semester2') {
+    return { student, errors: ['Học kỳ không hợp lệ.'] };
+  }
+  if (!isValidCommentResult(result)) {
+    return {
+      student,
+      errors: [`Kết quả phải là "${COMMENT_RESULT.PASS}" hoặc "${COMMENT_RESULT.FAIL}".`]
+    };
+  }
+
+  const existing = student.commentResults || {};
+  return {
+    student: {
+      ...student,
+      commentResults: {
+        ...existing,
+        [subject]: { ...(existing[subject] || {}), [semester]: result ?? null }
+      }
+    },
     errors: []
   };
 }
