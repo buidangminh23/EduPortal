@@ -127,7 +127,7 @@ Chào bạn, đối với câu hỏi **"${cleanQuery}"**:
 💡 *Nếu bạn có đề bài cụ thể hơn (ví dụ: công thức, phương trình, tác phẩm văn học), hãy gửi chi tiết để Gia sư AI giải đáp chính xác nhất nhé!*`;
 }
 
-export async function generateScaffoldedResponse({ query, retrievedEntry, presetName = '', tone = '', competencyScore = 7 }) {
+export async function generateScaffoldedResponse({ query, retrievedEntry, presetName = '', tone = '' }) {
   // 1. Check for crisis
   if (detectMentalHealthCrisis(query)) {
     return getCrisisInterventionMessage();

@@ -74,7 +74,7 @@ const ROLE_ACTIONS = {
 };
 
 export default function AppCommandDock({ activeTab, setActiveTab }) {
-  const { currentRole, notifications, t } = useContext(AppContext);
+  const { currentRole, t } = useContext(AppContext);
 
   const actions = useMemo(() => {
     const merged = [...COMMON_ACTIONS, ...(ROLE_ACTIONS[currentRole] ?? [])];

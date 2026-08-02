@@ -17,7 +17,7 @@ import {
 const { WATER_SPECIFIC_HEAT: C_WATER, ICE_FUSION_HEAT, ELEMENTARY_CHARGE, U_IN_MEV } = PHYSICS_CONSTANTS;
 
 const byId = Object.fromEntries(PHYSICS_PAPER_QUESTIONS.map((q) => [q.id, q]));
-const keyOf = (id) => byId[id].correctKey;
+
 
 /** Text of the option a question marks correct, with tags and entities stripped. */
 const answerText = (id) => {

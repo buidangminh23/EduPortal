@@ -1,28 +1,18 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import  { useState, useEffect, useRef, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import {
   Calculator,
-  HelpCircle,
   History,
-  RotateCcw,
   Sparkles,
   BookOpen,
   Volume2,
   VolumeX,
-  Maximize2,
-  Minimize2,
   X,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
   ChevronRight,
-  Check,
-  Cpu,
-  Layers,
   ArrowRightLeft,
-  FileText,
-  Sliders,
-  Maximize,
   Grid,
   Database
 } from 'lucide-react';
@@ -147,16 +137,12 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
   // Mode 3: Base-N
   const [baseNVal, setBaseNVal] = useState(255);
-  const [activeBase, setActiveBase] = useState('DEC');
 
   // Mode 4: Matrix
-  const [matDim, setMatDim] = useState(2); // 2x2, 3x3
   const [matA, setMatA] = useState([[1, 2], [3, 4]]);
-  const [matB, setMatB] = useState([[5, 6], [7, 8]]);
   const [matrixResult, setMatrixResult] = useState(null);
 
   // Mode 5: Vector
-  const [vctDim, setVctDim] = useState(3); // 2D or 3D
   const [vctA, setVctA] = useState([1, 2, 3]);
   const [vctB, setVctB] = useState([4, 5, 6]);
   const [vectorResult, setVectorResult] = useState(null);
@@ -181,7 +167,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   // Mode 9: EQN/SOLV
   const [eqnType, setEqnType] = useState('poly'); // 'simul' or 'poly'
   const [polyDegree, setPolyDegree] = useState(2); // 2, 3, 4
-  const [simulDim, setSimulDim] = useState(2); // 2, 3, 4
   const [polyCoeffs, setPolyCoeffs] = useState({ a: 1, b: -5, c: 6, d: 0, e: 0 });
   const [simulCoeffs, setSimulCoeffs] = useState({
     a1: 2, b1: 1, c1: 0, d1: 5,
@@ -649,7 +634,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
         if (part === '∫(') return <span key={index}>∫ (</span>;
         return <span key={index}>{part}</span>;
       });
-    } catch (e) {
+    } catch {
       // Fallback: render raw text if parsing fails
       return <span>{String(text)}</span>;
     }
@@ -1004,11 +989,15 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
   const handleCalculate = () => {
     playKeySound();
 
-    let mainVal = displayExpr ? evaluateExpression(displayExpr) : 0;
-    let finalVal = mainVal;
-    let histLabel = displayExpr || '0';
-
     try {
+      // Evaluating the main expression sits inside the try with everything
+      // else. It used to be the line above it, so a malformed expression threw
+      // straight past the catch: the "Syntax ERROR" message below never
+      // appeared and pressing = simply did nothing.
+      const mainVal = displayExpr ? evaluateExpression(displayExpr) : 0;
+      let finalVal = mainVal;
+      let histLabel = displayExpr || '0';
+
       if (activeTemplate === 'FRAC') {
         const nVal = evaluateExpression(fracNum || '0');
         const dVal = evaluateExpression(fracDen || '1');
@@ -1047,7 +1036,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
 
         setHistory(prev => [{ expr: histLabel, res: String(rounded) }, ...prev.slice(0, 49)]);
       }
-    } catch (err) {
+    } catch {
       setResultText('Syntax ERROR');
     }
   };
@@ -1087,7 +1076,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           `Kiểm tra lại: f(${sol}) ≈ 0`
         ]
       });
-    } catch (e) {
+    } catch {
       setResultText('Can\'t Solve');
     }
   };
@@ -1311,7 +1300,7 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
           if (roundedY < minVal) { minVal = roundedY; minX = roundedX; }
           if (roundedY > maxVal) { maxVal = roundedY; maxX = roundedX; }
         }
-      } catch (e) {
+      } catch {
         rows.push({ x: roundedX, y: 'ERROR' });
       }
     }

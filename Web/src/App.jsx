@@ -8,7 +8,7 @@ import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
 import UnconfiguredScreen from './components/UnconfiguredScreen';
 import { isUnconfigured } from './lib/appMode';
-import { ShieldCheck, Mail, Phone, Trophy, Search, X, Filter, Sparkles, Eye, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));

@@ -41,11 +41,7 @@ import {
   Check,
   X,
   ClipboardList,
-  BookOpen,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  BarChart2
+  BookOpen
 } from 'lucide-react';
 
 const SUBJECT_ICONS = {
@@ -109,12 +105,11 @@ function PaperStructure({ subjects, questions }) {
   );
 }
 export default function MockExamTab({ student }) {
-  const { customExams, mockExamHistory, saveMockExamResult, t, language } = useContext(AppContext);
+  const { customExams, mockExamHistory, saveMockExamResult } = useContext(AppContext);
 
   const [selectedBlockKey, setSelectedBlockKey] = useState('A00');
   const [activeExam, setActiveExam] = useState(null);
   const [examMode, setExamMode] = useState(null); // null | 'taking' | 'reviewing'
-  const [selectedSubjectTab, setSelectedSubjectTab] = useState('');
   const [examAnswers, setExamAnswers] = useState({});
   const [examSecondsLeft, setExamSecondsLeft] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -268,8 +263,6 @@ export default function MockExamTab({ student }) {
     }
 
     setActiveExam(examToRun);
-    const subjects = getExamSubjects(examToRun);
-    setSelectedSubjectTab(subjects[0] || 'Math');
     setExamMode('taking');
     setExamAnswers({});
     setExamSecondsLeft(examToRun.duration * 60);
@@ -318,8 +311,6 @@ export default function MockExamTab({ student }) {
 
     if (exam) {
       setActiveExam(exam);
-      const subjects = getExamSubjects(exam);
-      setSelectedSubjectTab(subjects[0] || 'Math');
       setExamAnswers(attempt.selectedAnswers || {});
       setExamMode('reviewing');
       setReviewingPastAttempt(attempt);
@@ -335,17 +326,7 @@ export default function MockExamTab({ student }) {
     setReviewingPastAttempt(null);
   };
 
-  const isQuestionAnswered = (q) => {
-    const ans = examAnswers[q.id];
-    if (!ans) return false;
-    if (q.type === 'tf') {
-      return typeof ans === 'object' && Object.keys(ans).length > 0;
-    }
-    if (q.type === 'short') {
-      return String(ans).trim().length > 0;
-    }
-    return true;
-  };
+  
 
   const ALL_SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Literature', 'History', 'Geography'];
 
@@ -365,7 +346,6 @@ export default function MockExamTab({ student }) {
     const minutes = mockExamObj.duration || 50;
 
     setActiveExam(mockExamObj);
-    setSelectedSubjectTab(subjectKey);
     setExamMode('taking');
     setExamAnswers({});
     setExamSecondsLeft(minutes * 60);
@@ -373,8 +353,8 @@ export default function MockExamTab({ student }) {
     setReviewingPastAttempt(null);
   };
 
-  const currentSubjectQuestions = activeExam?.questions?.filter(q => q.subject === selectedSubjectTab) || [];
-  const currentQuestion = currentSubjectQuestions[currentQuestionIndex] || currentSubjectQuestions[0];
+  
+  
 
   return (
     <div className="animate-fade">

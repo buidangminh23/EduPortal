@@ -74,7 +74,7 @@ export function evaluateMathExpression(query) {
         formattedOutput: `### 🧮 Lời giải phép tính:\n\n**Phép tính:** $$${displayExpr} = ${rounded}$$\n\n**Đáp số:** **${rounded}**`
       };
     }
-  } catch (e) {
+  } catch {
     return null;
   }
 

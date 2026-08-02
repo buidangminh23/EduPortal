@@ -44,7 +44,7 @@ export function formatFocusedResponse(query, entry, presetName = '', tone = '') 
     }
   }
 
-  let body = '';
+  let body;
   const solution = entry.solutions?.[0];
 
   if (presetName === 'Gợi mở từng bước' && solution && solution.steps?.length > 0) {

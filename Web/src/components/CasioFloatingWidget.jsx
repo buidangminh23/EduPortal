@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import  { useState, useContext } from 'react';
 import { Calculator, X, Maximize2, Minimize2 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import CasioFX580 from './CasioFX580';
