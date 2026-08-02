@@ -5,6 +5,7 @@ import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
   MAX_SUBJECT_SCORE,
   examFormatFor,
+  PART_LABEL,
   formatQuestionCount,
   pointsForQuestion,
   trueFalsePoints
@@ -12,6 +13,7 @@ import {
 
 /** Weight used when a subject has no published paper to weight against. */
 const FALLBACK_QUESTION_POINTS = 0.25;
+
 import {
   Award,
   ArrowRight,
@@ -43,6 +45,55 @@ const SUBJECT_ICONS = {
   Literature: '📖'
 };
 
+/**
+ * Shows what the real paper looks like next to what this set actually serves.
+ *
+ * Without it a five-question practice set reads as a sitting of the real exam.
+ * A student who scores 8 on ten questions should know the real paper is 28.
+ */
+function PaperStructure({ subjects, questions }) {
+  const rows = subjects.map(subject => {
+    const format = examFormatFor(subject);
+    const served = questions.filter(q => q.subject === subject).length;
+    return {
+      subject,
+      served,
+      official: formatQuestionCount(format),
+      duration: format?.durationMinutes ?? null,
+      parts: format?.parts ?? []
+    };
+  });
+
+  const anyShort = rows.some(row => row.official > 0 && row.served < row.official);
+
+  return (
+    <div style={{ background: 'rgba(99,102,241,0.05)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: 8 }}>
+        Cấu trúc đề chính thức
+      </div>
+      {rows.map(row => (
+        <div key={row.subject} style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: 4 }}>
+          <strong>{SUBJECT_NAMES[row.subject] || row.subject}</strong>
+          {row.parts.length > 0 && (
+            <> — {row.parts.map(p => `${p.count} ${PART_LABEL[p.type].replace(/^Phần [I]+ — Trắc nghiệm /, '')}`).join(' · ')}</>
+          )}
+          {row.duration && <> · {row.duration} phút</>}
+          {row.official > 0 && (
+            <span style={{ color: row.served < row.official ? '#b45309' : '#047857', fontWeight: 600 }}>
+              {' '}(bộ này: {row.served}/{row.official} câu)
+            </span>
+          )}
+        </div>
+      ))}
+      {anyShort && (
+        <div style={{ fontSize: '0.74rem', color: '#92400e', marginTop: 8 }}>
+          Đây là bộ luyện rút gọn, chưa đủ số câu của đề thật. Điểm vẫn quy về thang 10 mỗi môn
+          nhưng không phản ánh một lần thi đầy đủ.
+        </div>
+      )}
+    </div>
+  );
+}
 export default function MockExamTab({ student }) {
   const { customExams, mockExamHistory, saveMockExamResult, t, language } = useContext(AppContext);
 
@@ -469,9 +520,11 @@ export default function MockExamTab({ student }) {
                         {systemExam.title}
                       </h4>
                       <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
-                        Thời gian: <strong>{systemExam.duration} phút</strong> | Thang điểm: <strong>30.0 điểm</strong> | Các môn: <strong>{subjects.map(s => SUBJECT_NAMES[s]).join(', ')}</strong>
+                        Thời gian: <strong>{systemExam.duration} phút</strong> | Thang điểm: <strong>{(subjects.length * 10).toFixed(1)} điểm</strong> | Các môn: <strong>{subjects.map(s => SUBJECT_NAMES[s]).join(', ')}</strong>
                       </p>
                     </div>
+
+                    <PaperStructure subjects={subjects} questions={systemExam.questions} />
 
                     <button
                       onClick={() => handleStartExam(systemExam, null)}

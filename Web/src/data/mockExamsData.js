@@ -1,4 +1,5 @@
 import { MATH_PAPER_META, MATH_PAPER_QUESTIONS } from './examPaperMath';
+import { examFormatFor } from '../config/examFormat';
 
 export const BLOCKS = {
   A00: { name: 'Khối A00', subjects: ['Math', 'Physics', 'Chemistry'] },
@@ -35,20 +36,7 @@ export const QUESTIONS = {
       correctKey: 'A',
       explanation: 'Ta áp dụng công thức nguyên hàm cơ bản:<br/>&int; 3<i>x</i><sup>2</sup> d<i>x</i> = 3 &middot; (<i>x</i><sup>3</sup>/3) = <i>x</i><sup>3</sup><br/>&int; 2<i>x</i> d<i>x</i> = 2 &middot; (<i>x</i><sup>2</sup>/2) = <i>x</i><sup>2</sup><br/>&int; 1 d<i>x</i> = <i>x</i><br/>Suy ra: <i>F</i>(<i>x</i>) = &int; (3<i>x</i><sup>2</sup> + 2<i>x</i> + 1)d<i>x</i> = <i>x</i><sup>3</sup> + <i>x</i><sup>2</sup> + <i>x</i> + <i>C</i>. Do đó, đáp án đúng là A.'
     },
-    {
-      id: 'QM2',
-      subject: 'Math',
-      question: 'Cho số phức <i>z</i> = 3 - 4<i>i</i>. Tính môđun |<i>z</i>| của số phức đã cho.',
-      options: [
-        { key: 'A', text: '|<i>z</i>| = 7' },
-        { key: 'B', text: '|<i>z</i>| = 5' },
-        { key: 'C', text: '|<i>z</i>| = 25' },
-        { key: 'D', text: '|<i>z</i>| = &radic;7' }
-      ],
-      correctKey: 'B',
-      explanation: 'Môđun của số phức <i>z</i> = <i>a</i> + <i>bi</i> được tính bằng công thức: |<i>z</i>| = &radic;(<i>a</i><sup>2</sup> + <i>b</i><sup>2</sup>).<br/>Với <i>z</i> = 3 - 4<i>i</i>, ta có:<br/>|<i>z</i>| = &radic;(3<sup>2</sup> + (-4)<sup>2</sup>) = &radic;(9 + 16) = &radic;25 = 5. Do đó chọn B.'
-    },
-    {
+        {
       id: 'QM3',
       subject: 'Math',
       question: 'Trong không gian <i>Oxyz</i>, phương trình mặt phẳng đi qua điểm <i>M</i>(1, -2, 3) và nhận vectơ pháp tuyến <i>n</i>&#8407; = (2, 1, -1) là:',
@@ -532,81 +520,23 @@ export const QUESTIONS = {
       explanation: 'Nhờ có Biển Đông ôm trọn phía đông và nam, các khối khí di chuyển qua biển được nhận thêm một lượng nhiệt ẩm dồi dào. Nhờ đó, khí hậu nước ta không bị khô hạn như các khu vực khác cùng vĩ độ ở Tây Á hay Bắc Phi, mà mang tính chất hải dương điều hòa, ẩm ướt với lượng mưa lớn. Chọn B.'
     }
   ],
-  Literature: [
-    {
-      id: 'QL1',
-      subject: 'Literature',
-      question: 'Đọc đoạn thơ sau: <br/><i>"Dốc lên khúc khuỷu dốc thăm thẳm<br/>Heo hút cồn mây, súng ngửi trời<br/>Ngàn thước lên cao, ngàn thước xuống<br/>Nhà ai Pha Luông mưa xa khơi"</i><br/>Đoạn thơ trên được trích trong bài thơ nào và của nhà thơ nào?',
-      options: [
-        { key: 'A', text: 'Bài thơ <i>"Đồng chí"</i> - Nhà thơ Chính Hữu' },
-        { key: 'B', text: 'Bài thơ <i>"Tây Tiến"</i> - Nhà thơ Quang Dũng' },
-        { key: 'C', text: 'Bài thơ <i>"Việt Bắc"</i> - Nhà thơ Tố Hữu' },
-        { key: 'D', text: 'Bài thơ <i>"Đất Nước"</i> - Nhà thơ Nguyễn Khoa Điềm' }
-      ],
-      correctKey: 'B',
-      explanation: 'Đoạn thơ trên trích từ tác phẩm <i>"Tây Tiến"</i> của nhà thơ Quang Dũng, sáng tác năm 1948 tại Phù Lưu Chanh. Những câu thơ vẽ nên bức tranh thiên nhiên miền Tây Bắc hiểm trở, heo hút nhưng vô cùng kỳ vĩ và lãng mạn, phản ánh chặng đường hành quân gian khổ của những người lính Tây Tiến hào hoa. Chọn B.'
-    },
-    {
-      id: 'QL2',
-      subject: 'Literature',
-      question: 'Trong truyện ngắn <i>"Vợ Nhặt"</i> của nhà văn Kim Lân, hình ảnh "lá cờ đỏ bay phấp phới" xuất hiện trong tâm trí nhân vật Tràng ở cuối tác phẩm thể hiện thông điệp nghệ thuật gì?',
-      options: [
-        { key: 'A', text: 'Sự bế tắc, tuyệt vọng của người nông dân trước nạn đói thê thảm năm 1945.' },
-        { key: 'B', text: 'Niềm tin, khát vọng sống và định hướng cách mạng giải phóng số phận con người.' },
-        { key: 'C', text: 'Sự oán hận giai cấp phong kiến địa chủ bóc lột sức lao động.' },
-        { key: 'D', text: 'Nỗi nhớ da diết về quê hương và những ngày tháng bình yên cũ.' }
-      ],
-      correctKey: 'B',
-      explanation: 'Hình ảnh lá cờ đỏ của Việt Minh xuất hiện cuối truyện ngắn <i>"Vợ Nhặt"</i> biểu trưng cho tương lai tươi sáng và sự đổi đời của người nông dân nghèo khổ. Nó nhen nhóm niềm tin và định hướng hành động cách mạng (cướp kho thóc Nhật) để tự cứu sống bản thân và gia đình. Chọn B.'
-    },
-    {
-      id: 'QL3',
-      subject: 'Literature',
-      question: 'Nhân vật nghệ sĩ Phùng trong truyện ngắn <i>"Chiếc thuyền ngoài xa"</i> của Nguyễn Minh Châu đã ngộ ra chân lý nghệ thuật và cuộc sống nào sau khi chứng kiến bi kịch của gia đình người đàn bà hàng chài?',
-      options: [
-        { key: 'A', text: 'Nghệ thuật chỉ cần hướng tới cái đẹp hoàn mỹ bên ngoài là đủ.' },
-        { key: 'B', text: 'Nghệ sĩ phải nhìn nhận cuộc đời và con người một cách đa diện, đa chiều; không thể vội vã đánh giá sự việc qua vẻ bề ngoài.' },
-        { key: 'C', text: 'Tránh xa những mâu thuẫn phức tạp của cuộc sống thực tế để giữ cho tâm hồn nghệ sĩ trong sạch.' },
-        { key: 'D', text: 'Các bức ảnh chụp đen trắng luôn giàu giá trị nghệ thuật hơn ảnh màu.' }
-      ],
-      correctKey: 'B',
-      explanation: 'Sau những phát hiện nghịch lý tại bãi biển (cảnh chiếc thuyền thơ mộng trong sương đối lập với cảnh bạo lực gia đình ngay sau đó), Phùng nhận ra rằng cuộc sống vốn chứa đựng nhiều góc khuất phức tạp. Người nghệ sĩ không thể đơn giản hóa hiện thực hay nhìn đời bằng lăng kính lãng mạn một chiều, mà phải đi sâu tìm hiểu bản chất đa diện của con người và cuộc đời. Chọn B.'
-    },
-    {
-      id: 'QL4',
-      subject: 'Literature',
-      question: 'Nhận định nào sau đây phác họa chính xác nhất phong cách nghệ thuật thơ của Xuân Quỳnh thể hiện qua bài thơ <i>"Sóng"</i>?',
-      options: [
-        { key: 'A', text: 'Giọng thơ hào hoa, bay bổng mang đậm màu sắc bi tráng của thời kỳ kháng chiến.' },
-        { key: 'B', text: 'Giọng thơ triết lý sâu sắc, giàu tính suy tưởng về cội nguồn của tự nhiên.' },
-        { key: 'C', text: 'Tiếng lòng tha thiết yêu thương của một tâm hồn phụ nữ hồn nhiên, chân thành, giàu lòng vị tha nhưng cũng đầy lo âu phấp phỏng.' },
-        { key: 'D', text: 'Giọng thơ trữ tình chính trị, đậm đà tính dân tộc và ngọt ngào sâu lắng.' }
-      ],
-      correctKey: 'C',
-      explanation: 'Thơ tình Xuân Quỳnh nói chung và bài thơ <i>"Sóng"</i> nói riêng là tiếng lòng vô cùng chân thành, đắm thắm của người phụ nữ khi yêu. Ở đó có sự tự nguyện hiến dâng, khát vọng thủy chung son sắt đi kèm với những lo âu, nhạy cảm trước sự hữu hạn của đời người và tình yêu. Chọn C.'
-    },
-    {
-      id: 'QL5',
-      subject: 'Literature',
-      question: 'Trong tùy bút <i>"Người lái đò Sông Đà"</i> của Nguyễn Tuân, dòng sông Đà được khắc họa qua hai tính cách đối lập, độc đáo nào?',
-      options: [
-        { key: 'A', text: 'Dòng nước nông cạn bình yên và mùa lũ đục ngầu phù sa.' },
-        { key: 'B', text: 'Hung bạo, dữ dằn như kẻ thù số một và trữ tình, gợi cảm như một cố nhân.' },
-        { key: 'C', text: 'Dòng chảy êm đềm ở thượng nguồn và thác ghềnh cuồn cuộn ở hạ lưu.' },
-        { key: 'D', text: 'Màu nước xanh ngọc bích mùa xuân và đỏ lừ mùa thu.' }
-      ],
-      correctKey: 'B',
-      explanation: 'Nguyễn Tuân đã biến dòng sông Đà vô tri thành một sinh thể có cá tính mạnh mẽ với hai nét tính cách đối lập song hành: một mặt là "hung bạo" với thác đá, trùng vây thạch trận đe dọa con người; mặt khác lại cực kỳ "trữ tình", dịu dàng như một áng tóc trữ tình tuôn dài, nước sông đổi màu theo mùa đầy gợi cảm. Chọn B.'
-    }
-  ]
 };
 
 // Assemble sequential block exams
+/**
+ * Minutes a sitting should run, summed from each subject's published paper.
+ *
+ * Every exam here used to claim 45 phút regardless of what it contained, which
+ * is shorter than any real paper — Toán alone is 90.
+ */
+function durationForSubjects(subjects) {
+  return subjects.reduce((total, subject) => total + (examFormatFor(subject)?.durationMinutes ?? 0), 0);
+}
+
 export const SYSTEM_BLOCK_EXAMS = [
   // The one paper here that is actually complete: 22 questions across the three
-  // parts, timed at the real 90 phút. The khối papers below predate the current
-  // format — they bundle three subjects at 45 phút and carry 5–7 questions each,
-  // so they practise the question types without being a real sitting.
+  // parts, timed at the real 90 phút. The khối sets below carry 5–7 questions
+  // per subject, so they practise the question types without being a sitting.
   {
     id: 'SYS_MATH_FULL_01',
     block: 'SINGLE',
@@ -618,8 +548,8 @@ export const SYSTEM_BLOCK_EXAMS = [
   {
     id: 'SYS_A00_01',
     block: 'A00',
-    title: 'Đề thi thử liên môn Khối A00 (Toán - Lý - Hóa) - Đề số 1',
-    duration: 45, // Simulation duration in minutes
+    title: 'Đề luyện theo khối A00 (Toán · Lý · Hoá) — bộ rút gọn',
+    duration: durationForSubjects(['Math', 'Physics', 'Chemistry']),
     questions: [
       ...QUESTIONS.Math,
       ...QUESTIONS.Physics,
@@ -629,8 +559,8 @@ export const SYSTEM_BLOCK_EXAMS = [
   {
     id: 'SYS_A01_01',
     block: 'A01',
-    title: 'Đề thi thử liên môn Khối A01 (Toán - Lý - Anh) - Đề số 1',
-    duration: 45,
+    title: 'Đề luyện theo khối A01 (Toán · Lý · Anh) — bộ rút gọn',
+    duration: durationForSubjects(['Math', 'Physics', 'English']),
     questions: [
       ...QUESTIONS.Math,
       ...QUESTIONS.Physics,
@@ -640,8 +570,8 @@ export const SYSTEM_BLOCK_EXAMS = [
   {
     id: 'SYS_B00_01',
     block: 'B00',
-    title: 'Đề thi thử liên môn Khối B00 (Toán - Hóa - Sinh) - Đề số 1',
-    duration: 45,
+    title: 'Đề luyện theo khối B00 (Toán · Hoá · Sinh) — bộ rút gọn',
+    duration: durationForSubjects(['Math', 'Chemistry', 'Biology']),
     questions: [
       ...QUESTIONS.Math,
       ...QUESTIONS.Chemistry,
@@ -649,12 +579,14 @@ export const SYSTEM_BLOCK_EXAMS = [
     ]
   },
   {
+    // Ngữ văn is sat entirely as tự luận, so it cannot appear in an
+    // auto-marked paper. The khối keeps its name; the Văn component is taken
+    // separately on paper.
     id: 'SYS_C00_01',
     block: 'C00',
-    title: 'Đề thi thử liên môn Khối C00 (Văn - Sử - Địa) - Đề số 1',
-    duration: 45,
+    title: 'Đề luyện theo khối C00 (Sử · Địa) — bộ rút gọn, chưa gồm Ngữ văn',
+    duration: durationForSubjects(['History', 'Geography']),
     questions: [
-      ...QUESTIONS.Literature,
       ...QUESTIONS.History,
       ...QUESTIONS.Geography
     ]
@@ -662,11 +594,10 @@ export const SYSTEM_BLOCK_EXAMS = [
   {
     id: 'SYS_D01_01',
     block: 'D01',
-    title: 'Đề thi thử liên môn Khối D01 (Toán - Văn - Anh) - Đề số 1',
-    duration: 45,
+    title: 'Đề luyện theo khối D01 (Toán · Anh) — bộ rút gọn, chưa gồm Ngữ văn',
+    duration: durationForSubjects(['Math', 'English']),
     questions: [
       ...QUESTIONS.Math,
-      ...QUESTIONS.Literature,
       ...QUESTIONS.English
     ]
   }
@@ -691,7 +622,7 @@ export const INITIAL_MOCK_EXAM_HISTORY = [
       Chemistry: { correct: 4, total: 5 }
     },
     selectedAnswers: {
-      'QM1': 'A', 'QM2': 'B', 'QM3': 'A', 'QM4': 'A', 'QM5': 'B',
+      'QM1': 'A', 'QM3': 'A', 'QM4': 'A', 'QM5': 'B',
       'QP1': 'A', 'QP2': 'C', 'QP3': 'A', 'QP4': 'B', 'QP5': 'B',
       'QC1': 'B', 'QC2': 'A', 'QC3': 'C', 'QC4': 'C', 'QC5': 'A'
     }
@@ -714,7 +645,7 @@ export const INITIAL_MOCK_EXAM_HISTORY = [
       English: { correct: 5, total: 5 }
     },
     selectedAnswers: {
-      'QM1': 'A', 'QM2': 'B', 'QM3': 'A', 'QM4': 'A', 'QM5': 'A',
+      'QM1': 'A', 'QM3': 'A', 'QM4': 'A', 'QM5': 'A',
       'QP1': 'A', 'QP2': 'C', 'QP3': 'A', 'QP4': 'B', 'QP5': 'B',
       'QE1': 'C', 'QE2': 'C', 'QE3': 'C', 'QE4': 'B', 'QE5': 'B'
     }
@@ -737,7 +668,7 @@ export const INITIAL_MOCK_EXAM_HISTORY = [
       English: { correct: 4, total: 5 }
     },
     selectedAnswers: {
-      'QM1': 'A', 'QM2': 'B', 'QM3': 'A', 'QM4': 'A', 'QM5': 'A',
+      'QM1': 'A', 'QM3': 'A', 'QM4': 'A', 'QM5': 'A',
       'QL1': 'B', 'QL2': 'B', 'QL3': 'B', 'QL4': 'C', 'QL5': 'C',
       'QE1': 'C', 'QE2': 'C', 'QE3': 'C', 'QE4': 'A', 'QE5': 'B'
     }
@@ -760,7 +691,7 @@ export const INITIAL_MOCK_EXAM_HISTORY = [
       Biology: { correct: 3, total: 5 }
     },
     selectedAnswers: {
-      'QM1': 'A', 'QM2': 'C', 'QM3': 'A', 'QM4': 'B', 'QM5': 'A',
+      'QM1': 'A', 'QM3': 'A', 'QM4': 'B', 'QM5': 'A',
       'QC1': 'B', 'QC2': 'A', 'QC3': 'C', 'QC4': 'C', 'QC5': 'A',
       'QB1': 'B', 'QB2': 'B', 'QB3': 'C', 'QB4': 'B', 'QB5': 'B'
     }
@@ -783,7 +714,7 @@ export const INITIAL_MOCK_EXAM_HISTORY = [
       Chemistry: { correct: 4, total: 5 }
     },
     selectedAnswers: {
-      'QM1': 'A', 'QM2': 'B', 'QM3': 'A', 'QM4': 'A', 'QM5': 'B',
+      'QM1': 'A', 'QM3': 'A', 'QM4': 'A', 'QM5': 'B',
       'QP1': 'A', 'QP2': 'C', 'QP3': 'A', 'QP4': 'B', 'QP5': 'B',
       'QC1': 'B', 'QC2': 'A', 'QC3': 'C', 'QC4': 'C', 'QC5': 'A'
     }
