@@ -141,6 +141,7 @@ export default function Navbar({ setActiveTab }) {
         {/* Language Switcher Toggle */}
         <button
           onClick={toggleLanguage}
+          className="lang-toggle"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -176,8 +177,9 @@ export default function Navbar({ setActiveTab }) {
 
         {/* User profile dropdown - always available */}
         <div ref={dropdownRef} style={{ position: 'relative' }}>
-          <button 
+          <button
             onClick={() => setShowUserDropdown(!showUserDropdown)}
+            className="navbar-account"
             style={{
               cursor: 'pointer',
               display: 'flex',
@@ -205,7 +207,7 @@ export default function Navbar({ setActiveTab }) {
                 {(userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'BGH' : currentRole.startsWith('teacher') ? 'GV' : currentRole === 'student' ? 'HS' : 'PH')).substring(0, 2).toUpperCase()}
               </div>
             )}
-            <div style={{ overflow: 'hidden', lineHeight: 1.25 }}>
+            <div className="navbar-account-meta" style={{ overflow: 'hidden', lineHeight: 1.25 }}>
               <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary, #1e293b)', whiteSpace: 'nowrap' }}>
                 {userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'Hiệu trưởng BGH' : currentRole.startsWith('teacher') ? 'Thầy Minh Triết' : currentRole === 'student' ? (activeStudent?.name || 'Học sinh') : 'Phụ huynh')}
               </div>

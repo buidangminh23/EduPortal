@@ -69,12 +69,18 @@ body {
 
 .main-content {
   flex: 1;
+  /* Không có dòng này thì cột nội dung rộng theo phần tử rộng nhất bên trong
+     (min-width mặc định của flex item là auto), kéo cả thanh trên và trang
+     tràn ngang trên điện thoại. */
+  min-width: 0;
   min-height: 100vh;
   padding-left: 280px; /* Width of sidebar */
   transition: padding var(--transition-normal);
 }
 
-@media (max-width: 768px) {
+/* Cùng ngưỡng với sidebar: khi sidebar thành ngăn kéo thì nội dung lấy hết
+   bề ngang, không còn chừa 280px cho một cột đã trượt ra ngoài màn hình. */
+@media (max-width: 1024px) {
   .main-content {
     padding-left: 0;
   }
@@ -82,6 +88,7 @@ body {
 
 .content-pane {
   flex: 1;
+  min-width: 0;
   padding: 96px 28px 28px;
   max-width: 1400px;
   width: 100%;
@@ -92,6 +99,18 @@ body {
 @media (max-width: 768px) {
   .content-pane {
     padding: 110px 14px 18px;
+  }
+}
+
+/* Các trang chia cột bằng style inline ('1.2fr 1fr', '200px 1fr', '1fr 340px'…).
+   Media query thường không thắng được style inline nên phải !important; đổi
+   từng chỗ một thì vẫn sót, mà mỗi chỗ sót là một trang tràn ngang trên điện
+   thoại. Loại trừ repeat(...) vì đó là các lưới đã tự co (auto-fit) hoặc lưới
+   có ý nghĩa cố định — 7 cột lịch tuần, 4 cột đáp án trắc nghiệm — gộp thành
+   một cột sẽ hỏng nghĩa. */
+@media (max-width: 760px) {
+  .content-pane [style*="grid-template-columns"]:not([style*="repeat"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
@@ -129,7 +148,7 @@ h1, h2, h3, h4 {
 }
 
 h1 {
-  font-size: 2.2rem;
+  font-size: clamp(1.5rem, 1.15rem + 1.6vw, 2.2rem);
   margin-bottom: 8px;
 }
 
@@ -523,23 +542,75 @@ h1 {
   box-shadow: var(--sh-sm);
 }
 
-@media (max-width: 1120px) {
+/* Dock điều hướng nằm cố định ở top:96px, nên thanh trên phải cao đúng một
+   hàng (82px). Sidebar ăn mất 280px nên từ ~1560px trở xuống thanh trên đã
+   hết chỗ và xuống dòng thành 124px — che mất nửa dock trên gần như mọi màn
+   laptop. Bỏ mấy chip số liệu trước, rồi ép một hàng và cắt bằng dấu ba chấm. */
+@media (max-width: 1560px) {
   .navbar-metrics {
     display: none;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1560px) {
+  .navbar {
+    flex-wrap: nowrap;
+  }
+  .navbar-identity {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .navbar-identity > div {
+    min-width: 0;
+  }
+  .navbar-title {
+    display: block;
+  }
+  .navbar-title,
+  .navbar-subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .role-switcher-container {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  .navbar-account-meta {
+    max-width: 160px;
+  }
+  /* Tên dài thì kết thúc bằng dấu ba chấm chứ không bị cắt cụt giữa chữ. */
+  .navbar-account-meta > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Thẻ "Con đang theo dõi: …" dài bằng cả tên học sinh; dưới ngưỡng này nó
+     một mình đẩy thanh trên rộng hơn màn hình. Tên con đã có trong thẻ
+     workspace ở menu và trên chính trang phụ huynh. */
+  .parent-student-lock {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  /* Sidebar đã thành ngăn kéo nên dock không phải né 280px nữa. */
   .app-command-dock {
     left: 14px;
     right: 14px;
     overflow-x: auto;
     justify-content: flex-start;
+    scrollbar-width: none;
+  }
+  .app-command-dock::-webkit-scrollbar {
+    display: none;
   }
   [data-role="student"] .app-command-dock {
     right: 14px;
     bottom: auto;
   }
+}
+
+@media (max-width: 900px) {
   .dock-action span,
   .dock-status span {
     display: none;
@@ -547,13 +618,78 @@ h1 {
 }
 
 @media (max-width: 768px) {
+  /* Thanh trên giữ đúng một hàng: nếu nó xuống dòng thì cao thêm và đè lên
+     dock điều hướng đứng ngay dưới. Tiêu đề co lại rồi cắt bằng dấu ba chấm,
+     cụm nút bên phải giữ nguyên. */
+  .navbar {
+    padding-right: 14px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
   .navbar-identity {
     min-width: 0;
+    flex: 1 1 auto;
+  }
+  .navbar-identity > div {
+    min-width: 0;
+  }
+  .navbar-title {
+    font-size: 1.02rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .navbar-role-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    flex-shrink: 0;
   }
   .navbar-subtitle,
   .account-chip,
   .parent-student-switcher span {
     display: none;
+  }
+  .role-switcher-container {
+    gap: 6px;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  /* Ô tìm kiếm còn cái kính lúp: nhãn và gợi ý phím Ctrl K vô nghĩa trên
+     điện thoại, mà chính chúng làm tràn thanh trên. */
+  .global-search-trigger span,
+  .global-search-trigger kbd {
+    display: none;
+  }
+  .global-search-trigger {
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .navbar {
+    min-height: 68px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  /* Biểu tượng vai trò chỉ lặp lại điều tiêu đề ngay cạnh nó đã nói; bỏ đi để
+     tiêu đề đủ chỗ. Nút ngôn ngữ còn lá cờ, nút tài khoản còn avatar — tên và
+     vai trò đã có trong menu. */
+  .navbar-role-icon {
+    display: none;
+  }
+  .navbar-title {
+    font-size: 0.95rem;
+  }
+  .lang-toggle span {
+    display: none;
+  }
+  .navbar-account-meta {
+    display: none;
+  }
+  .navbar-account {
+    padding: 4px !important;
   }
 }
 
