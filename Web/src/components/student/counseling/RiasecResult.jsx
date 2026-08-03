@@ -1,4 +1,4 @@
-import { GraduationCap, RotateCcw, ArrowRight, Info } from 'lucide-react';
+import { GraduationCap, RotateCcw, Info } from 'lucide-react';
 import { getCareerGuidance, MAX_TRAIT_SCORE, TRAIT_ORDER } from '../../../lib/counseling/riasec';
 
 const RADAR_CENTER = 150;
@@ -39,7 +39,7 @@ function ConfidenceBadge({ profile }) {
   );
 }
 
-export default function RiasecResult({ profile, onRetake, onOpenMatchmaker }) {
+export default function RiasecResult({ profile, onRetake }) {
   if (!profile) return null;
 
   const guidance = getCareerGuidance(profile);
@@ -199,13 +199,8 @@ export default function RiasecResult({ profile, onRetake, onOpenMatchmaker }) {
       </div>
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {onOpenMatchmaker && (
-          <button onClick={onOpenMatchmaker} className="btn btn-primary" style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            Tìm trường phù hợp <ArrowRight size={15} />
-          </button>
-        )}
         <button onClick={onRetake} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <RotateCcw size={15} /> Làm lại
+          <RotateCcw size={15} /> Làm lại khảo sát
         </button>
       </div>
     </div>

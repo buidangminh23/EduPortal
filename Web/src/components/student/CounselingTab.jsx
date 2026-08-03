@@ -2,6 +2,7 @@ import { useContext, useMemo, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import RiasecSurvey from './counseling/RiasecSurvey';
 import RiasecResult from './counseling/RiasecResult';
+import CareerPathways from './counseling/CareerPathways';
 import CounselorChat from './counseling/CounselorChat';
 import { computeRiasecProfile, profileFromStoredScores, toStorageScores } from '../../lib/counseling/riasec';
 
@@ -11,7 +12,8 @@ export default function CounselingTab({ student }) {
     saveCareerTest,
     logWellnessMood,
     requestCounseling,
-    setStudentSubTab
+    setStudentSubTab,
+    mockExamHistory
   } = useContext(AppContext);
 
   const [answers, setAnswers] = useState({});
@@ -86,11 +88,15 @@ export default function CounselingTab({ student }) {
         )}
 
         {activeProfile && (
-          <RiasecResult
-            profile={activeProfile}
-            onRetake={handleRetake}
-            onOpenMatchmaker={setStudentSubTab ? () => setStudentSubTab('university_matchmaker') : null}
-          />
+          <>
+            <RiasecResult profile={activeProfile} onRetake={handleRetake} />
+            <CareerPathways
+              profile={activeProfile}
+              student={student}
+              mockExamHistory={mockExamHistory}
+              onOpenMatchmaker={setStudentSubTab ? () => setStudentSubTab('university_matchmaker') : null}
+            />
+          </>
         )}
       </div>
 
