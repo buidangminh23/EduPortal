@@ -1,0 +1,22 @@
+# Line endings, decided here rather than by whichever machine last committed.
+#
+# The repository is written on Windows and the server scripts run on the
+# school's Linux machine. A shell script checked out with CRLF fails there with
+# `$'\r': command not found` — a confusing error a long way from its cause — so
+# the two file types that care are pinned and everything else is normalised.
+
+* text=auto
+
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
