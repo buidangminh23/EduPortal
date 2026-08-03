@@ -9,7 +9,7 @@
  * a wrong table name, a missing tenant column, a forgotten conflict target.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { REPOSITORY_METHODS, createSupabaseAdapter, localAdapter } from './repository';
+import { REPOSITORY_METHODS, createSupabaseAdapter, localAdapter, fromMockExamRow } from './repository';
 
 /** Node has no localStorage, and safeStorage swallows that into a silent no-op. */
 function installMemoryStorage() {
@@ -24,6 +24,24 @@ function installMemoryStorage() {
 
 beforeEach(() => {
   installMemoryStorage();
+});
+
+/** One handed-in paper, in the shape the exam screen produces. */
+const mockPaper = (over = {}) => ({
+  studentId: 'HS001',
+  studentName: 'Nguyễn Hoàng Nam',
+  class: '12A1',
+  examId: 'SYS_SUBJ_Math',
+  title: 'Đề thi thử Toán',
+  block: 'SINGLE',
+  score: 8.25,
+  totalQuestions: 22,
+  timeSpent: '48:12',
+  interruptions: 2,
+  subjectBreakdown: { Math: { subjectScore: 8.25 } },
+  selectedAnswers: { MP01: 'B' },
+  takenAt: '2026-08-03T07:00:00.000Z',
+  ...over
 });
 
 describe('adapter contract', () => {
@@ -188,6 +206,7 @@ function fakeClient() {
     const chain = {
       select: (...args) => { calls.push({ table, op: 'select', args }); return chain; },
       eq: (field, value) => { calls.push({ table, op: 'eq', field, value }); return chain; },
+      order: (field, options) => { calls.push({ table, op: 'order', field, options }); return chain; },
       insert: (payload) => { calls.push({ table, op: 'insert', payload }); return chain; },
       update: (payload) => { calls.push({ table, op: 'update', payload }); return chain; },
       upsert: (payload, options) => { calls.push({ table, op: 'upsert', payload, options }); return chain; },
@@ -261,5 +280,126 @@ describe('supabase adapter · query shape', () => {
       select: () => ({ then: (resolve) => Promise.resolve({ data: null, error: { message: 'permission denied' } }).then(resolve) })
     }) };
     await expect(createSupabaseAdapter(failing, 'school-1').listInvoices()).rejects.toThrow(/permission denied/);
+  });
+
+  it('inserts a mock exam sitting rather than upserting over the last one', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper());
+
+    const call = find(calls, 'insert', 'mock_exam_results');
+    expect(call).toBeTruthy();
+    expect(find(calls, 'upsert', 'mock_exam_results')).toBeUndefined();
+    expect(call.payload.school_id).toBe('school-1');
+    expect(call.payload.student_id).toBe('HS001');
+    expect(call.payload.interruptions).toBe(2);
+    expect(call.payload.selected_answers).toEqual({ MP01: 'B' });
+  });
+
+  it('does not send the browser-only id to Postgres, which has no such column', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper({ localId: 'local-1' }));
+
+    expect(find(calls, 'insert', 'mock_exam_results').payload).not.toHaveProperty('localId');
+  });
+
+  it('asks for the newest sittings first', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').listMockExamResults();
+
+    expect(find(calls, 'order', 'mock_exam_results').options).toMatchObject({ ascending: false });
+  });
+});
+
+describe('mock exam sittings · browser store', () => {
+  it('appends each sitting instead of collapsing them onto one row', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'a', score: 5 }));
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'b', score: 9 }));
+
+    const rows = await localAdapter.listMockExamResults({ studentId: 'HS001' });
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => Number(r.score)).sort()).toEqual([5, 9]);
+  });
+
+  it('keeps the id the outbox gave it, so a reload shows one sitting not two', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'local-42' }));
+
+    expect((await localAdapter.listMockExamResults({}))[0].id).toBe('local-42');
+  });
+
+  it('carries the name and class the student had that day', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'a' }));
+
+    expect((await localAdapter.listMockExamResults({}))[0]).toMatchObject({
+      student_name: 'Nguyễn Hoàng Nam',
+      class_name: '12A1'
+    });
+  });
+
+  it('hands back one student\'s papers without the others', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'a' }));
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'b', studentId: 'HS002' }));
+
+    const mine = await localAdapter.listMockExamResults({ studentId: 'HS001' });
+
+    expect(mine).toHaveLength(1);
+    expect(mine[0].student_id).toBe('HS001');
+  });
+
+  it('reports a refused write instead of letting the outbox drop the paper', async () => {
+    const realSetItem = globalThis.localStorage.setItem;
+    globalThis.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+
+    await expect(localAdapter.saveMockExamResult(mockPaper({ localId: 'a' })))
+      .rejects.toThrow(/không lưu được/);
+
+    globalThis.localStorage.setItem = realSetItem;
+  });
+});
+
+describe('fromMockExamRow', () => {
+  it('gives the screens back the shape they already read', () => {
+    const row = {
+      id: 'row-1',
+      student_id: 'HS001',
+      student_name: 'Nguyễn Hoàng Nam',
+      class_name: '12A1',
+      exam_id: 'SYS_SUBJ_Math',
+      title: 'Đề thi thử Toán',
+      block: 'SINGLE',
+      score: '8.25',
+      total_questions: 22,
+      time_spent: '48:12',
+      interruptions: 2,
+      subject_breakdown: { Math: { subjectScore: 8.25 } },
+      selected_answers: { MP01: 'B' },
+      taken_at: '2026-08-03T07:00:00.000Z'
+    };
+
+    expect(fromMockExamRow(row)).toEqual({
+      id: 'row-1',
+      studentId: 'HS001',
+      studentName: 'Nguyễn Hoàng Nam',
+      class: '12A1',
+      examId: 'SYS_SUBJ_Math',
+      title: 'Đề thi thử Toán',
+      block: 'SINGLE',
+      score: 8.25,
+      totalQuestions: 22,
+      timeSpent: '48:12',
+      interruptions: 2,
+      subjectBreakdown: { Math: { subjectScore: 8.25 } },
+      selectedAnswers: { MP01: 'B' },
+      date: '2026-08-03'
+    });
+  });
+
+  it('survives a row whose optional columns are empty', () => {
+    const bare = fromMockExamRow({ id: 'r', student_id: 'HS001', exam_id: 'e', title: 't', score: 0, total_questions: 0 });
+
+    expect(bare.subjectBreakdown).toEqual({});
+    expect(bare.selectedAnswers).toEqual({});
+    expect(bare.interruptions).toBe(0);
+    expect(bare.studentName).toBeNull();
   });
 });

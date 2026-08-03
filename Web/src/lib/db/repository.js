@@ -22,7 +22,8 @@ const KEYS = {
   comments: 'db_comment_results',
   attendance: 'db_attendance_records',
   leave: 'db_leave_requests',
-  invoices: 'db_invoices'
+  invoices: 'db_invoices',
+  mockExams: 'db_mock_exam_results'
 };
 
 function readAll(key) {
@@ -36,8 +37,9 @@ function readAll(key) {
   }
 }
 
+/** @returns {boolean} False when the browser refused to store it. */
 function writeAll(key, rows) {
-  safeStorage.setItem(key, JSON.stringify(rows));
+  return safeStorage.setItem(key, JSON.stringify(rows));
 }
 
 const matches = (row, filter) =>
@@ -193,8 +195,72 @@ export const localAdapter = {
       paid_method: method,
       confirmed_by: confirmedBy ?? null
     });
+  },
+
+  async listMockExamResults({ studentId } = {}) {
+    const filter = studentId ? { student_id: studentId } : {};
+    return readAll(KEYS.mockExams)
+      .filter((row) => matches(row, filter))
+      .sort((a, b) => String(b.taken_at).localeCompare(String(a.taken_at)));
+  },
+
+  async saveMockExamResult(result) {
+    // Appended, never upserted: sitting the same paper twice is two results,
+    // and the second must not overwrite the first.
+    const rows = readAll(KEYS.mockExams);
+    const row = { ...toMockExamRow(result), id: result.localId || `local-${rows.length + 1}-${Date.now()}` };
+    rows.push(row);
+
+    // A storage that refused the write has to say so. Reporting success would
+    // let the outbox drop a paper it never actually stored — the one failure
+    // this whole mechanism exists to prevent.
+    if (!writeAll(KEYS.mockExams, rows)) {
+      throw new Error('Trình duyệt không lưu được kết quả (hết dung lượng hoặc bị chặn).');
+    }
+    return row;
   }
 };
+
+/** The one place the app's result shape becomes the database's column names. */
+function toMockExamRow(result) {
+  return {
+    student_id: result.studentId,
+    student_name: result.studentName ?? null,
+    class_name: result.class ?? null,
+    exam_id: result.examId,
+    title: result.title,
+    block: result.block ?? null,
+    score: result.score,
+    total_questions: result.totalQuestions ?? 0,
+    time_spent: result.timeSpent ?? null,
+    interruptions: result.interruptions ?? 0,
+    subject_breakdown: result.subjectBreakdown ?? {},
+    selected_answers: result.selectedAnswers ?? {},
+    taken_at: result.takenAt || new Date().toISOString()
+  };
+}
+
+/** Database row back into what the screens already read. */
+export function fromMockExamRow(row) {
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    // The teacher and head teacher screens list attempts by name and class, so
+    // these travel with the row rather than being looked up per render.
+    studentName: row.student_name ?? null,
+    class: row.class_name ?? null,
+    examId: row.exam_id,
+    title: row.title,
+    block: row.block,
+    score: Number(row.score),
+    totalQuestions: row.total_questions,
+    timeSpent: row.time_spent,
+    interruptions: row.interruptions ?? 0,
+    subjectBreakdown: row.subject_breakdown || {},
+    selectedAnswers: row.selected_answers || {},
+    date: String(row.taken_at || '').split('T')[0]
+  };
+}
 
 /** Throws whatever the database said rather than returning a silent empty set. */
 function unwrap({ data, error }) {
@@ -378,6 +444,24 @@ export function createSupabaseAdapter(client, schoolId) {
           .select()
           .single()
       );
+    },
+
+    async listMockExamResults({ studentId } = {}) {
+      let query = rows('mock_exam_results').select('*').order('taken_at', { ascending: false });
+      if (studentId) query = query.eq('student_id', studentId);
+      return unwrap(await query);
+    },
+
+    async saveMockExamResult(result) {
+      // Insert, not upsert. Two sittings of the same paper are two rows, and
+      // the table grants no UPDATE to anybody: a handed-in paper stays as it
+      // was handed in.
+      return unwrap(
+        await rows('mock_exam_results')
+          .insert({ school_id: schoolId, ...toMockExamRow(result) })
+          .select()
+          .single()
+      );
     }
   };
 }
@@ -396,5 +480,7 @@ export const REPOSITORY_METHODS = [
   'listInvoices',
   'createInvoice',
   'declareTransfer',
-  'confirmPayment'
+  'confirmPayment',
+  'listMockExamResults',
+  'saveMockExamResult'
 ];

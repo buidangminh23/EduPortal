@@ -9,7 +9,9 @@ import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
 import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
 import { currentSchoolDay } from '../config/demoClock';
-import { getRepository, resetRepository } from '../lib/db';
+import { getRepository, resetRepository, isBrowserStore } from '../lib/db';
+import { fromMockExamRow } from '../lib/db/repository';
+import { enqueue, flushOutbox, pendingCount } from '../lib/exam/submissionOutbox';
 import { safeStorage } from '../lib/safeStorage';
 
 
@@ -1219,6 +1221,61 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('mockExamHistory', JSON.stringify(mockExamHistory));
   }, [mockExamHistory]);
 
+  /** How many handed-in papers have not reached the database yet. */
+  const [pendingSubmissions, setPendingSubmissions] = useState(() => pendingCount());
+
+  const flushMockExamOutbox = useCallback(() => {
+    const repo = getRepository(profile?.school_id ?? null);
+    flushOutbox((result) => repo.saveMockExamResult(result))
+      .then(({ remaining }) => setPendingSubmissions(remaining))
+      .catch(() => setPendingSubmissions(pendingCount()));
+  }, [profile?.school_id]);
+
+  // Papers left over from a session that ended badly — the tab was closed, the
+  // machine was turned off at the wall — go out as soon as the app is open
+  // again, and again the moment the network comes back.
+  useEffect(() => {
+    flushMockExamOutbox();
+    window.addEventListener('online', flushMockExamOutbox);
+    return () => window.removeEventListener('online', flushMockExamOutbox);
+  }, [flushMockExamOutbox]);
+
+  /**
+   * Replaces the seeded history with what the database holds.
+   *
+   * In a real deployment the database is the whole truth, empty included: a
+   * school looking at its own dashboard must not see the demo's invented
+   * results. In the browser store the seed is all there is to look at, so
+   * stored attempts are merged in beside it instead.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    const repo = getRepository(profile?.school_id ?? null);
+
+    Promise.resolve()
+      .then(() => repo.listMockExamResults())
+      .then((rows) => {
+        if (cancelled) return;
+        const stored = (rows || []).map(fromMockExamRow);
+
+        if (!isBrowserStore) {
+          setMockExamHistory(stored);
+          return;
+        }
+        if (stored.length === 0) return;
+
+        setMockExamHistory(prev => {
+          const storedIds = new Set(stored.map(row => row.id));
+          return [...stored, ...prev.filter(row => !storedIds.has(row.id))];
+        });
+      })
+      .catch((error) => {
+        if (!cancelled) setStoreError({ what: 'tải kết quả thi thử', message: error?.message || 'Lỗi không rõ.' });
+      });
+
+    return () => { cancelled = true; };
+  }, [profile?.school_id]);
+
   const [customExams, setCustomExams] = useState(() => {
     const saved = localStorage.getItem('customExams');
     return saved ? JSON.parse(saved) : [];
@@ -2227,15 +2284,26 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  /**
+   * Hand in a paper.
+   *
+   * Three steps, in this order and for a reason: the student sees the result
+   * at once because the marking already happened on their machine; the paper
+   * goes into the outbox so a network hiccup at hand-in time cannot lose it;
+   * and only then is the send attempted. A thousand students finishing within
+   * the same two minutes will produce some failures, and none of them may cost
+   * a student their work.
+   */
   const saveMockExamResult = (result) => {
-    setMockExamHistory(prev => {
-      const newResult = {
-        id: 'MEH' + String(prev.length + 1).padStart(3, '0') + '_' + Math.floor(Math.random() * 1000),
-        ...result,
-        date: new Date().toISOString().split('T')[0]
-      };
-      return [newResult, ...prev];
-    });
+    const queued = enqueue({ ...result, takenAt: new Date().toISOString() });
+
+    setMockExamHistory(prev => [{
+      id: queued.localId,
+      ...result,
+      date: new Date().toISOString().split('T')[0]
+    }, ...prev]);
+
+    flushMockExamOutbox();
   };
 
   const addCustomExam = (exam) => {
@@ -3160,6 +3228,8 @@ export const AppProvider = ({ children }) => {
       setSelectedStudentId: selectStudentSafely,
       mockExamHistory: scopeStudentRows(mockExamHistory),
       saveMockExamResult,
+      pendingSubmissions,
+      flushMockExamOutbox,
       customExams,
       addCustomExam,
       teachers,

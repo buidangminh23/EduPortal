@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { BLOCKS, SYSTEM_BLOCK_EXAMS, SUBJECT_NAMES, QUESTIONS } from '../../data/mockExamsData';
 
@@ -17,6 +17,14 @@ function fullPaperFor(subjectKey) {
 }
 import { decodeHtmlEntities } from '../../lib/tutor/formatText';
 import {
+  buildDraft,
+  saveDraft,
+  readDraft,
+  clearDraft,
+  describeRemaining,
+  DRAFT_STATUS
+} from '../../lib/exam/examDraft';
+import {
   MAX_SUBJECT_SCORE,
   examFormatFor,
   PART_LABEL,
@@ -27,6 +35,9 @@ import {
 
 /** Weight used when a subject has no published paper to weight against. */
 const FALLBACK_QUESTION_POINTS = 0.25;
+
+/** How often the ticking clock alone is enough reason to rewrite the draft. */
+const DRAFT_CLOCK_INTERVAL_SECONDS = 10;
 
 import {
   Award,
@@ -41,7 +52,8 @@ import {
   Check,
   X,
   ClipboardList,
-  BookOpen
+  BookOpen,
+  AlertTriangle
 } from 'lucide-react';
 
 const SUBJECT_ICONS = {
@@ -105,7 +117,13 @@ function PaperStructure({ subjects, questions }) {
   );
 }
 export default function MockExamTab({ student }) {
-  const { customExams, mockExamHistory, saveMockExamResult } = useContext(AppContext);
+  const {
+    customExams,
+    mockExamHistory,
+    saveMockExamResult,
+    pendingSubmissions,
+    flushMockExamOutbox
+  } = useContext(AppContext);
 
   const [selectedBlockKey, setSelectedBlockKey] = useState('A00');
   const [activeExam, setActiveExam] = useState(null);
@@ -115,6 +133,24 @@ export default function MockExamTab({ student }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [reviewingPastAttempt, setReviewingPastAttempt] = useState(null);
   const [selectionTab, setSelectionTab] = useState('subject'); // 'subject' | 'block'
+  const [examStartedAt, setExamStartedAt] = useState(null);
+  const [interruptions, setInterruptions] = useState(0);
+
+  // Read once, while the component is first rendering. An effect would have to
+  // call setState to report what it found, which is the cascading render the
+  // hooks rules warn about — and there is nothing to synchronise here: the
+  // draft either existed before this screen opened or it did not.
+  const studentId = student?.id ?? null;
+
+  const [pendingResume, setPendingResume] = useState(
+    () => (studentId ? readDraft(studentId) : { status: DRAFT_STATUS.NONE })
+  );
+
+  const canResume =
+    pendingResume.status === DRAFT_STATUS.RESUMABLE || pendingResume.status === DRAFT_STATUS.TIME_UP;
+
+  /** What the last draft write held, so an unchanged paper is not rewritten. */
+  const lastDraftWriteRef = useRef({ bucket: -1, answers: null, index: -1 });
 
   // Calculate official MoET National High School exam score
   const calculateExamScore = useCallback((exam, answers) => {
@@ -178,35 +214,55 @@ export default function MockExamTab({ student }) {
     };
   }, []);
 
-  const submitExam = useCallback(() => {
-    if (!activeExam) return;
+  /**
+   * @param {object|null} override Paper to mark instead of the one in state.
+   *   Resuming a draft whose time ran out has to hand in what the draft holds,
+   *   and the state set a moment earlier is not readable yet.
+   */
+  const submitExam = useCallback((override = null) => {
+    const paper = override?.exam || activeExam;
+    const answers = override?.answers || examAnswers;
+    const secondsLeft = override?.secondsLeft ?? examSecondsLeft;
+    const timesInterrupted = override?.interruptions ?? interruptions;
 
-    const durationUsed = activeExam.duration * 60 - examSecondsLeft;
+    if (!paper) return;
+
+    const durationUsed = paper.duration * 60 - secondsLeft;
     const minutesUsed = Math.floor(durationUsed / 60);
     const secondsUsed = durationUsed % 60;
     const timeSpentStr = `${String(minutesUsed).padStart(2, '0')}:${String(secondsUsed).padStart(2, '0')}`;
 
-    const { score, totalQuestions, subjectBreakdown } = calculateExamScore(activeExam, examAnswers);
+    const { score, totalQuestions, subjectBreakdown } = calculateExamScore(paper, answers);
 
     const newResult = {
       studentId: student?.id,
       studentName: student?.name,
       class: student?.class,
-      block: activeExam.block || selectedBlockKey,
-      examId: activeExam.id,
-      title: activeExam.title,
+      block: paper.block || selectedBlockKey,
+      examId: paper.id,
+      title: paper.title,
       score: score,
       totalQuestions: totalQuestions,
       timeSpent: timeSpentStr,
-      selectedAnswers: examAnswers,
+      selectedAnswers: answers,
       subjectBreakdown: subjectBreakdown,
+      // How many times the machine went down under this paper. A teacher
+      // looking at a low score deserves to know the student sat it three
+      // times over rather than losing their nerve.
+      interruptions: timesInterrupted,
       date: new Date().toISOString().split('T')[0]
     };
 
+    // The paper is handed in before the draft is torn up: if saving throws,
+    // the student still has something to come back to.
     saveMockExamResult(newResult);
+    if (studentId) clearDraft(studentId);
+    setPendingResume({ status: DRAFT_STATUS.NONE });
+    setActiveExam(paper);
+    setExamAnswers(answers);
     setExamMode('reviewing');
     setReviewingPastAttempt(newResult);
-  }, [activeExam, examAnswers, examSecondsLeft, student, selectedBlockKey, saveMockExamResult, calculateExamScore]);
+  }, [activeExam, examAnswers, examSecondsLeft, student, studentId, selectedBlockKey, saveMockExamResult, calculateExamScore, interruptions]);
 
   const handleAutoSubmit = useCallback(() => {
     alert('⏰ Hết giờ làm bài! Hệ thống đang nộp bài thi của bạn.');
@@ -239,7 +295,7 @@ export default function MockExamTab({ student }) {
     };
   }, [examMode, examSecondsLeft, handleAutoSubmit]);
 
-  const handleStartExam = (exam, subjectFilter = null) => {
+  const handleStartExam = useCallback((exam, subjectFilter = null) => {
     let examToRun = exam;
     if (subjectFilter) {
       const filteredQs = exam.questions.filter(q => q.subject === subjectFilter);
@@ -252,12 +308,70 @@ export default function MockExamTab({ student }) {
       };
     }
 
+    const startedAt = Date.now();
+
     setActiveExam(examToRun);
     setExamMode('taking');
     setExamAnswers({});
     setExamSecondsLeft(examToRun.duration * 60);
     setCurrentQuestionIndex(0);
     setReviewingPastAttempt(null);
+    setExamStartedAt(startedAt);
+    setInterruptions(0);
+    setPendingResume({ status: DRAFT_STATUS.NONE });
+
+    // Written before the first question is answered, so a machine that dies in
+    // the opening minute still leaves a paper to come back to.
+    if (studentId) {
+      saveDraft(studentId, buildDraft({
+        exam: examToRun,
+        answers: {},
+        secondsLeft: examToRun.duration * 60,
+        questionIndex: 0,
+        startedAt,
+        interruptions: 0,
+        now: startedAt
+      }));
+    }
+  }, [studentId]);
+
+  /** Take back a paper the browser was in the middle of. */
+  const handleResumeExam = () => {
+    const { draft, secondsLeft, interruptions: count, status } = pendingResume;
+
+    // The clock ran out while the machine was off. What the student wrote is
+    // still their work, so it is marked — losing a paper to a crash is not a
+    // result anybody wants to defend to a parent.
+    if (status === DRAFT_STATUS.TIME_UP) {
+      submitExam({ exam: draft.exam, answers: draft.answers, secondsLeft: 0, interruptions: count });
+      return;
+    }
+
+    setActiveExam(draft.exam);
+    setExamAnswers(draft.answers);
+    setCurrentQuestionIndex(draft.questionIndex || 0);
+    setExamSecondsLeft(secondsLeft);
+    setExamStartedAt(draft.startedAt);
+    setInterruptions(count);
+    setReviewingPastAttempt(null);
+    setExamMode('taking');
+    setPendingResume({ status: DRAFT_STATUS.NONE });
+
+    if (studentId) {
+      saveDraft(studentId, buildDraft({
+        exam: draft.exam,
+        answers: draft.answers,
+        secondsLeft,
+        questionIndex: draft.questionIndex || 0,
+        startedAt: draft.startedAt,
+        interruptions: count
+      }));
+    }
+  };
+
+  const handleDiscardResume = () => {
+    if (studentId) clearDraft(studentId);
+    setPendingResume({ status: DRAFT_STATUS.NONE });
   };
 
   const handleSelectOptionSingle = (questionId, optionKey) => {
@@ -309,6 +423,28 @@ export default function MockExamTab({ student }) {
     }
   };
 
+  // Keep the draft on disk in step with the paper on screen. Answers and page
+  // turns are written the moment they happen; the clock only every ten seconds,
+  // because a full paper is tens of kilobytes and a school machine does not
+  // need to serialise that sixty times a minute.
+  useEffect(() => {
+    if (examMode !== 'taking' || !activeExam || !studentId) return;
+
+    const bucket = Math.floor(examSecondsLeft / DRAFT_CLOCK_INTERVAL_SECONDS);
+    const last = lastDraftWriteRef.current;
+    if (last.answers === examAnswers && last.index === currentQuestionIndex && last.bucket === bucket) return;
+
+    lastDraftWriteRef.current = { bucket, answers: examAnswers, index: currentQuestionIndex };
+    saveDraft(studentId, buildDraft({
+      exam: activeExam,
+      answers: examAnswers,
+      secondsLeft: examSecondsLeft,
+      questionIndex: currentQuestionIndex,
+      startedAt: examStartedAt,
+      interruptions
+    }));
+  }, [examMode, activeExam, studentId, examAnswers, currentQuestionIndex, examSecondsLeft, examStartedAt, interruptions]);
+
   const handleExitExam = () => {
     setActiveExam(null);
     setExamMode(null);
@@ -349,6 +485,62 @@ export default function MockExamTab({ student }) {
   return (
     <div className="animate-fade">
       {/* ─── 1. SELECTION & OVERVIEW VIEW ────────────────────────────────────── */}
+      {pendingSubmissions > 0 && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '14px 18px', marginBottom: '16px',
+            background: 'var(--amber-soft)', border: '1px solid var(--amber)',
+            display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap'
+          }}
+        >
+          <RefreshCw size={18} color="#b45309" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, minWidth: '240px', fontSize: '0.85rem', color: '#92400e', lineHeight: 1.5 }}>
+            <strong>{pendingSubmissions} bài</strong> đã nộp nhưng chưa gửi lên được hệ thống — bài vẫn nằm an toàn
+            trên máy này và sẽ tự gửi khi mạng thông. Đừng xoá dữ liệu trình duyệt trước lúc đó.
+          </span>
+          <button onClick={flushMockExamOutbox} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
+            Thử gửi lại
+          </button>
+        </div>
+      )}
+
+      {examMode === null && canResume && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '18px 20px', marginBottom: '18px',
+            background: 'var(--amber-soft)', border: '1px solid var(--amber)'
+          }}
+        >
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <AlertTriangle size={22} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ flex: 1, minWidth: '260px' }}>
+              <div style={{ fontWeight: 800, fontSize: '1rem', color: '#92400e' }}>
+                {pendingResume.status === DRAFT_STATUS.TIME_UP
+                  ? 'Bài thi dở của em đã hết giờ'
+                  : 'Em có một bài thi đang làm dở'}
+              </div>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#92400e', lineHeight: 1.55 }}>
+                <strong>{pendingResume.draft.exam.title}</strong> — đã trả lời{' '}
+                {Object.keys(pendingResume.draft.answers).length}/{pendingResume.draft.exam.questions.length} câu.
+                {pendingResume.status === DRAFT_STATUS.TIME_UP
+                  ? ' Hết giờ trong lúc máy tắt, nhưng bài em đã làm vẫn được chấm.'
+                  : ` Còn lại ${describeRemaining(pendingResume.secondsLeft)} — đồng hồ vẫn chạy trong thời gian máy tắt.`}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button onClick={handleResumeExam} className="btn btn-primary" style={{ fontWeight: 700 }}>
+                {pendingResume.status === DRAFT_STATUS.TIME_UP ? 'Chấm bài đã làm' : 'Làm tiếp'}
+              </button>
+              <button onClick={handleDiscardResume} className="btn btn-secondary">
+                Bỏ bài này
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {examMode === null && (
         <div>
           {/* Header Card */}

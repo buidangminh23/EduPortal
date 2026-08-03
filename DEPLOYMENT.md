@@ -32,7 +32,9 @@ Tài liệu này hướng dẫn chi tiết từng bước để đưa hệ thố
 
 ## 🗄️ BƯỚC 2: Cấu Hình Cơ Sở Dữ Liệu Real Supabase (Tùy chọn)
 
-> **Lưu ý**: Nếu chưa cấu hình Supabase, EduPortal sẽ **tự động chạy ở chế độ Mock / Demo Mode** thông qua bộ giả lập cơ sở dữ liệu ngay trên trình duyệt (LocalStorage). Khi sẵn sàng dùng Database thật, hãy làm theo các bước dưới đây:
+> **Lưu ý**: Thiếu cấu hình Supabase, EduPortal **không tự chạy ở chế độ demo** — nó từ chối khởi động. Muốn demo thì phải khai `VITE_DEMO_MODE=true` một cách cố ý. Sở dĩ như vậy vì quy tắc cũ ("không có Supabase thì coi là demo") mở sai chiều: một biến môi trường gõ nhầm trên Vercel biến bản triển khai của trường thành bản giả nhận mọi mật khẩu và lưu điểm trong trình duyệt người xem, mà trên màn hình không có gì báo. Chi tiết ở [appMode.js](Web/src/lib/appMode.js).
+>
+> Muốn dữ liệu nằm trong trường thay vì trên đám mây, xem [server/SELF-HOST.md](server/SELF-HOST.md) — cùng mã nguồn Supabase, dựng trên máy của trường, không sửa code ứng dụng.
 
 ### 1. Tạo Dự Án Supabase
 1. Truy cập [Supabase Console](https://supabase.com/dashboard) -> Chọn **New Project**.

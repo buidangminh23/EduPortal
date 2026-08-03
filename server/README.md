@@ -1,3 +1,7 @@
+> Hai tài liệu đi kèm, cho máy chủ đặt tại trường:
+> **[CAMERA.md](CAMERA.md)** — camera giám sát cho Ban Giám Hiệu, và chỗ cắm lớp AI.
+> **[SELF-HOST.md](SELF-HOST.md)** — dựng Supabase ngay tại trường, kèm sao lưu.
+
 # EduPortal Server — khung backend cho EduMeet
 
 Khung (scaffold) máy chủ cho các tính năng EduMeet **không thể chạy chỉ bằng frontend**:
