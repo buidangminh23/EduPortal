@@ -25,6 +25,7 @@ const DirectChat = lazy(() => import('./components/DirectChat'));
 const MeetingBooking = lazy(() => import('./components/MeetingBooking'));
 const ExamRepository = lazy(() => import('./components/ExamRepository'));
 const AssetManager = lazy(() => import('./components/AssetManager'));
+const CameraWallTab = lazy(() => import('./components/admin/CameraWallTab'));
 const BadgesPanel = lazy(() => import('./components/BadgesPanel'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const GradeTrendChart = lazy(() => import('./components/GradeTrendChart'));
@@ -129,6 +130,10 @@ function App() {
           return <BulletinBoard />;
         case 'exam_repository':
           return <ExamRepository />;
+        // Ban Giám Hiệu only, and enforced on the school's server as well —
+        // this branch is reachable by role, not by permission.
+        case 'camera_wall':
+          return <CameraWallTab />;
         case 'asset_manager':
           return <AssetManager />;
         default:

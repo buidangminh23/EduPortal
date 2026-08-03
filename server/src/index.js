@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import aiRouter from './routes/ai.js';
+import { createCameraRouterFromEnv } from './routes/cameras.js';
 import { attachSignaling } from './signaling.js';
 
 const PORT = process.env.PORT || 8080;
@@ -13,6 +14,7 @@ app.use(express.json({ limit: '25mb' })); // audioBase64 có thể lớn
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'eduportal-server' }));
 app.use('/api', aiRouter);
+app.use('/api', createCameraRouterFromEnv());
 
 const server = http.createServer(app);
 
@@ -24,4 +26,5 @@ server.listen(PORT, () => {
   console.log(`EduPortal server đang chạy: http://localhost:${PORT}`);
   console.log(`  • AI REST:   POST /api/transcribe · POST /api/summarize`);
   console.log(`  • Signaling: ws://localhost:${PORT}/rtc?room=<id>`);
+  console.log(`  • Camera:    GET /api/cameras · POST /api/cameras/:id/ticket · POST /api/camera-events`);
 });

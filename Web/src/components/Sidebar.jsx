@@ -32,6 +32,7 @@ import {
   Target,
   AlertTriangle,
   Camera,
+  Video,
   Sparkles,
   Compass,
   Calculator,
@@ -155,6 +156,7 @@ const ADMIN_SECTIONS = [
     title: 'VẬN HÀNH & TRUYỀN THÔNG',
     items: [
       { id: 'duty_schedule',      label: 'Phân Công Lịch Trực',  icon: Calendar,        isSubTab: false },
+      { id: 'camera_wall',        label: 'Camera Giám Sát',      icon: Video,           isSubTab: false },
       { id: 'asset_manager',      label: 'Tài Sản & Thiết Bị',   icon: Layers,          isSubTab: false },
       { id: 'bus_tracker',        label: 'Xe Bus Học Đường',     icon: Bus,             isSubTab: false },
       { id: 'school_gallery',     label: 'Album Sự Kiện Trường', icon: Camera,          isSubTab: false },

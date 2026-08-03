@@ -1,0 +1,23 @@
+{
+  "cameras": [
+    {
+      "id": "san-truong",
+      "name": "Sân trường",
+      "location": "Khu A",
+      "source": "rtsp://admin:DOI_MAT_KHAU@192.168.1.64:554/Streaming/Channels/102"
+    },
+    {
+      "id": "cong-chinh",
+      "name": "Cổng chính",
+      "location": "Mặt đường Nguyễn Du",
+      "source": "rtsp://admin:DOI_MAT_KHAU@192.168.1.65:554/Streaming/Channels/102"
+    },
+    {
+      "id": "hanh-lang-tang-2",
+      "name": "Hành lang tầng 2",
+      "location": "Nhà B",
+      "source": "rtsp://admin:DOI_MAT_KHAU@192.168.1.66:554/Streaming/Channels/102",
+      "enabled": false
+    }
+  ]
+}

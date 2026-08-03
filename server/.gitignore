@@ -1,3 +1,8 @@
 node_modules
 .env
 *.log
+
+# Camera list and viewing log. cameras.json holds the RTSP passwords of a real
+# school's cameras — committing it publishes the keys to the building.
+data/*
+!data/cameras.example.json
