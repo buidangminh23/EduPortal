@@ -2587,7 +2587,10 @@ export const AppProvider = ({ children }) => {
   // ── Wellness Hub Actions ──────────────────────────────────────────────────
   const logWellnessMood = (studentId, stressLevel, mood, notes) => {
     const id = 'WL' + Date.now();
-    const date = new Date().toISOString().split('T')[0];
+    // The school day, not the wall clock: on demo data every other screen shows
+    // DEMO_TODAY, so a real-dated entry lands outside the visible week and the
+    // student's own check-in disappears from their wellness history.
+    const date = currentSchoolDay();
     setWellnessLogs(prev => [{ id, studentId, date, stressLevel, mood, notes }, ...prev]);
   };
 

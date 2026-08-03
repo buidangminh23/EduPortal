@@ -7,22 +7,35 @@ const STOP_WORDS = new Set([
   'oi', 'vay', 'nhe', 'nha', 'a', 'ha'
 ]);
 
+/**
+ * Abbreviations, keyed by the shorthand students actually type.
+ *
+ * Matching uses Unicode-aware boundaries rather than `\b`. JavaScript's `\b`
+ * only knows about ASCII word characters, so an accented letter counts as a
+ * boundary: `\bk\b` matched the "k" inside "kết" and rewrote it to "khôngết",
+ * which then silently poisoned every keyword lookup built on this function.
+ */
+const ABBREVIATIONS = [
+  [['ko', 'k', 'khg'], 'không'],
+  [['dc', 'đc'], 'được'],
+  [['ntn'], 'như thế nào'],
+  [['nv'], 'nhân vật'],
+  [['tp'], 'tác phẩm'],
+  [['tg'], 'tác giả'],
+  [['sgk'], 'sách giáo khoa'],
+  [['vs'], 'với'],
+  [['bn'], 'bao nhiêu'],
+  [['bt', 'btai'], 'bài tập']
+];
+
 export function expandAbbreviations(text) {
   if (!text) return '';
   let s = text.toLowerCase();
 
-  // Expand common Vietnamese chat slang and abbreviations
-  s = s
-    .replace(/\b(ko|k|khg)\b/gi, 'không')
-    .replace(/\b(dc|đc)\b/gi, 'được')
-    .replace(/\bntn\b/gi, 'như thế nào')
-    .replace(/\bnv\b/gi, 'nhân vật')
-    .replace(/\btp\b/gi, 'tác phẩm')
-    .replace(/\btg\b/gi, 'tác giả')
-    .replace(/\bsgk\b/gi, 'sách giáo khoa')
-    .replace(/\bvs\b/gi, 'với')
-    .replace(/\bbn\b/gi, 'bao nhiêu')
-    .replace(/\b(bt|btai)\b/gi, 'bài tập');
+  for (const [forms, expansion] of ABBREVIATIONS) {
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${forms.join('|')})(?![\\p{L}\\p{N}])`, 'giu');
+    s = s.replace(pattern, expansion);
+  }
 
   return s;
 }
@@ -60,6 +73,10 @@ export function normalizeVietnameseText(text) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    // "\u0111" is its own letter, not "d" plus a mark, so NFD leaves it untouched and
+    // it survives the line above. Students typing without diacritics write "d",
+    // so without this every keyword containing \u0111 ("\u0111\u1ecbnh", "\u0111au", "\u0111\u1ee7") misses.
+    .replace(/\u0111/g, 'd')
     .replace(/[.?/!,:;()"'~`@#$%^&*+=[\]{}|\\<>-]/g, ' ') // punctuation to space
     .replace(/\s+/g, ' ')
     .trim();
