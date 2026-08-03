@@ -1,11 +1,17 @@
 /* components.css - CSS Chi tiết cho từng Component */
 
-/* Sidebar */
+/* Sidebar
+   Từ 1024px trở xuống sidebar không còn chỗ nằm cạnh nội dung, nên nó thu
+   thành ngăn kéo: mặc định trượt ra ngoài màn hình, mở bằng nút hamburger,
+   đóng khi chạm lớp phủ hoặc chọn một mục. Trước đây nó nằm đè cố định lên
+   nội dung trên điện thoại — chiếm gần hết bề ngang và để chữ phía sau hằn
+   xuyên qua vì nền hơi trong. */
 .sidebar {
   width: 280px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--accent) 10%, var(--line));
   height: 100vh;
+  height: 100dvh; /* thanh địa chỉ trình duyệt di động không cắt mất đáy menu */
   position: fixed;
   left: 0;
   top: 0;
@@ -14,9 +20,84 @@
   flex-direction: column;
   padding: 22px 16px 16px;
   justify-content: space-between;
-  transition: all var(--transition-normal);
+  transition: transform var(--transition-normal), visibility var(--transition-normal), box-shadow var(--transition-normal);
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 18px 0 50px -42px rgba(35, 38, 80, 0.55);
+}
+
+/* Nút hamburger: chỉ tồn tại ở chế độ ngăn kéo, nằm trên cả sidebar lẫn lớp
+   phủ để luôn bấm đóng lại được. */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 18px;
+  left: 14px;
+  z-index: 120;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  background: var(--surface);
+  color: var(--accent-ink);
+  cursor: pointer;
+  box-shadow: 0 10px 28px -18px rgba(35, 38, 80, 0.75);
+  transition: left var(--transition-normal), background var(--transition-fast);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: rgba(15, 23, 42, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: min(300px, 84vw);
+    /* Đục hẳn: nội dung phía sau không được hằn xuyên qua menu. */
+    background: var(--surface);
+    transform: translateX(-100%);
+    visibility: hidden;
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: 24px 0 60px -28px rgba(35, 38, 80, 0.6);
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  /* Khi ngăn kéo mở, nút lùi ra sát mép menu thay vì đè lên logo bên trong. */
+  .app-container.nav-open .sidebar-toggle {
+    left: calc(min(300px, 84vw) + 10px);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+  }
+
+  .sidebar-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Nút nổi có z-index cao hơn lớp phủ nên vẫn trôi trên nền mờ khi menu mở;
+     cất đi cho tới lúc đóng menu. */
+  .app-container.nav-open .casio-floating-launcher,
+  .app-container.nav-open .ai-floating-launcher {
+    display: none !important;
+  }
 }
 
 .logo-container {
@@ -182,17 +263,24 @@
   box-shadow: 0 12px 32px -30px rgba(35, 38, 80, 0.38);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .navbar {
-    padding-left: 70px; /* Space for mobile hamburger */
+    padding-left: 70px; /* chừa chỗ cho nút hamburger cố định */
   }
 }
+
+/* Các điều chỉnh thanh trên cho màn hình hẹp nằm ở cuối index.css: file đó
+   nạp sau file này nên rule ở đây không đè được các giá trị gốc của nó. */
 
 .role-switcher-container {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  /* Không cho xuống dòng ở bất kỳ bề ngang nào: cụm nút này xuống dòng là
+     thanh trên cao lên 124px và che mất dock điều hướng cố định bên dưới.
+     Chỗ nào chật thì bớt phần tử (xem media query trong index.css). */
+  flex-wrap: nowrap;
+  min-width: 0;
   justify-content: flex-end;
 }
 
@@ -1597,10 +1685,13 @@ sub + sup, sup + sub {
 /* ==========================================================================
    FLOATING CASIO WIDGET STYLING
    ========================================================================== */
+/* Nút nổi xếp theo cột ở góc phải dưới. Học sinh còn có nút trợ lý AI
+   (60px, cách đáy 28px) nên máy tính đứng bên trên nó và canh cùng trục;
+   đặt cạnh nhau theo chiều ngang thì trên điện thoại hai nút chồng lên nhau. */
 .casio-floating-launcher {
   position: fixed;
   bottom: 24px;
-  right: 88px;
+  right: 24px;
   z-index: 9990;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #00e5ff;
@@ -1614,6 +1705,11 @@ sub + sup, sup + sub {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 229, 255, 0.2);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+}
+
+[data-role="student"] .casio-floating-launcher {
+  right: 34px; /* 28px + (60px - 48px)/2 — cùng trục với nút trợ lý AI */
+  bottom: 98px;
 }
 
 .casio-floating-launcher:hover {
@@ -1701,7 +1797,43 @@ sub + sup, sup + sub {
   overflow-y: auto;
 }
 
+/* Đang mở máy tính toàn trang thì nút nổi mở đúng cái đó chỉ che mất bàn phím. */
+.app-container:has(.casio-container.full-page) .casio-floating-launcher {
+  display: none;
+}
+
 @media (max-width: 600px) {
+  /* Thanh trên của máy tính: bốn nút chức năng không đủ chỗ trên một hàng
+     điện thoại, cho xuống dòng thay vì bị cắt ở mép. */
+  .casio-top-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .casio-brand {
+    font-size: 0.85rem;
+  }
+
+  .casio-quick-actions {
+    flex-wrap: wrap;
+  }
+
+  .top-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .casio-body {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .key {
+    font-size: 0.78rem;
+    padding: 8px 2px;
+  }
+
   .casio-floating-window {
     right: 8px;
     left: 8px;
@@ -1709,9 +1841,22 @@ sub + sup, sup + sub {
     bottom: 12px;
   }
 
+  .casio-floating-window.minimized {
+    width: auto;
+  }
+
+  .floating-window-body {
+    max-height: 70vh;
+  }
+
   .casio-floating-launcher {
-    right: 76px;
-    bottom: 16px;
+    right: 20px;
+    bottom: 20px;
+  }
+
+  [data-role="student"] .casio-floating-launcher {
+    right: 34px;
+    bottom: 98px;
   }
 }
 

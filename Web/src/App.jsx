@@ -8,7 +8,8 @@ import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
 import UnconfiguredScreen from './components/UnconfiguredScreen';
 import { isUnconfigured } from './lib/appMode';
-import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye } from 'lucide-react';
+import { canUseCasio } from './lib/casioAccess';
+import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye, Menu } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
@@ -50,6 +51,9 @@ function App() {
   const { currentRole, userSession } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showLogin, setShowLogin] = useState(false);
+  // Trên màn hình hẹp sidebar là ngăn kéo trượt ra; trên desktop nó luôn hiện
+  // và trạng thái này không được dùng tới.
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Reset tab on role switch
   useEffect(() => {
@@ -58,6 +62,16 @@ function App() {
     }, 0);
     return () => clearTimeout(timer);
   }, [currentRole]);
+
+  // Phím Esc đóng ngăn kéo, giống mọi lớp phủ khác trong app.
+  useEffect(() => {
+    if (!isNavOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setIsNavOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isNavOpen]);
 
   // A build that was given neither a database nor an explicit demo flag stops
   // here, before it can offer anyone a login screen it cannot honour.
@@ -78,7 +92,9 @@ function App() {
     if (activeTab === 'calendar') {
       return <SchoolCalendar />;
     }
-    if (activeTab === 'casio580') {
+    // Máy tính Casio chỉ dành cho học sinh và giáo viên; vai trò khác rơi
+    // xuống trang mặc định của họ thay vì mở được bằng cách đặt tab.
+    if (activeTab === 'casio580' && canUseCasio(currentRole)) {
       return <CasioFX580 />;
     }
 
@@ -220,10 +236,34 @@ function App() {
   };
 
   return (
-    <div className="app-container" data-role={currentRole} data-active-tab={activeTab}>
+    <div className={`app-container ${isNavOpen ? 'nav-open' : ''}`} data-role={currentRole} data-active-tab={activeTab}>
+      {/* Nút mở/đóng menu — chỉ hiện khi sidebar thu thành ngăn kéo */}
+      <button
+        type="button"
+        className="sidebar-toggle no-print"
+        onClick={() => setIsNavOpen(open => !open)}
+        aria-label={isNavOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
+        aria-expanded={isNavOpen}
+        aria-controls="app-sidebar"
+      >
+        {isNavOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Lớp phủ: chạm ra ngoài là đóng menu */}
+      <div
+        className={`sidebar-backdrop no-print ${isNavOpen ? 'visible' : ''}`}
+        onClick={() => setIsNavOpen(false)}
+        aria-hidden="true"
+      />
+
       {/* Navigation Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpen={isNavOpen}
+        onNavigate={() => setIsNavOpen(false)}
+      />
+
       <div className="main-content">
         {/* Header / Navbar */}
         <Navbar setActiveTab={setActiveTab} />

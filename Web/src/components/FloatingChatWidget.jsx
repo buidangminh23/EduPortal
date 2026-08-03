@@ -243,6 +243,7 @@ export default function FloatingChatWidget() {
         <button
           onClick={handleOpen}
           aria-label="Mở trợ lý AI"
+          className="ai-floating-launcher"
           style={{
             position: 'fixed', bottom: '28px', right: '28px', zIndex: 9998,
             width: '60px', height: '60px', borderRadius: '50%',

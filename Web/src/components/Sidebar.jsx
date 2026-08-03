@@ -111,6 +111,7 @@ const TEACHER_SECTIONS = [
       { id: 'resources',          label: 'Học Liệu Bài Giảng',     icon: BookOpen,        isSubTab: true },
       { id: 'exam_repository',    label: 'Kho Đề Thi',           icon: BookMarked,      isSubTab: false },
       { id: 'essay_grader',       label: 'Chấm Bài Luận Tự Động',     icon: FileText,        isSubTab: false },
+      { id: 'casio580',           label: 'Máy Tính Casio fx-580', icon: Calculator,      isSubTab: false },
       { id: 'ai_risk',            label: 'Cảnh Báo Học Sinh Nguy Cơ',  icon: AlertTriangle,   isSubTab: false },
     ]
   },
@@ -281,7 +282,7 @@ const DICT_EN = {
   'Định Hướng Nghề Nghiệp': 'Career Guidance'
 };
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onNavigate }) {
   const {
     currentRole,
     selectedStudentId,
@@ -399,6 +400,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     } else {
       setActiveTab(item.id);
     }
+    // Trên màn hình hẹp, chọn xong là đóng ngăn kéo để thấy nội dung vừa mở.
+    onNavigate?.();
   };
 
   const isItemActive = (item) => {
@@ -415,7 +418,11 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const sections = getSections();
 
   return (
-    <aside className="sidebar" style={{ overflowY: 'auto' }}>
+    <aside
+      id="app-sidebar"
+      className={`sidebar ${isOpen ? 'open' : ''}`}
+      style={{ overflowY: 'auto' }}
+    >
       <div style={{ flex: 1 }}>
         {/* Logo */}
         <div className="logo-container">
@@ -435,7 +442,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
               <p>{getRoleSnapshot()}</p>
             </div>
             <button
-              onClick={logout}
+              onClick={() => { onNavigate?.(); logout(); }}
               aria-label="Đăng xuất khỏi hệ thống"
               style={{
                 background: 'rgba(220, 38, 38, 0.1)',
@@ -538,7 +545,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           {/* Logout Button at bottom of Sidebar */}
           <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--line, rgba(255,255,255,0.1))' }}>
             <button
-              onClick={logout}
+              onClick={() => { onNavigate?.(); logout(); }}
               aria-label="Đăng xuất khỏi hệ thống"
               style={{
                 width: '100%',
