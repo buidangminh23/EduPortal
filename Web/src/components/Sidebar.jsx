@@ -111,6 +111,7 @@ const TEACHER_SECTIONS = [
       { id: 'resources',          label: 'Học Liệu Bài Giảng',     icon: BookOpen,        isSubTab: true },
       { id: 'exam_repository',    label: 'Kho Đề Thi',           icon: BookMarked,      isSubTab: false },
       { id: 'essay_grader',       label: 'Chấm Bài Luận Tự Động',     icon: FileText,        isSubTab: false },
+      { id: 'casio580',           label: 'Máy Tính Casio fx-580', icon: Calculator,      isSubTab: false },
       { id: 'ai_risk',            label: 'Cảnh Báo Học Sinh Nguy Cơ',  icon: AlertTriangle,   isSubTab: false },
     ]
   },

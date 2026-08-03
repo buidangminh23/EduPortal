@@ -8,6 +8,7 @@ import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
 import UnconfiguredScreen from './components/UnconfiguredScreen';
 import { isUnconfigured } from './lib/appMode';
+import { canUseCasio } from './lib/casioAccess';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
@@ -78,7 +79,9 @@ function App() {
     if (activeTab === 'calendar') {
       return <SchoolCalendar />;
     }
-    if (activeTab === 'casio580') {
+    // Máy tính Casio chỉ dành cho học sinh và giáo viên; vai trò khác rơi
+    // xuống trang mặc định của họ thay vì mở được bằng cách đặt tab.
+    if (activeTab === 'casio580' && canUseCasio(currentRole)) {
       return <CasioFX580 />;
     }
 

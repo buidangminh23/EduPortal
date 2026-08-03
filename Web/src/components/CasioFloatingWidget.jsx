@@ -1,12 +1,16 @@
 import  { useState, useContext } from 'react';
 import { Calculator, X, Maximize2, Minimize2 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import { canUseCasio } from '../lib/casioAccess';
 import CasioFX580 from './CasioFX580';
 
 export default function CasioFloatingWidget() {
-  const { t } = useContext(AppContext);
+  const { t, currentRole } = useContext(AppContext);
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // Nút nổi chỉ theo học sinh và giáo viên; BGH và phụ huynh không thấy nó.
+  if (!canUseCasio(currentRole)) return null;
 
   return (
     <>
