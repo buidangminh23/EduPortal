@@ -198,11 +198,15 @@ export default function RiasecResult({ profile, onRetake }) {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        <button onClick={onRetake} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <RotateCcw size={15} /> Làm lại khảo sát
-        </button>
-      </div>
+      {/* While an unsaved analysis is on screen the retake button lives beside
+          the save button instead, so the two decisions sit together. */}
+      {onRetake && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={onRetake} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <RotateCcw size={15} /> Làm lại khảo sát
+          </button>
+        </div>
+      )}
     </div>
   );
 }

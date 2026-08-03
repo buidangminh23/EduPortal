@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Compass, ChevronLeft, ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { Compass, ChevronLeft, ChevronRight, Sparkles, AlertCircle } from 'lucide-react';
 import { RIASEC_QUESTIONS, MAX_ANSWER } from '../../../lib/counseling/riasec';
 import { ANSWER_LABELS } from '../../../lib/counseling/riasecContent';
 
@@ -9,7 +9,7 @@ const TOTAL_PAGES = Math.ceil(RIASEC_QUESTIONS.length / PAGE_SIZE);
 
 const SCALE = Array.from({ length: MAX_ANSWER }, (_, i) => i + 1);
 
-export default function RiasecSurvey({ answers, onAnswer, onSubmit, hasPreviousResult }) {
+export default function RiasecSurvey({ answers, onAnswer, onAnalyse, hasPreviousResult }) {
   const [page, setPage] = useState(0);
   const [showGaps, setShowGaps] = useState(false);
 
@@ -35,7 +35,7 @@ export default function RiasecSurvey({ answers, onAnswer, onSubmit, hasPreviousR
     }
   };
 
-  const handleSubmit = () => {
+  const handleAnalyse = () => {
     if (remaining > 0) {
       setShowGaps(true);
       const firstGap = RIASEC_QUESTIONS.findIndex(q => !answers[q.id]);
@@ -44,7 +44,7 @@ export default function RiasecSurvey({ answers, onAnswer, onSubmit, hasPreviousR
     }
 
     setShowGaps(false);
-    onSubmit();
+    onAnalyse();
   };
 
   return (
@@ -185,13 +185,19 @@ export default function RiasecSurvey({ answers, onAnswer, onSubmit, hasPreviousR
       </div>
 
       <button
-        onClick={handleSubmit}
+        onClick={handleAnalyse}
         className="btn btn-primary"
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
       >
-        <Check size={16} />
-        {remaining > 0 ? `Lưu kết quả (còn ${remaining} câu)` : hasPreviousResult ? 'Cập nhật kết quả RIASEC' : 'Xem kết quả hướng nghiệp'}
+        <Sparkles size={16} />
+        {remaining > 0
+          ? `Còn ${remaining} câu chưa trả lời`
+          : hasPreviousResult ? 'Phân tích lại & định hướng' : 'Bắt đầu phân tích & định hướng'}
       </button>
+
+      <p style={{ margin: '8px 0 0 0', fontSize: '0.74rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+        Xem kết quả và hướng đi trước; lưu vào hồ sơ hay không là do em quyết.
+      </p>
     </div>
   );
 }
