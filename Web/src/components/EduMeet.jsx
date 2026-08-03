@@ -79,6 +79,10 @@ export default function EduMeet() {
   const [newPollOpt1, setNewPollOpt1] = useState('');
   const [newPollOpt2, setNewPollOpt2] = useState('');
   const reactionIdRef = useRef(0);
+  // Số reaction đã gửi được vẽ trong biểu đồ, nên phải là state. Trước đây
+  // biểu đồ đọc thẳng reactionIdRef.current lúc render: con số chỉ nhảy khi có
+  // thứ khác vô tình khiến component render lại.
+  const [reactionCount, setReactionCount] = useState(0);
 
   // ── Ghi âm cuộc họp (MediaRecorder — chạy thật trên trình duyệt) ──
   const [recording, setRecording] = useState(false);
@@ -172,6 +176,7 @@ export default function EduMeet() {
       left: `${20 + ((reactionIdRef.current * 37) % 60)}%`,
     };
     setReactions(prev => [...prev, { id, emoji, style }]);
+    setReactionCount(prev => prev + 1);
     setTimeout(() => {
       setReactions(prev => prev.filter(r => r.id !== id));
     }, 3000);
@@ -265,6 +270,7 @@ export default function EduMeet() {
 
   const handleJoinCall = () => {
     setInCall(true);
+    setSignalStatus('connecting');
     setChatMessages([
       { id: '1', sender: 'Hệ thống', text: 'Chào mừng bạn đến với lớp học ảo EduMeet. Cuộc trò chuyện được bảo mật.', system: true },
       { id: '2', sender: 'Lê Mai Chi', text: 'Em chào thầy ạ!', system: false },
@@ -356,9 +362,6 @@ export default function EduMeet() {
   // Kết nối WebRTC signaling khi vào phòng; ngắt khi rời
   useEffect(() => {
     if (!inCall) return;
-    setSignalPeers([]);
-    setRemoteStreams({});
-    setSignalStatus('connecting');
     const sig = createSignaling({
       wsUrl: WS_URL,
       room: 'edumeet-lop12a1',
@@ -377,7 +380,15 @@ export default function EduMeet() {
       }
     });
     signalRef.current = sig;
-    return () => { sig.close(); signalRef.current = null; setSignalStatus('idle'); };
+    // Dọn ngay khi rời phòng, thay vì dọn lúc vào phòng kế tiếp: lần vào sau
+    // không còn thấy danh sách peer của cuộc gọi trước nữa.
+    return () => {
+      sig.close();
+      signalRef.current = null;
+      setSignalPeers([]);
+      setRemoteStreams({});
+      setSignalStatus('idle');
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inCall]);
 
@@ -672,7 +683,7 @@ export default function EduMeet() {
       { label: 'Tin nhắn', value: chatCount, color: '#6366f1' },
       { label: 'Vote', value: pollVotes, color: '#10b981' },
       { label: 'Người', value: peerParticipants.length + 1, color: '#f59e0b' },
-      { label: 'Reaction', value: reactionIdRef.current, color: '#ec4899' },
+      { label: 'Reaction', value: reactionCount, color: '#ec4899' },
       { label: 'Phút', value: Math.max(1, Math.round((recordingSecs || 1800) / 60)), color: '#0891b2' }
     ];
   };

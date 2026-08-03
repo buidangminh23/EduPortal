@@ -1,4 +1,4 @@
-import  { useState, useEffect, useRef, useContext } from 'react';
+import  { useState, useEffect, useEffectEvent, useRef, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import {
   Calculator,
@@ -253,129 +253,6 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     setLogArg('');
     setPowerExp('');
   };
-
-  const navigateLeft = () => {
-    playKeySound();
-    if (activeTemplate === 'FRAC') {
-      if (activeBox === 'den') setActiveBox('num');
-      else if (activeBox === 'num') commitActiveTemplateToDisplayExpr('left');
-      else setCursorPos(prev => Math.max(0, prev - 1));
-    } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'body') setActiveBox('upper');
-      else if (activeBox === 'upper') setActiveBox('lower');
-      else if (activeBox === 'lower') commitActiveTemplateToDisplayExpr('left');
-      else setCursorPos(prev => Math.max(0, prev - 1));
-    } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'arg') setActiveBox('base');
-      else if (activeBox === 'base') commitActiveTemplateToDisplayExpr('left');
-      else setCursorPos(prev => Math.max(0, prev - 1));
-    } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('left');
-      else setCursorPos(prev => Math.max(0, prev - 1));
-    } else {
-      setCursorPos(prev => Math.max(0, prev - 1));
-    }
-  };
-
-  const navigateRight = () => {
-    playKeySound();
-    if (activeTemplate === 'FRAC') {
-      if (activeBox === 'num') setActiveBox('den');
-      else if (activeBox === 'den') commitActiveTemplateToDisplayExpr('right');
-      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-    } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'lower') setActiveBox('upper');
-      else if (activeBox === 'upper') setActiveBox('body');
-      else if (activeBox === 'body') commitActiveTemplateToDisplayExpr('right');
-      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-    } else if (activeTemplate === 'LOGBASE') {
-      if (activeBox === 'base') setActiveBox('arg');
-      else if (activeBox === 'arg') commitActiveTemplateToDisplayExpr('right');
-      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-    } else if (activeTemplate === 'POWER') {
-      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('right');
-      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-    } else {
-      setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
-    }
-  };
-
-  const navigateUp = () => {
-    playKeySound();
-    if (activeTemplate === 'FRAC' && activeBox === 'den') {
-      setActiveBox('num');
-    } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'lower') setActiveBox('upper');
-      else if (activeBox === 'upper') setActiveBox('body');
-    } else if (activeTemplate === 'LOGBASE' && activeBox === 'base') {
-      setActiveBox('arg');
-    } else if (history.length > 0) {
-      setDisplayExpr(history[0].expr);
-    }
-  };
-
-  const navigateDown = () => {
-    playKeySound();
-    if (activeTemplate === 'FRAC' && activeBox === 'num') {
-      setActiveBox('den');
-    } else if (activeTemplate === 'INTEGRAL') {
-      if (activeBox === 'body') setActiveBox('upper');
-      else if (activeBox === 'upper') setActiveBox('lower');
-    } else if (activeTemplate === 'LOGBASE' && activeBox === 'arg') {
-      setActiveBox('base');
-    } else {
-      handleAC();
-    }
-  };
-
-  // Keyboard Shortcuts Listener
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-
-      if (e.key >= '0' && e.key <= '9') {
-        handleKeyPress(e.key);
-      } else if (e.key === '.') {
-        handleKeyPress('.');
-      } else if (e.key === '+') {
-        handleKeyPress('+');
-      } else if (e.key === '-') {
-        handleKeyPress('-');
-      } else if (e.key === '*') {
-        handleKeyPress('×');
-      } else if (e.key === '/') {
-        handleKeyPress('÷');
-      } else if (e.key === '(' || e.key === ')') {
-        handleKeyPress(e.key);
-      } else if (e.key === '^') {
-        handleKeyPress('xⁿ');
-      } else if (e.key === 'Enter' || e.key === '=') {
-        e.preventDefault();
-        handleCalculate();
-      } else if (e.key === 'Backspace') {
-        handleDel();
-      } else if (e.key === 'Escape') {
-        handleAC();
-      } else if (e.key.toLowerCase() === 'x') {
-        handleKeyPress('X');
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        navigateLeft();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        navigateRight();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        navigateUp();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        navigateDown();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayExpr, angleUnit, vars, shift, alpha, mode, activeTemplate, activeBox]);
 
   // Prime Factorization Helper (FACT)
   const getPrimeFactorizationStr = (n) => {
@@ -1086,6 +963,134 @@ export default function CasioFX580({ isFloating = false, onClose = null }) {
     const val = evaluateExpression(displayExpr, { X: vars.X });
     setResultText(`X=${vars.X} => ${val}`);
   };
+
+  // Con trỏ và phím mũi tên. Đặt sau các handler ở trên vì chúng gọi tới
+  // handleAC/handleKeyPress/handleCalculate/handleDel.
+  const navigateLeft = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC') {
+      if (activeBox === 'den') setActiveBox('num');
+      else if (activeBox === 'num') commitActiveTemplateToDisplayExpr('left');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'body') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('lower');
+      else if (activeBox === 'lower') commitActiveTemplateToDisplayExpr('left');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'LOGBASE') {
+      if (activeBox === 'arg') setActiveBox('base');
+      else if (activeBox === 'base') commitActiveTemplateToDisplayExpr('left');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else if (activeTemplate === 'POWER') {
+      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('left');
+      else setCursorPos(prev => Math.max(0, prev - 1));
+    } else {
+      setCursorPos(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const navigateRight = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC') {
+      if (activeBox === 'num') setActiveBox('den');
+      else if (activeBox === 'den') commitActiveTemplateToDisplayExpr('right');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'lower') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('body');
+      else if (activeBox === 'body') commitActiveTemplateToDisplayExpr('right');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'LOGBASE') {
+      if (activeBox === 'base') setActiveBox('arg');
+      else if (activeBox === 'arg') commitActiveTemplateToDisplayExpr('right');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else if (activeTemplate === 'POWER') {
+      if (activeBox === 'exp') commitActiveTemplateToDisplayExpr('right');
+      else setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    } else {
+      setCursorPos(prev => Math.min(displayExpr.length, prev + 1));
+    }
+  };
+
+  const navigateUp = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC' && activeBox === 'den') {
+      setActiveBox('num');
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'lower') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('body');
+    } else if (activeTemplate === 'LOGBASE' && activeBox === 'base') {
+      setActiveBox('arg');
+    } else if (history.length > 0) {
+      setDisplayExpr(history[0].expr);
+    }
+  };
+
+  const navigateDown = () => {
+    playKeySound();
+    if (activeTemplate === 'FRAC' && activeBox === 'num') {
+      setActiveBox('den');
+    } else if (activeTemplate === 'INTEGRAL') {
+      if (activeBox === 'body') setActiveBox('upper');
+      else if (activeBox === 'upper') setActiveBox('lower');
+    } else if (activeTemplate === 'LOGBASE' && activeBox === 'arg') {
+      setActiveBox('base');
+    } else {
+      handleAC();
+    }
+  };
+
+  // Keyboard Shortcuts Listener. useEffectEvent để phím luôn đọc state mới
+  // nhất: danh sách phụ thuộc cũ bỏ sót history, cursorPos, stoMode… nên mũi
+  // tên lên lấy phải lịch sử cũ, và listener bị gỡ/gắn lại mỗi lần gõ.
+  const handleKeyDown = useEffectEvent((e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      handleKeyPress(e.key);
+    } else if (e.key === '.') {
+      handleKeyPress('.');
+    } else if (e.key === '+') {
+      handleKeyPress('+');
+    } else if (e.key === '-') {
+      handleKeyPress('-');
+    } else if (e.key === '*') {
+      handleKeyPress('×');
+    } else if (e.key === '/') {
+      handleKeyPress('÷');
+    } else if (e.key === '(' || e.key === ')') {
+      handleKeyPress(e.key);
+    } else if (e.key === '^') {
+      handleKeyPress('xⁿ');
+    } else if (e.key === 'Enter' || e.key === '=') {
+      e.preventDefault();
+      handleCalculate();
+    } else if (e.key === 'Backspace') {
+      handleDel();
+    } else if (e.key === 'Escape') {
+      handleAC();
+    } else if (e.key.toLowerCase() === 'x') {
+      handleKeyPress('X');
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigateLeft();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      navigateRight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      navigateUp();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      navigateDown();
+    }
+  });
+
+  useEffect(() => {
+    const listener = (e) => handleKeyDown(e);
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
+  }, []);
 
   // FULL MODE SOLVERS IMPLEMENTATIONS
 

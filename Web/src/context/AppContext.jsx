@@ -742,6 +742,99 @@ const initialTournaments = [
   }
 ];
 
+const MOCK_DICT = {
+  // Subjects
+  'Toán học': 'Mathematics',
+  'Ngữ văn': 'Literature',
+  'Hóa học': 'Chemistry',
+  'Vật lý': 'Physics',
+  'Tiếng Anh': 'English',
+  'Sinh học': 'Biology',
+  'Lịch sử': 'History',
+  'Địa lý': 'Geography',
+  'GDCD': 'Civics',
+  'Tin học': 'Computer Science',
+  'Hướng nghiệp': 'Career Guidance',
+  'Sự kiện': 'Events',
+  'Tổng hợp': 'General Subjects',
+  'Toán': 'Math',
+
+  // Deadlines & Titles
+  'Kiểm tra 1 tiết Toán học': '45-Min Math Test',
+  'Chương: Tích phân, Nguyên hàm. Hình thức: Tự luận 45 phút.': 'Topic: Integrals & Antiderivatives. Format: 45-min essay exam.',
+  'Kiểm tra Hóa học học kỳ II': 'Semester II Chemistry Exam',
+  'Ôn toàn bộ chương trình học kỳ II. Hình thức: Trắc nghiệm 60 câu.': 'Review entire Semester II syllabus. Format: 60-question MCQs.',
+  'Thi thử THPT Quốc gia đợt 2': 'National High School Mock Exam #2',
+  'Thi thử 3 môn tổ hợp. Làm bài thi chính thức tại trường.': 'Mock test for 3 combination subjects. Official exam held at school.',
+  'Nộp hồ sơ xét tuyển đại học': 'Submit University Application',
+  'Hạn chót nộp hồ sơ nguyện vọng qua cổng VNPT. Chuẩn bị đầy đủ học bạ.': 'Final deadline for application submission via VNPT portal. Prepare complete transcripts.',
+  'Ngày hội hướng nghiệp 2026': 'Career Fair 2026',
+  'Tham quan các gian hàng trường đại học, nghe tư vấn ngành nghề.': 'Visit university booths and attend career orientation sessions.',
+  'Lễ trưởng thành khối 12': 'Grade 12 Graduation Ceremony',
+  'Lễ tri ân thầy cô và trưởng thành cho học sinh lớp 12. Đồng phục áo dài trắng.': 'Teacher gratitude & graduation ceremony for Grade 12. White Ao Dai uniform.',
+  'Nộp bài Luyện đề Toán số 6': 'Submit Math Practice Test #6',
+  'Giải toàn bộ đề thi thử số 6. Trình bày chi tiết lời giải.': 'Solve all questions in mock exam #6. Show detailed solutions.',
+  'Nộp bài Nghị luận Ngữ văn': 'Submit Literature Essay',
+  'Viết nghị luận 200 chữ về tinh thần tự học.': 'Write a 200-word essay on the spirit of self-learning.',
+
+  // Assignments
+  'Luyện đề thi tốt nghiệp THPT số 6': 'High School Graduation Practice Exam #6',
+  'Hãy giải toàn bộ đề thi thử số 6 đính kèm trong tệp học liệu môn Toán. Chú ý các câu hỏi từ 40 đến 50 về phương trình hàm số và hình học không gian. Trình bày chi tiết lời giải ra giấy hoặc soạn thảo văn bản.': 'Please solve all questions in mock exam #6 attached in Math resources. Pay special attention to questions 40-50 on functional equations and spatial geometry. Show detailed solutions.',
+  'Nghị luận xã hội về tinh thần tự học': 'Social Argumentative Essay on Self-Study',
+  'Viết bài văn nghị luận ngắn khoảng 200 từ trình bày suy nghĩ của em về tầm quan trọng của tinh thần tự học đối với học sinh cuối cấp THPT.': 'Write a short 200-word argumentative essay sharing your thoughts on the importance of self-study for high school seniors.',
+
+  // General Status & Badges
+  'Thấp': 'Low',
+  'Trung bình': 'Medium',
+  'Cao': 'High',
+  'Gấp': 'Urgent',
+  'Gấp, quan trọng': 'Urgent & Important',
+  'KỲ THI': 'EXAM',
+  'SỰ KIỆN': 'EVENT',
+  'BÀI TẬP': 'ASSIGNMENT',
+  'Chưa nộp': 'Not Submitted',
+  'Đã nộp': 'Submitted',
+  'Đã chấm điểm': 'Graded',
+  'Hôm nay': 'Today',
+  'Hôm nay, 23:59': 'Today, 23:59',
+  'Ngày mai': 'Tomorrow',
+  'Quá hạn': 'Overdue',
+  'Chào cờ': 'Flag Ceremony',
+  'Sân trường': 'School Yard',
+  'Thể dục': 'Physical Education',
+  'Nhà thi đấu · Thầy Hải': 'Gymnasium · Mr. Hai',
+  'P.201 · Cô Hoa': 'Room 201 · Ms. Hoa',
+  'P.305 · Thầy Phúc': 'Room 305 · Mr. Phuc',
+  'P.Lab 2 · Thầy Dũng': 'Lab Room 2 · Mr. Dung',
+  'P.201 · Cô Lan': 'Room 201 · Ms. Lan',
+  'Sắp tới': 'Upcoming',
+  'Tốt': 'Good',
+  'Khá': 'Fair',
+  'TB': 'Average',
+  'Yếu': 'Poor',
+  'Chuyên cần': 'Attendance',
+  'Top 3 lớp': 'Top 3 Class',
+  'Mọt sách': 'Bookworm',
+  'Streak 7': '7-Day Streak',
+  'Siêu Toán': 'Math Wizard',
+  'Nhà vô địch': 'Champion',
+  'Khẩn': 'Urgent',
+  'Hoạt động': 'Activity',
+  'Học phí': 'Tuition',
+  'Học vụ': 'Academic',
+  'Thông báo': 'Announcement',
+
+  // Clubs
+  'CLB Robotics & AI': 'Robotics & AI Club',
+  'CLB Mỹ thuật & Truyền thông': 'Fine Arts & Media Club',
+  'CLB Tranh biện Tiếng Anh': 'English Debate Club',
+  'CLB Bóng đá học sinh': 'Student Football Club',
+  'Nghiên cứu chế tạo robot, tham gia Robocon và ứng dụng trí tuệ nhân tạo.': 'Research and build robots, compete in Robocon, and apply AI.',
+  'Sáng tạo nghệ thuật, vẽ tranh tường cổ động và chụp ảnh sự kiện trường.': 'Artistic creation, promotional murals, and event photography.',
+  'Rèn luyện khả năng nói, tư duy phản biện và tham gia các giải đấu hùng biện.': 'Train public speaking, critical thinking, and enter debate tournaments.',
+  'Tập luyện bóng đá hàng tuần và tổ chức giải bóng đá thường niên toàn trường.': 'Weekly football practice and annual school tournament.'
+};
+
 export const AppProvider = ({ children }) => {
   // ── Database Version Auto-Reset ───────────────────────────────────────────
   const CURRENT_DB_VERSION = 'v1.5';
@@ -792,99 +885,6 @@ export const AppProvider = ({ children }) => {
       return next;
     });
   }, []);
-
-  const MOCK_DICT = {
-    // Subjects
-    'Toán học': 'Mathematics',
-    'Ngữ văn': 'Literature',
-    'Hóa học': 'Chemistry',
-    'Vật lý': 'Physics',
-    'Tiếng Anh': 'English',
-    'Sinh học': 'Biology',
-    'Lịch sử': 'History',
-    'Địa lý': 'Geography',
-    'GDCD': 'Civics',
-    'Tin học': 'Computer Science',
-    'Hướng nghiệp': 'Career Guidance',
-    'Sự kiện': 'Events',
-    'Tổng hợp': 'General Subjects',
-    'Toán': 'Math',
-
-    // Deadlines & Titles
-    'Kiểm tra 1 tiết Toán học': '45-Min Math Test',
-    'Chương: Tích phân, Nguyên hàm. Hình thức: Tự luận 45 phút.': 'Topic: Integrals & Antiderivatives. Format: 45-min essay exam.',
-    'Kiểm tra Hóa học học kỳ II': 'Semester II Chemistry Exam',
-    'Ôn toàn bộ chương trình học kỳ II. Hình thức: Trắc nghiệm 60 câu.': 'Review entire Semester II syllabus. Format: 60-question MCQs.',
-    'Thi thử THPT Quốc gia đợt 2': 'National High School Mock Exam #2',
-    'Thi thử 3 môn tổ hợp. Làm bài thi chính thức tại trường.': 'Mock test for 3 combination subjects. Official exam held at school.',
-    'Nộp hồ sơ xét tuyển đại học': 'Submit University Application',
-    'Hạn chót nộp hồ sơ nguyện vọng qua cổng VNPT. Chuẩn bị đầy đủ học bạ.': 'Final deadline for application submission via VNPT portal. Prepare complete transcripts.',
-    'Ngày hội hướng nghiệp 2026': 'Career Fair 2026',
-    'Tham quan các gian hàng trường đại học, nghe tư vấn ngành nghề.': 'Visit university booths and attend career orientation sessions.',
-    'Lễ trưởng thành khối 12': 'Grade 12 Graduation Ceremony',
-    'Lễ tri ân thầy cô và trưởng thành cho học sinh lớp 12. Đồng phục áo dài trắng.': 'Teacher gratitude & graduation ceremony for Grade 12. White Ao Dai uniform.',
-    'Nộp bài Luyện đề Toán số 6': 'Submit Math Practice Test #6',
-    'Giải toàn bộ đề thi thử số 6. Trình bày chi tiết lời giải.': 'Solve all questions in mock exam #6. Show detailed solutions.',
-    'Nộp bài Nghị luận Ngữ văn': 'Submit Literature Essay',
-    'Viết nghị luận 200 chữ về tinh thần tự học.': 'Write a 200-word essay on the spirit of self-learning.',
-
-    // Assignments
-    'Luyện đề thi tốt nghiệp THPT số 6': 'High School Graduation Practice Exam #6',
-    'Hãy giải toàn bộ đề thi thử số 6 đính kèm trong tệp học liệu môn Toán. Chú ý các câu hỏi từ 40 đến 50 về phương trình hàm số và hình học không gian. Trình bày chi tiết lời giải ra giấy hoặc soạn thảo văn bản.': 'Please solve all questions in mock exam #6 attached in Math resources. Pay special attention to questions 40-50 on functional equations and spatial geometry. Show detailed solutions.',
-    'Nghị luận xã hội về tinh thần tự học': 'Social Argumentative Essay on Self-Study',
-    'Viết bài văn nghị luận ngắn khoảng 200 từ trình bày suy nghĩ của em về tầm quan trọng của tinh thần tự học đối với học sinh cuối cấp THPT.': 'Write a short 200-word argumentative essay sharing your thoughts on the importance of self-study for high school seniors.',
-
-    // General Status & Badges
-    'Thấp': 'Low',
-    'Trung bình': 'Medium',
-    'Cao': 'High',
-    'Gấp': 'Urgent',
-    'Gấp, quan trọng': 'Urgent & Important',
-    'KỲ THI': 'EXAM',
-    'SỰ KIỆN': 'EVENT',
-    'BÀI TẬP': 'ASSIGNMENT',
-    'Chưa nộp': 'Not Submitted',
-    'Đã nộp': 'Submitted',
-    'Đã chấm điểm': 'Graded',
-    'Hôm nay': 'Today',
-    'Hôm nay, 23:59': 'Today, 23:59',
-    'Ngày mai': 'Tomorrow',
-    'Quá hạn': 'Overdue',
-    'Chào cờ': 'Flag Ceremony',
-    'Sân trường': 'School Yard',
-    'Thể dục': 'Physical Education',
-    'Nhà thi đấu · Thầy Hải': 'Gymnasium · Mr. Hai',
-    'P.201 · Cô Hoa': 'Room 201 · Ms. Hoa',
-    'P.305 · Thầy Phúc': 'Room 305 · Mr. Phuc',
-    'P.Lab 2 · Thầy Dũng': 'Lab Room 2 · Mr. Dung',
-    'P.201 · Cô Lan': 'Room 201 · Ms. Lan',
-    'Sắp tới': 'Upcoming',
-    'Tốt': 'Good',
-    'Khá': 'Fair',
-    'TB': 'Average',
-    'Yếu': 'Poor',
-    'Chuyên cần': 'Attendance',
-    'Top 3 lớp': 'Top 3 Class',
-    'Mọt sách': 'Bookworm',
-    'Streak 7': '7-Day Streak',
-    'Siêu Toán': 'Math Wizard',
-    'Nhà vô địch': 'Champion',
-    'Khẩn': 'Urgent',
-    'Hoạt động': 'Activity',
-    'Học phí': 'Tuition',
-    'Học vụ': 'Academic',
-    'Thông báo': 'Announcement',
-
-    // Clubs
-    'CLB Robotics & AI': 'Robotics & AI Club',
-    'CLB Mỹ thuật & Truyền thông': 'Fine Arts & Media Club',
-    'CLB Tranh biện Tiếng Anh': 'English Debate Club',
-    'CLB Bóng đá học sinh': 'Student Football Club',
-    'Nghiên cứu chế tạo robot, tham gia Robocon và ứng dụng trí tuệ nhân tạo.': 'Research and build robots, compete in Robocon, and apply AI.',
-    'Sáng tạo nghệ thuật, vẽ tranh tường cổ động và chụp ảnh sự kiện trường.': 'Artistic creation, promotional murals, and event photography.',
-    'Rèn luyện khả năng nói, tư duy phản biện và tham gia các giải đấu hùng biện.': 'Train public speaking, critical thinking, and enter debate tournaments.',
-    'Tập luyện bóng đá hàng tuần và tổ chức giải bóng đá thường niên toàn trường.': 'Weekly football practice and annual school tournament.'
-  };
 
   const t = useCallback((viStr, enStr) => {
     if (language === 'en') {

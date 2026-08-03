@@ -66,7 +66,10 @@ export default function AiTutorTrainerTab() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   
-  const [loading, setLoading] = useState(true);
+  // Giáo viên mà dữ liệu đang giữ thuộc về. Suy ra trạng thái tải từ đây thay
+  // vì một cờ boolean bật/tắt: đổi giáo viên là spinner quay lại, và phản hồi
+  // của lần tải cũ về muộn không còn tắt spinner của lần tải mới.
+  const [loadedFor, setLoadedFor] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Who this tab reads and writes as. Resolved rather than assumed: the three
@@ -82,22 +85,17 @@ export default function AiTutorTrainerTab() {
   const teacherSubject = author?.subject ?? null;
   const canWrite = canFileContent(author);
 
+  // Chỉ lấy dữ liệu, không đụng state. Việc ghi state nằm ở effect bên dưới,
+  // nơi biết component còn sống hay không.
   const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const presetsData = await fetchPresets();
-      setPresets(presetsData || []);
-
-      const configData = await fetchTutorConfig(teacherId);
-      setConfig(configData || { teacher_id: teacherId, preset_id: presetsData?.[0]?.id, tone: 'than_mat', status: 'draft', version: '1.0' });
-
-      const entriesData = await fetchKnowledgeEntries(teacherId, schoolId, teacherSubject);
-      setEntries(entriesData || []);
-    } catch (err) {
-      console.error('Error loading AiTutor data:', err);
-    } finally {
-      setLoading(false);
-    }
+    const presetsData = await fetchPresets();
+    const configData = await fetchTutorConfig(teacherId);
+    const entriesData = await fetchKnowledgeEntries(teacherId, schoolId, teacherSubject);
+    return {
+      presets: presetsData || [],
+      config: configData || { teacher_id: teacherId, preset_id: presetsData?.[0]?.id, tone: 'than_mat', status: 'draft', version: '1.0' },
+      entries: entriesData || []
+    };
   }, [teacherId, schoolId, teacherSubject]);
 
   useEffect(() => {
@@ -107,15 +105,29 @@ export default function AiTutorTrainerTab() {
     if (!teacherId) return undefined;
 
     let mounted = true;
-    loadData();
+    loadData()
+      .then((data) => {
+        if (!mounted) return;
+        setPresets(data.presets);
+        setConfig(data.config);
+        setEntries(data.entries);
+      })
+      .catch((err) => {
+        console.error('Error loading AiTutor data:', err);
+      })
+      .finally(() => {
+        if (mounted) setLoadedFor(teacherId);
+      });
     const safetyTimer = setTimeout(() => {
-      if (mounted) setLoading(false);
+      if (mounted) setLoadedFor(teacherId);
     }, 1000);
     return () => {
       mounted = false;
       clearTimeout(safetyTimer);
     };
   }, [loadData, teacherId]);
+
+  const loading = Boolean(teacherId) && loadedFor !== teacherId;
 
   const handleSelectPreset = async (presetId) => {
     const updated = { ...config, preset_id: presetId, status: 'draft' };

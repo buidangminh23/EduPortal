@@ -116,16 +116,6 @@ export default function MockExamTab({ student }) {
   const [reviewingPastAttempt, setReviewingPastAttempt] = useState(null);
   const [selectionTab, setSelectionTab] = useState('subject'); // 'subject' | 'block'
 
-  // Helper to get list of unique subjects in current active exam
-  const getExamSubjects = useCallback((exam) => {
-    if (!exam || !exam.questions) return [];
-    const set = new Set();
-    exam.questions.forEach(q => {
-      if (q.subject) set.add(q.subject);
-    });
-    return Array.from(set);
-  }, []);
-
   // Calculate official MoET National High School exam score
   const calculateExamScore = useCallback((exam, answers) => {
     if (!exam || !exam.questions) return { score: 0, totalQuestions: 0, subjectBreakdown: {} };
