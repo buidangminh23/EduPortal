@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { detectMentalHealthCrisis, getCrisisInterventionMessage } from './crisisDetector';
+import { SUPPORT_HOTLINES } from '../../config/school';
+import { SUPPORT_CONTACTS } from '../counseling/riskAssessment';
 
 describe('detectMentalHealthCrisis', () => {
   it.each([
@@ -44,7 +46,19 @@ describe('getCrisisInterventionMessage', () => {
   // The hotline is the whole point of the intervention: if it is ever dropped or
   // mistyped during an edit, this test fails instead of shipping silently.
   it('includes the school counselling hotline', () => {
-    expect(getCrisisInterventionMessage().message).toContain('1800 1567');
+    expect(getCrisisInterventionMessage().message).toContain(SUPPORT_HOTLINES.counselling);
+  });
+
+  it('includes the national child protection line', () => {
+    expect(getCrisisInterventionMessage().message).toContain(SUPPORT_HOTLINES.childProtection);
+  });
+
+  // A student in distress must not see a different number depending on which
+  // screen they happened to open. These two paths were written months apart and
+  // had already drifted once.
+  it('prints the same numbers as the counselling tab', () => {
+    expect(SUPPORT_CONTACTS.schoolHotline).toBe(SUPPORT_HOTLINES.counselling);
+    expect(SUPPORT_CONTACTS.childProtectionHotline).toBe(SUPPORT_HOTLINES.childProtection);
   });
 
   it('points the student at the wellness section', () => {

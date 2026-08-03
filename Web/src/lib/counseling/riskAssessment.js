@@ -10,11 +10,17 @@
  */
 
 import { normalizeVietnameseText } from '../tutor/normalize';
+import { SUPPORT_HOTLINES } from '../../config/school';
 
-/** Shown in every escalation. Change here and the whole feature follows. */
+/**
+ * Shown in every escalation.
+ *
+ * Sourced from the school config so the counselling tab, the floating
+ * assistant and the tutor's crisis handler cannot print different numbers.
+ */
 export const SUPPORT_CONTACTS = {
-  schoolHotline: '1800 599 920',
-  childProtectionHotline: '111'
+  schoolHotline: SUPPORT_HOTLINES.counselling,
+  childProtectionHotline: SUPPORT_HOTLINES.childProtection
 };
 
 export const RISK_LEVELS = {

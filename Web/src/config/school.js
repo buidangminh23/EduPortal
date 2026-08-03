@@ -16,6 +16,7 @@ const DEMO_ACCOUNT_NAME = 'TRUONG THPT NGUYEN DU';
 const DEMO_SCHOOL_NAME = 'Trường THPT Nguyễn Du';
 const DEMO_SCHOOL_SHORT_NAME = 'THPT Nguyễn Du';
 const DEMO_SCHOOL_DOMAIN = 'school.edu.vn';
+const DEMO_COUNSELLING_HOTLINE = '1800 1567';
 
 const read = (value, fallback) => {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -64,6 +65,27 @@ export const SCHOOL = {
 
   /** True while the school identity is still the built-in demo one. */
   isDemoSchool: read(env.VITE_SCHOOL_NAME, '') === ''
+};
+
+/**
+ * Numbers a student in distress is told to call.
+ *
+ * One definition for the whole app. These were previously typed out at four
+ * call sites and had already drifted — the counselling tab and the floating
+ * assistant printed one number while the tutor's crisis handler printed
+ * another, so which number a student saw depended on which screen they
+ * happened to be on when they needed it.
+ */
+export const SUPPORT_HOTLINES = {
+  /** The school's own counselling line. */
+  counselling: read(env.VITE_SCHOOL_COUNSELLING_HOTLINE, DEMO_COUNSELLING_HOTLINE),
+
+  /**
+   * Vietnam's national child protection line. Not configurable: it is the same
+   * number nationwide, and a school overriding it would be a mistake, not a
+   * deployment choice.
+   */
+  childProtection: '111'
 };
 
 /** Builds an address at the school's domain: `emailAt('triet.nm')`. */

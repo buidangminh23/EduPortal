@@ -8,13 +8,14 @@ import {
 const getTimestamp = () => Date.now();
 
 import { formatTutorText } from '../lib/tutor/formatText';
+import { SUPPORT_HOTLINES } from '../config/school';
 
 // ─── AI Counselor reply engine (extracted from StudentDashboard) ──────────────
 function generateCounselorReply(txt, msgCount, studentName, gpaVal, currentScores) {
   const norm = txt.toLowerCase();
 
   if (norm.includes('tự tử') || norm.includes('không muốn sống') || norm.includes('chán sống')) {
-    return `💙 Em ơi, thầy rất lo cho em. Em không đơn độc – thầy ở đây cùng em.\n\nXin gọi ngay **Đường dây hỗ trợ tâm thần 1800 599 920** (miễn phí, 24/7) hoặc tìm gặp thầy cô.\n\nEm có muốn kể thêm không? Thầy lắng nghe.`;
+    return `💙 Em ơi, thầy rất lo cho em. Em không đơn độc – thầy ở đây cùng em.\n\nXin gọi ngay **Tham vấn tâm lý học đường ${SUPPORT_HOTLINES.counselling}** hoặc **Tổng đài Bảo vệ Trẻ em ${SUPPORT_HOTLINES.childProtection}** (miễn phí, 24/7), và tìm gặp thầy cô ngay hôm nay.\n\nEm có muốn kể thêm không? Thầy lắng nghe.`;
   }
   if (norm.includes('áp lực') || norm.includes('lo lắng') || norm.includes('stress') || norm.includes('hoảng')) {
     return `💙 Cảm ơn em đã chia sẻ. Áp lực trước kỳ thi là phản ứng bình thường của não bộ.\n\n🧘 **3 kỹ thuật giảm lo âu tức thì:**\n• **Thở 4-7-8:** Hít vào 4s → Nín 7s → Thở ra 8s. Lặp 3 lần.\n• **Kỹ thuật 5-4-3-2-1:** Nhìn 5 thứ, nghe 4 âm thanh, chạm 3 bề mặt.\n• **"Hộp lo lắng":** Viết nỗi lo ra giấy, gấp lại, đặt sang một bên.\n\nEm đang lo nhất về điều gì?`;
@@ -651,7 +652,7 @@ export default function FloatingChatWidget() {
                       margin: 0, padding: '4px 12px 8px',
                       fontSize: '0.62rem', color: '#cbd5e1', textAlign: 'center', background: 'white'
                     }}>
-                      🔒 Bảo mật tuyệt đối • Khẩn cấp: <strong>1800 599 920</strong>
+                      🔒 Bảo mật tuyệt đối • Khẩn cấp: <strong>{SUPPORT_HOTLINES.counselling}</strong>
                     </p>
                   </div>
                 </div>

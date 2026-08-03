@@ -3,7 +3,7 @@ import { respond, createSession, buildGreeting, buildSessionSummary, shortName }
 import { classifyTopics, secondaryTopics, TOPICS } from './topicClassifier';
 import { computeRiasecProfile } from './riasec';
 import { RIASEC_QUESTIONS } from './riasecContent';
-import { RISK_LEVELS } from './riskAssessment';
+import { RISK_LEVELS, SUPPORT_CONTACTS } from './riskAssessment';
 
 const STUDENT = {
   id: 'S001',
@@ -92,7 +92,7 @@ describe('respond – safety first', () => {
 
     expect(reply.riskLevel).toBe(RISK_LEVELS.CRISIS);
     expect(reply.needsEscalation).toBe(true);
-    expect(reply.text).toContain('1800 599 920');
+    expect(reply.text).toContain(SUPPORT_CONTACTS.schoolHotline);
     expect(reply.text).not.toContain('Spaced repetition');
   });
 
