@@ -91,7 +91,7 @@ export async function completeSchoolSignIn(token, { fetchImpl = fetch, client = 
     };
   }
 
-  let body = null;
+  let body;
   try {
     body = await response.json();
   } catch {

@@ -86,7 +86,12 @@ export function verifySchoolToken(token, {
   replayGuard,
   now = Date.now()
 } = {}) {
+  // A blank issuer used to mean "skip the issuer check", so a deployment that
+  // forgot the variable ran one check short and never said so. Missing
+  // configuration is refused here for the same reason a missing secret is:
+  // whichever half is absent, this module cannot tell who wrote the note.
   if (!secret) return { ok: false, reason: 'not_configured' };
+  if (!issuer) return { ok: false, reason: 'not_configured' };
   if (typeof token !== 'string' || token.length > 4096) return { ok: false, reason: 'malformed' };
 
   const parts = token.split('.');
@@ -119,7 +124,7 @@ export function verifySchoolToken(token, {
 
   // Who vouched, and who they vouched to. Without the audience check, a note
   // the school mints for some other service would open a session here too.
-  if (issuer && claims.iss !== issuer) return { ok: false, reason: 'issuer' };
+  if (claims.iss !== issuer) return { ok: false, reason: 'issuer' };
   if (audience && claims.aud !== audience) return { ok: false, reason: 'audience' };
 
   const nowSeconds = Math.floor(now / 1000);

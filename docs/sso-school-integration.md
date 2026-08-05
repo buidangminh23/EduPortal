@@ -71,10 +71,56 @@ Phiếu **hết hạn sau 60 giây** và **chỉ dùng được một lần**. S
 | Mã giáo viên | `GV001` | Định danh, nối hai hệ thống |
 | Email | `a.nv@c3phucthinh.edu.vn` | Tài khoản trong EduPortal |
 | Họ tên | `Nguyễn Văn A` | Hiển thị trên giao diện |
-| Vai trò | `teacher` / `admin` | Phân quyền (BGH thấy nhiều hơn giáo viên) |
+| Vai trò | `teacher` | Phân quyền lần đầu (xem Mục 4.1 và 4.2) |
 
 **Không** chuyển: mật khẩu, mã băm mật khẩu, số điện thoại, số căn cước, lương,
 hồ sơ nhân sự, hay bất cứ dữ liệu học sinh nào.
+
+### 4.1. Mã giáo viên là thứ quyết định, không phải email
+
+Lần đầu một giáo viên đi qua cửa này, EduPortal tạo tài khoản và **ghi mã giáo
+viên vào tài khoản đó**, ở chỗ chính chủ tài khoản không sửa được (`app_metadata`
+của Supabase — chỉ khoá quản trị viên ghi được, khoá này nằm trên máy chủ và
+không bao giờ ra trình duyệt). Những lần sau, EduPortal đọc lại mã đó và **chỉ mở
+phiên khi mã khớp**.
+
+Vì sao phải vậy: đăng ký tài khoản EduPortal đang mở, và khoá ẩn danh nằm sẵn
+trong mã nguồn trang web. Nếu chỉ so email, một người lạ đăng ký trước bằng địa
+chỉ của hiệu trưởng — không cần vào được hòm thư đó — rồi ngồi đợi. Đến khi hiệu
+trưởng thật bấm "Mở EduPortal", phiên đăng nhập và vai trò của hiệu trưởng sẽ rơi
+vào tài khoản người lạ đã chiếm chỗ. Ràng buộc theo mã giáo viên đóng đúng cửa đó.
+
+Ba trường hợp bị từ chối, kèm câu thông báo giáo viên nhìn thấy:
+
+| Tình huống | EduPortal làm gì |
+|---|---|
+| Email đã có tài khoản nhưng **chưa gắn mã nào** (tài khoản tạo tay trước đây, hoặc người lạ chiếm chỗ) | Từ chối. Quản trị viên gắn mã vào tài khoản đó rồi giáo viên đăng nhập lại |
+| Email đã gắn **mã khác** | Từ chối. Hai hệ thống đang mâu thuẫn, cần người xem lại |
+| Email **ngoài tên miền** `c3phucthinh.edu.vn` | Từ chối. Phiếu ký hợp lệ vẫn không mở được tài khoản ngoài trường |
+
+Tài khoản EduPortal tạo tay từ trước ngày bật SSO sẽ rơi vào dòng đầu bảng. Đây
+là cố ý: thà bắt gắn mã một lần còn hơn nhận nhầm người. Quản trị viên gắn mã
+trong Supabase (`app_metadata.teacher_code`), mỗi tài khoản một lần.
+
+### 4.2. Vai trò: phiếu chỉ xin được `teacher`, và chỉ xin được một lần
+
+Hai giới hạn, cùng một lý do — trong EduPortal, **ghi vai trò vào bảng `profiles`
+chính là cấp quyền**: hàm `auth_role()` mà toàn bộ phân quyền cơ sở dữ liệu dựa
+vào chỉ là một câu đọc đúng cột đó.
+
+1. **Trần vai trò.** Mặc định phiếu chỉ được xin `teacher`
+   (`SCHOOL_SSO_ALLOWED_ROLES`). Phiếu xin `admin` bị từ chối. Vai trò `admin`
+   mở luồng camera lớp học — hình ảnh trực tiếp của học sinh — nên câu hỏi "ai
+   được làm admin?" không thể có đáp án "bất cứ ai ký được phiếu". Website
+   trường bị chỉnh sửa, hay chuỗi bí mật lọt ra ngoài, cũng không tự tạo được
+   admin.
+2. **Vai trò chỉ đặt lúc tạo tài khoản.** Lần đăng nhập thứ hai trở đi không ghi
+   lại vai trò nữa. Nhà trường hạ quyền một tài khoản trong EduPortal thì lần
+   đăng nhập kế tiếp **không** phục hồi quyền cũ. Họ tên và trường vẫn cập nhật
+   theo hồ sơ bên website, vì đó là hiển thị, không phải quyền.
+
+Nâng một giáo viên lên `admin` là việc làm trong EduPortal, do người thật bấm,
+một lần — không phải hệ quả của một lần đăng nhập.
 
 ### Về bảo vệ dữ liệu cá nhân
 
@@ -126,7 +172,10 @@ Route::get('/teacher/sang-eduportal', function () {
         'sub'   => $teacher->ma_giao_vien,
         'email' => $teacher->email,
         'name'  => $teacher->ho_ten,
-        'role'  => $teacher->la_bgh ? 'admin' : 'teacher',
+        // Luôn 'teacher'. Xem Mục 4.2: EduPortal từ chối phiếu xin 'admin',
+        // và vai trò chỉ được đặt lúc tạo tài khoản. Quyền BGH cấp trong
+        // EduPortal, một lần, không phải mỗi lần đăng nhập.
+        'role'  => 'teacher',
         'iat'   => $now,
         'exp'   => $now + 60,
         'jti'   => bin2hex(random_bytes(16)),
@@ -162,6 +211,61 @@ khoảng 10 dòng — phía EduPortal chấp nhận cả hai vì đều là JWT 
 Khi nhà trường đồng ý, việc còn lại là hai bên trao đổi chuỗi bí mật qua kênh an toàn
 (không gửi qua email hay chat) và bật cấu hình. Thời gian triển khai ước tính nửa ngày.
 
+### 7.1. Cấu hình phía EduPortal
+
+Đặt trong `server/.env` (mẫu đầy đủ ở `server/.env.example`):
+
+| Biến | Ý nghĩa | Thiếu thì sao |
+|---|---|---|
+| `SCHOOL_SSO_SECRET` | Chuỗi bí mật, giống hệt bên website trường | 503 |
+| `SCHOOL_SSO_ISSUER` | Phải khớp trường `iss` trong phiếu | 503 |
+| `SCHOOL_DOMAIN` | Tên miền email của trường; vừa tra bảng `schools`, vừa chặn email ngoài trường | 503 |
+| `SCHOOL_SSO_ALLOWED_ROLES` | Trần vai trò, mặc định `teacher` | Mặc định `teacher` |
+| `SCHOOL_SSO_ACCESS_LOG` | Tệp nhật ký truy cập, xem Mục 7.2 | Chỉ in ra stdout, mất khi khởi động lại |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Kết nối tới cơ sở dữ liệu | 503 |
+| `TRUST_PROXY` | Số proxy đứng trước máy chủ (Cloudflare Tunnel, nginx) | Xem cảnh báo dưới |
+
+**Ba biến đầu bỏ trống là cửa đóng, không phải cửa mở thiếu chốt.** Trước đây bỏ
+trống `SCHOOL_SSO_ISSUER` là lặng lẽ bỏ luôn bước kiểm tra "ai ký phiếu này",
+trong khi endpoint vẫn báo đã cấu hình và vẫn phục vụ. Nay thiếu bất kỳ biến nào
+trong số đó thì `/api/sso/school` trả 503.
+
+**`TRUST_PROXY` cần đặt nếu máy chủ nằm sau tunnel** (đúng cách dựng trong
+`server/SELF-HOST.md`). Không đặt thì mọi request trông như đến từ một địa chỉ
+duy nhất: giới hạn 20 lần thử mỗi phút biến thành một rổ chung cho cả trường —
+một người gõ sai liên tục là khoá cửa của mọi giáo viên — và nhật ký ghi địa chỉ
+proxy thay vì người gọi. Đặt `TRUST_PROXY=1` khi có đúng một proxy. Không có giá
+trị nào nghĩa là "tin mọi header": `TRUST_PROXY=true` bị từ chối ngay lúc khởi
+động, vì khi đó người gọi tự khai địa chỉ của mình và cả hai thứ trên đều vô hiệu.
+
+### 7.2. Nhật ký: ai đã đi qua cửa này
+
+Nghị định 13/2023 hỏi "ai đã truy cập dữ liệu này?" cho toàn bộ dữ liệu cá nhân,
+không riêng camera. Cửa SSO ghi vào một tệp chỉ-thêm (`SCHOOL_SSO_ACCESS_LOG`),
+cùng cơ chế mà tường camera đang dùng, mỗi dòng một sự việc: **cho vào**, **từ
+chối** (kèm lý do cụ thể), và **tạo tài khoản mới**. Mỗi dòng có thời điểm, mã
+giáo viên, địa chỉ người gọi và id tài khoản khi đã biết.
+
+```bash
+tail -f server/data/sso-access.log
+```
+
+Tệp này nằm cạnh nhật ký camera và cần được sao lưu như mọi dữ liệu khác.
+
+### 7.3. Điều chưa làm: thu hồi tài khoản khi giáo viên nghỉ
+
+Nói thẳng, vì đây đúng là lý do ban đầu của đề xuất này. Hiện SSO **chỉ chặn
+đường vào từ website trường**: giáo viên đã chuyển đi không đăng nhập qua cửa này
+được nữa, vì website trường không còn ký phiếu cho họ. Nhưng **tài khoản EduPortal
+của họ vẫn còn**, và nếu ai đó đặt mật khẩu cho tài khoản đó thì vẫn vào được.
+
+Chưa làm được vì phần thiếu không nằm ở mã nguồn: EduPortal cần biết "người này
+đã nghỉ" bằng cách nào — nhà trường bấm một nút, xuất danh sách định kỳ, hay
+EduPortal hỏi ngược website trường. Đó là quy trình của nhà trường, cần bàn trước
+rồi mới viết. Trong lúc chờ, quy trình tạm: **khi có giáo viên chuyển đi, quản
+trị viên vô hiệu hoá tài khoản tương ứng trong EduPortal**, cùng lúc với các thủ
+tục bàn giao khác.
+
 ## 8. Câu hỏi gửi nhà trường
 
 1. **Học sinh và phụ huynh lấy tài khoản từ đâu?** Cơ sở dữ liệu hiện tại có danh
@@ -169,11 +273,16 @@ Khi nhà trường đồng ý, việc còn lại là hai bên trao đổi chuỗ
    trường nếu có, (b) BGH tạo tài khoản trong EduPortal, (c) học sinh đăng nhập bằng
    tài khoản Google của trường — EduPortal đã hỗ trợ sẵn cách này.
 
-2. **Ai được quyền "admin"?** Đề xuất: Ban Giám hiệu. Nhà trường xác nhận cách nhận
-   biết một tài khoản là BGH trong CSDL hiện tại (cột nào, giá trị nào).
+2. **Ai được quyền "admin"?** Đề xuất: Ban Giám hiệu, và **cấp trong EduPortal**
+   chứ không qua phiếu đăng nhập (Mục 4.2). Nhà trường cho biết danh sách người
+   cần quyền này để cấp một lần lúc bàn giao.
 
 3. **Ai giữ chuỗi bí mật phía nhà trường?** Nên là người quản trị website, và nên
    đổi định kỳ 6 tháng một lần.
+
+4. **Đã có tài khoản EduPortal nào tạo tay trước đây chưa?** Nếu có, cần gắn mã
+   giáo viên cho từng tài khoản đó trước khi bật SSO (Mục 4.1) — nếu không, chính
+   những người này sẽ bị từ chối ở lần đăng nhập đầu tiên.
 
 ---
 

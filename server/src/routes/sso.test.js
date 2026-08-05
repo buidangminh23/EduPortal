@@ -31,13 +31,23 @@ function schoolNote(claims = {}, { secret = SECRET, header = { alg: 'HS256', typ
   return `${head}.${body}.${signature}`;
 }
 
-/** Records what the route asked Supabase for, and answers as Supabase would. */
-function createSupabaseDouble({ userExists = false } = {}) {
+/**
+ * Records what the route asked Supabase for, and answers as Supabase would.
+ *
+ * `account` stands in for a row in `auth.users` that already holds the address
+ * — the ordinary returning teacher when it carries their code, and the
+ * squatter who signed up through the public anon key when it does not.
+ * `profile` stands in for the `profiles` row, so a role already set inside
+ * EduPortal can be watched for changes.
+ */
+function createSupabaseDouble({ account = null, profile = null, school = { id: 'school-uuid-1' } } = {}) {
   const calls = [];
-  let exists = userExists;
+  let user = account;
+  let profileRow = profile;
 
   const fetchImpl = async (url, init = {}) => {
-    const path = url.replace(/^https?:\/\/[^/]+/, '');
+    const [rawPath] = url.replace(/^https?:\/\/[^/]+/, '').split('#');
+    const path = rawPath;
     calls.push({ path, method: init.method || 'GET', body: init.body ? JSON.parse(init.body) : null });
 
     const reply = (status, body) => ({
@@ -47,31 +57,60 @@ function createSupabaseDouble({ userExists = false } = {}) {
     });
 
     if (path === '/auth/v1/admin/users' && init.method === 'POST') {
-      if (exists) return reply(422, { error_code: 'email_exists', msg: 'Email already registered' });
-      exists = true;
-      return reply(200, { id: 'user-uuid-1' });
+      if (user) return reply(422, { error_code: 'email_exists', msg: 'Email already registered' });
+      const sent = JSON.parse(init.body);
+      user = {
+        id: 'user-uuid-1',
+        email: sent.email,
+        app_metadata: sent.app_metadata || {},
+        user_metadata: sent.user_metadata || {}
+      };
+      return reply(200, { id: user.id });
+    }
+
+    // GoTrue's admin listing: `filter` is a partial match on the address.
+    if (path.startsWith('/auth/v1/admin/users?')) {
+      const filter = new URLSearchParams(path.split('?')[1]).get('filter') || '';
+      const users = user && user.email.includes(filter) ? [user] : [];
+      return reply(200, { users });
     }
 
     if (path === '/auth/v1/admin/generate_link') {
       return reply(200, {
-        user: { id: 'user-uuid-1' },
+        user: { id: user?.id || 'user-uuid-1' },
         properties: { hashed_token: 'one-time-hash' }
       });
     }
 
     if (path.startsWith('/rest/v1/schools')) {
-      return reply(200, [{ id: 'school-uuid-1' }]);
+      return reply(200, school ? [school] : []);
     }
 
     if (path.startsWith('/rest/v1/profiles')) {
-      return reply(201, null);
+      if (init.method === 'POST') {
+        profileRow = JSON.parse(init.body);
+        return reply(201, null);
+      }
+      if (init.method === 'PATCH') {
+        profileRow = { ...profileRow, ...JSON.parse(init.body) };
+        return reply(204, null);
+      }
+      return reply(200, profileRow ? [{ id: profileRow.id }] : []);
     }
 
     return reply(404, {});
   };
 
-  return { fetchImpl, calls };
+  return { fetchImpl, calls, profileNow: () => profileRow };
 }
+
+/** An account already registered under the teacher's address. */
+const accountHolding = (appMetadata) => ({
+  id: 'user-uuid-1',
+  email: 'a.nv@c3phucthinh.edu.vn',
+  app_metadata: appMetadata,
+  user_metadata: {}
+});
 
 let server;
 let baseUrl;
@@ -136,27 +175,196 @@ describe('POST /api/sso/school', () => {
     await stop();
   });
 
-  it('writes the role into profiles, where row-level security can read it', async () => {
+  it('writes the role into profiles when it provisions the account', async () => {
     await start(mount());
-    await post(schoolNote({ role: 'admin' }));
+    await post(schoolNote());
 
-    const write = supabase.calls.find(c => c.path.startsWith('/rest/v1/profiles'));
+    const write = supabase.calls.find(c => c.path.startsWith('/rest/v1/profiles') && c.method === 'POST');
     expect(write.body).toMatchObject({
       id: 'user-uuid-1',
-      role: 'admin',
+      role: 'teacher',
       school_id: 'school-uuid-1'
     });
     await stop();
   });
 
+  it("binds the account to the school's teacher code where the user cannot edit it", async () => {
+    await start(mount());
+    await post(schoolNote());
+
+    const create = supabase.calls.find(c => c.path === '/auth/v1/admin/users' && c.method === 'POST');
+    expect(create.body.app_metadata).toEqual({ teacher_code: 'GV001' });
+    // user_metadata is what `auth.updateUser()` writes, so a code kept there
+    // would be a binding the account holder could rewrite at will.
+    expect(create.body.user_metadata).not.toHaveProperty('teacher_code');
+    await stop();
+  });
+
   it('treats a second sign-in as normal rather than a failed account creation', async () => {
-    supabase = createSupabaseDouble({ userExists: true });
+    supabase = createSupabaseDouble({
+      account: accountHolding({ teacher_code: 'GV001' }),
+      profile: { id: 'user-uuid-1', role: 'teacher' }
+    });
     await start(mount());
 
     const response = await post(schoolNote());
 
     expect(response.status).toBe(200);
     expect(recorded.at(-1)).toMatchObject({ outcome: 'allowed', reason: 'returning' });
+    await stop();
+  });
+
+  it('leaves the role of an account that already exists alone', async () => {
+    // The school demoted this head teacher inside EduPortal. Their next login
+    // must not hand the role back, whatever the school's website still thinks.
+    supabase = createSupabaseDouble({
+      account: accountHolding({ teacher_code: 'GV001' }),
+      profile: { id: 'user-uuid-1', role: 'admin', full_name: 'Cũ' }
+    });
+    await start(mount());
+
+    const response = await post(schoolNote({ role: 'teacher' }));
+
+    expect(response.status).toBe(200);
+    expect(supabase.profileNow().role).toBe('admin');
+    expect(supabase.profileNow().full_name).toBe('Nguyễn Văn A');
+    expect(supabase.calls.some(c => c.path.startsWith('/rest/v1/profiles') && c.body && 'role' in c.body)).toBe(false);
+    await stop();
+  });
+
+  it('refuses a note asking for a role above the ceiling this deployment grants', async () => {
+    await start(mount());
+    const response = await post(schoolNote({ role: 'admin' }));
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe('role_not_allowed');
+    expect(recorded.at(-1)).toMatchObject({ outcome: 'denied', reason: 'role_not_allowed:admin' });
+    // Refused before anything was created: no account, no session, no profile.
+    expect(supabase.calls).toEqual([]);
+    await stop();
+  });
+
+  it('lets a deployment widen the ceiling on purpose', async () => {
+    await start(mount({ allowedRoles: ['teacher', 'admin'] }));
+    const response = await post(schoolNote({ role: 'admin' }));
+
+    expect(response.status).toBe(200);
+    await stop();
+  });
+
+  it('refuses an email outside the school domain', async () => {
+    await start(mount());
+    const response = await post(schoolNote({ email: 'a.nv@gmail.com' }));
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe('email_domain');
+    expect(recorded.at(-1)).toMatchObject({ outcome: 'denied', reason: 'email_domain' });
+    expect(supabase.calls).toEqual([]);
+    await stop();
+  });
+
+  it('refuses an account that holds the address but carries no teacher code', async () => {
+    // The attack the review found: register the head teacher's address through
+    // the public anon key, wait, and collect their session and their role.
+    supabase = createSupabaseDouble({ account: accountHolding({}) });
+    await start(mount());
+
+    const response = await post(schoolNote());
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe('teacher_code_unbound');
+    expect(recorded.at(-1)).toMatchObject({ outcome: 'denied', reason: 'teacher_code_unbound' });
+    expect(supabase.calls.some(c => c.path === '/auth/v1/admin/generate_link')).toBe(false);
+    await stop();
+  });
+
+  it('refuses an account bound to a different teacher code', async () => {
+    supabase = createSupabaseDouble({ account: accountHolding({ teacher_code: 'GV999' }) });
+    await start(mount());
+
+    const response = await post(schoolNote());
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe('teacher_code_mismatch');
+    expect(supabase.calls.some(c => c.path === '/auth/v1/admin/generate_link')).toBe(false);
+    await stop();
+  });
+
+  it('refuses rather than pretending a code sits in user_metadata counts', async () => {
+    // Exactly where the old version wrote it, and exactly where the account
+    // holder can write it themselves.
+    supabase = createSupabaseDouble({
+      account: { ...accountHolding({}), user_metadata: { teacher_code: 'GV001' } }
+    });
+    await start(mount());
+
+    expect((await post(schoolNote())).status).toBe(403);
+    await stop();
+  });
+
+  it('refuses when no schools row matches, instead of a session into an empty app', async () => {
+    supabase = createSupabaseDouble({ school: null });
+    await start(mount());
+
+    const response = await post(schoolNote());
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error).toBe('school_not_found');
+    expect(body.message).toMatch(/schools/);
+    expect(recorded.at(-1)).toMatchObject({ outcome: 'denied', reason: 'school_not_found' });
+    // Nothing was created for a school this deployment cannot place.
+    expect(supabase.calls.some(c => c.path === '/auth/v1/admin/users')).toBe(false);
+    await stop();
+  });
+
+  it('refuses to serve at all when the issuer was never configured', async () => {
+    await start(mount({ issuer: '' }));
+    const response = await post(schoolNote());
+
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toBe('sso_not_configured');
+    await stop();
+  });
+
+  it('refuses to serve at all when the school domain was never configured', async () => {
+    await start(mount({ schoolDomain: '' }));
+
+    expect((await post(schoolNote())).status).toBe(503);
+    await stop();
+  });
+
+  it('does not mistake a whitespace-only domain for a configured one', async () => {
+    // `Boolean('  ')` is true, so a stray space in the .env would otherwise
+    // have satisfied the gate and left the domain check matching nothing.
+    await start(mount({ schoolDomain: '   ' }));
+
+    expect((await post(schoolNote())).status).toBe(503);
+    await stop();
+  });
+
+  it('writes every refusal to the durable log, naming who was refused', async () => {
+    await start(mount());
+    await post(schoolNote({ role: 'admin' }));
+
+    expect(recorded.at(-1)).toMatchObject({
+      action: '/sso/school',
+      outcome: 'denied',
+      teacherCode: 'GV001'
+    });
+    await stop();
+  });
+
+  it('records provisioning as its own line, so a new account is traceable', async () => {
+    await start(mount());
+    await post(schoolNote());
+
+    expect(recorded.find(entry => entry.action === '/sso/school/provision')).toMatchObject({
+      outcome: 'allowed',
+      reason: 'role:teacher',
+      viewerId: 'user-uuid-1',
+      teacherCode: 'GV001'
+    });
     await stop();
   });
 
@@ -263,5 +471,14 @@ describe('verifySchoolToken', () => {
 
   it('reports missing configuration rather than accepting anything', () => {
     expect(verifySchoolToken(schoolNote(), { ...base, secret: '' })).toEqual({ ok: false, reason: 'not_configured' });
+  });
+
+  it('refuses a blank issuer instead of quietly dropping the issuer check', () => {
+    // The old reading of a blank issuer was "no issuer to check against, so
+    // accept whoever signed it" — one check short, and nothing said so.
+    const other = schoolNote({ iss: 'someone-else.edu.vn' });
+
+    expect(verifySchoolToken(other, { ...base, issuer: '' })).toEqual({ ok: false, reason: 'not_configured' });
+    expect(verifySchoolToken(schoolNote(), { ...base, issuer: '' })).toEqual({ ok: false, reason: 'not_configured' });
   });
 });
