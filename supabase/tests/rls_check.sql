@@ -6,6 +6,11 @@
 -- looks exactly like a policy that works. So each rule is exercised here rather
 -- than reasoned about.
 --
+-- Grants are exercised too, at the end. A policy decides which rows a caller
+-- may write; the grant decides which columns, and until 010 nothing decided
+-- that at all — which is how a student could hand themselves the admin role
+-- while every policy in this file went on passing.
+--
 -- Run against a local stack:
 --     supabase db reset
 --     psql "$(supabase status -o env | grep DB_URL | cut -d= -f2- | tr -d '"')" -v ON_ERROR_STOP=1 -f supabase/tests/rls_check.sql
@@ -19,8 +24,12 @@ BEGIN;
 -- ── Fixtures ───────────────────────────────────────────────────────────────
 -- Seeded as the table owner, which RLS does not apply to.
 
+-- A second school, so that "move myself into another school" is a real move
+-- rather than a foreign key error that would pass the test for the wrong
+-- reason. Nobody is enrolled in it.
 INSERT INTO schools (id, name, domain, sgk_series) VALUES
-    ('ffffffff-1111-1111-1111-111111111111', 'THPT Kiểm Thử', 'rlstest.edu.vn', 'canh_dieu');
+    ('ffffffff-1111-1111-1111-111111111111', 'THPT Kiểm Thử',  'rlstest.edu.vn', 'canh_dieu'),
+    ('ffffffff-2222-2222-2222-222222222222', 'THPT Trường Bên', 'other.edu.vn',   'ket_noi_tri_thuc');
 
 INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
     ('ff000000-0000-0000-0000-000000000001', 'admin@test.edu.vn',   '{}'::jsonb),
@@ -184,6 +193,155 @@ SELECT act_as('ff000000-0000-0000-0000-000000000003');
 SELECT expect('đọc hồ sơ của chính mình không gây đệ quy',
     (SELECT count(*) FROM profiles WHERE id = 'ff000000-0000-0000-0000-000000000003'), 1);
 
+-- ── Nobody hands themselves a role ─────────────────────────────────────────
+-- Everything above this line is decided by profiles.role, which auth_role()
+-- reads and every policy in the schema believes. 001 said which row a user may
+-- update and nothing about which columns; 005 granted UPDATE on the whole
+-- table. So the field that decides who may read a child's marks was writable
+-- by the child, and nothing in this file noticed — every assertion above still
+-- passes for a student who has just made themselves an admin, because by then
+-- they really are one.
+--
+-- 010 refuses the write at the column grant, which means Postgres raises
+-- insufficient_privilege before a single row is examined. That is a different
+-- outcome from "the policy matched nothing and zero rows changed", and the
+-- difference matters: one means the door is locked, the other means the door
+-- happened to open onto an empty room. So these tests name the error.
+
 SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000003');
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE profiles SET role = 'admin'
+        WHERE id = 'ff000000-0000-0000-0000-000000000003';
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — học sinh tự đặt mình thành admin được';
+    END IF;
+    RAISE NOTICE 'ok — học sinh không đổi được vai trò của chính mình';
+END;
+$$;
+
+SELECT expect('vai trò của học sinh vẫn là student sau khi thử nâng quyền',
+    (SELECT count(*) FROM profiles
+     WHERE id = 'ff000000-0000-0000-0000-000000000003' AND role = 'student'), 1);
+
+-- Crossing schools is the same escalation through a different column:
+-- auth_school_id() would then point at the other school's roster.
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE profiles SET school_id = 'ffffffff-2222-2222-2222-222222222222'
+        WHERE id = 'ff000000-0000-0000-0000-000000000003';
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — học sinh tự chuyển mình sang trường khác được';
+    END IF;
+    RAISE NOTICE 'ok — học sinh không tự chuyển trường được';
+END;
+$$;
+
+SELECT expect('học sinh vẫn thuộc trường cũ',
+    (SELECT count(*) FROM profiles
+     WHERE id = 'ff000000-0000-0000-0000-000000000003'
+       AND school_id = 'ffffffff-1111-1111-1111-111111111111'), 1);
+
+-- Staff are ordinary signed-in users as far as this grant is concerned. A
+-- teacher already reads a whole class; admin would be the whole school.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE profiles SET role = 'admin'
+        WHERE id = 'ff000000-0000-0000-0000-000000000002';
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — giáo viên tự lên hiệu trưởng được';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không tự lên admin được';
+END;
+$$;
+
+SELECT expect('giáo viên vẫn là teacher',
+    (SELECT count(*) FROM profiles
+     WHERE id = 'ff000000-0000-0000-0000-000000000002' AND role = 'teacher'), 1);
+
+-- ── And the fields a user does own still work ──────────────────────────────
+-- A lock that also stops somebody fixing the spelling of their own name is a
+-- bug reported as a lock. This is the half of 010 that must keep working.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000003');
+
+UPDATE profiles
+   SET full_name = 'Nguyễn Học Sinh Một',
+       avatar_url = 'https://cdn.rlstest.edu.vn/hs1.png'
+ WHERE id = 'ff000000-0000-0000-0000-000000000003';
+
+SELECT expect('học sinh vẫn sửa được tên hiển thị và ảnh đại diện của mình',
+    (SELECT count(*) FROM profiles
+     WHERE id = 'ff000000-0000-0000-0000-000000000003'
+       AND full_name = 'Nguyễn Học Sinh Một'
+       AND avatar_url = 'https://cdn.rlstest.edu.vn/hs1.png'), 1);
+
+-- ── The second lock, tested on its own ─────────────────────────────────────
+-- The column grant is what closes this hole; the trigger in 010 is what
+-- survives somebody re-opening it, and a guard nobody has ever seen fire is a
+-- guess. It cannot fire while the grant is narrow — the privilege check runs
+-- first — so widen the grant here exactly the way a future migration would by
+-- accident, and check the write is still refused. This time the error is the
+-- trigger's own, not the privilege system's.
+
+SET LOCAL ROLE postgres;
+GRANT UPDATE ON TABLE profiles TO authenticated;
+SELECT act_as('ff000000-0000-0000-0000-000000000003');
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE profiles SET role = 'admin'
+        WHERE id = 'ff000000-0000-0000-0000-000000000003';
+    EXCEPTION WHEN raise_exception THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — nới lại quyền UPDATE là mở lại lỗ nâng quyền';
+    END IF;
+    RAISE NOTICE 'ok — trigger vẫn chặn dù quyền UPDATE bị nới lại toàn bảng';
+END;
+$$;
+
+SELECT expect('vai trò học sinh vẫn nguyên sau khi trigger chặn',
+    (SELECT count(*) FROM profiles
+     WHERE id = 'ff000000-0000-0000-0000-000000000003' AND role = 'student'), 1);
+
+SET LOCAL ROLE postgres;
+
+-- Put the real grant back, so anything added below this line is measured
+-- against the schema as 010 leaves it and not against the widened one. The
+-- ROLLBACK would undo it either way; this is so the file never leaves a reader
+-- guessing which grant is in force at any point in it.
+REVOKE UPDATE ON TABLE profiles FROM authenticated;
+GRANT UPDATE (full_name, avatar_url) ON TABLE profiles TO authenticated;
 
 ROLLBACK;
