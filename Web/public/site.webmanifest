@@ -1,18 +1,29 @@
 {
+  "id": "/",
   "name": "EduPortal - Smart School Management Platform",
   "short_name": "EduPortal",
   "description": "Nền tảng quản lý giáo dục thông minh tích hợp AI Tutor, sổ đầu bài điện tử và cổng kết nối nhà trường - phụ huynh.",
+  "lang": "vi",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",
   "orientation": "any",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }
