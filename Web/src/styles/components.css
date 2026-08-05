@@ -19,6 +19,59 @@
   box-shadow: 18px 0 50px -42px rgba(35, 38, 80, 0.55);
 }
 
+/* Mobile drawer — desktop keeps the sidebar in place, phones slide it in */
+.sidebar-toggle,
+.sidebar-scrim {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0.25s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .sidebar-toggle {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    top: 20px;
+    left: 14px;
+    z-index: 120;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--accent-ink);
+    cursor: pointer;
+    box-shadow: var(--sh-sm);
+  }
+
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    width: 100%;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--ink) 42%, transparent);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
 .logo-container {
   display: flex;
   align-items: center;

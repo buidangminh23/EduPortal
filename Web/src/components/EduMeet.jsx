@@ -32,7 +32,7 @@ function RemoteVideo({ stream }) {
 }
 
 export default function EduMeet() {
-  const { currentRole, selectedStudentId, students } = useContext(AppContext);
+  const { currentRole, selectedStudentId, students, teachers, userSession } = useContext(AppContext);
   const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
 
   const [inCall, setInCall] = useState(false);
@@ -114,6 +114,18 @@ export default function EduMeet() {
   // http→ws and https→wss, in that order: replacing /^http/ alone would turn
   // https into wss only by luck of the s that follows.
   const WS_URL = SERVER_URL.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+  // Phòng họp gắn với lớp của người đang mở EduMeet: giáo viên dùng lớp chủ
+  // nhiệm trong hồ sơ nhân sự, học sinh và phụ huynh dùng lớp của mình. Room id
+  // trước đây là hằng số 'edumeet-lop12a1', nên hai lớp họp cùng lúc rơi vào
+  // đúng một cuộc gọi. Không suy ra được lớp nào thì vào phòng chung, và tên
+  // phòng nói thẳng điều đó thay vì giả vờ là phòng riêng của một lớp.
+  const homeroomClass = (teachers || []).find(item => item.name === userSession?.displayName)?.classJoined;
+  const roomClass = currentRole?.startsWith('teacher')
+    ? (homeroomClass || userSession?.class)
+    : (userSession?.class || activeStudent?.class);
+  const meetingRoom = roomClass
+    ? `edumeet-lop-${roomClass.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`
+    : 'edumeet-chung';
   const streamRef = useRef(null);
   const recordedBlobRef = useRef(null);
   const signalRef = useRef(null);
@@ -364,7 +376,7 @@ export default function EduMeet() {
     if (!inCall) return;
     const sig = createSignaling({
       wsUrl: WS_URL,
-      room: 'edumeet-lop12a1',
+      room: meetingRoom,
       getLocalStream: () => streamRef.current,
       handlers: {
         onStatus: (s) => setSignalStatus(s),
@@ -390,7 +402,7 @@ export default function EduMeet() {
       setSignalStatus('idle');
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inCall]);
+  }, [inCall, meetingRoom]);
 
   // Bot chat generator simulator
   useEffect(() => {

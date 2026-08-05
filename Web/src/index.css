@@ -531,7 +531,6 @@ h1 {
 
 @media (max-width: 900px) {
   .app-command-dock {
-    left: 14px;
     right: 14px;
     overflow-x: auto;
     justify-content: flex-start;
@@ -554,6 +553,10 @@ h1 {
   .account-chip,
   .parent-student-switcher span {
     display: none;
+  }
+  /* The sidebar is off-canvas here, so the dock no longer clears its width */
+  .app-command-dock {
+    left: 14px;
   }
 }
 

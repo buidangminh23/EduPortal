@@ -8,7 +8,7 @@ import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
 import UnconfiguredScreen from './components/UnconfiguredScreen';
 import { isUnconfigured } from './lib/appMode';
-import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye, Menu } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
@@ -42,8 +42,8 @@ const DutySchedule = lazy(() => import('./components/DutySchedule'));
 const SeatingChart = lazy(() => import('./components/SeatingChart'));
 const ClassVoting = lazy(() => import('./components/ClassVoting'));
 const AIRiskAnalysis = lazy(() => import('./components/AIRiskAnalysis'));
-import CasioFX580 from './components/CasioFX580';
-import CasioFloatingWidget from './components/CasioFloatingWidget';
+const CasioFX580 = lazy(() => import('./components/CasioFX580'));
+const CasioFloatingWidget = lazy(() => import('./components/CasioFloatingWidget'));
 const ClassComparison = lazy(() => import('./components/ClassComparison'));
 const SchoolGallery = lazy(() => import('./components/SchoolGallery'));
 
@@ -51,6 +51,7 @@ function App() {
   const { currentRole, userSession } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showLogin, setShowLogin] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Reset tab on role switch
   useEffect(() => {
@@ -59,6 +60,16 @@ function App() {
     }, 0);
     return () => clearTimeout(timer);
   }, [currentRole]);
+
+  // Escape closes the mobile navigation drawer
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen]);
 
   // A build that was given neither a database nor an explicit demo flag stops
   // here, before it can offer anyone a login screen it cannot honour.
@@ -226,8 +237,32 @@ function App() {
 
   return (
     <div className="app-container" data-role={currentRole} data-active-tab={activeTab}>
+      {/* Mobile drawer toggle — stays reachable while the sidebar is off-canvas */}
+      <button
+        className="sidebar-toggle no-print"
+        onClick={() => setSidebarOpen(open => !open)}
+        aria-label={sidebarOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
+        aria-expanded={sidebarOpen}
+        aria-controls="app-sidebar"
+      >
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {sidebarOpen && (
+        <button
+          className="sidebar-scrim no-print"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Đóng menu điều hướng"
+        />
+      )}
+
       {/* Navigation Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       
       <div className="main-content">
         {/* Header / Navbar */}

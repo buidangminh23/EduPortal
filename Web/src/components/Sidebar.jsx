@@ -283,7 +283,7 @@ const DICT_EN = {
   'Định Hướng Nghề Nghiệp': 'Career Guidance'
 };
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClose }) {
   const {
     currentRole,
     selectedStudentId,
@@ -401,6 +401,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     } else {
       setActiveTab(item.id);
     }
+    if (onClose) onClose();
   };
 
   const isItemActive = (item) => {
@@ -417,7 +418,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const sections = getSections();
 
   return (
-    <aside className="sidebar" style={{ overflowY: 'auto' }}>
+    <aside id="app-sidebar" className={`sidebar ${isOpen ? 'open' : ''}`} style={{ overflowY: 'auto' }}>
       <div style={{ flex: 1 }}>
         {/* Logo */}
         <div className="logo-container">
