@@ -207,10 +207,12 @@ function fakeClient() {
       select: (...args) => { calls.push({ table, op: 'select', args }); return chain; },
       eq: (field, value) => { calls.push({ table, op: 'eq', field, value }); return chain; },
       order: (field, options) => { calls.push({ table, op: 'order', field, options }); return chain; },
+      limit: (value) => { calls.push({ table, op: 'limit', value }); return chain; },
       insert: (payload) => { calls.push({ table, op: 'insert', payload }); return chain; },
       update: (payload) => { calls.push({ table, op: 'update', payload }); return chain; },
       upsert: (payload, options) => { calls.push({ table, op: 'upsert', payload, options }); return chain; },
       single: () => Promise.resolve(result),
+      maybeSingle: () => Promise.resolve(result),
       then: (resolve) => Promise.resolve(result).then(resolve)
     };
     return chain;
@@ -276,9 +278,14 @@ describe('supabase adapter · query shape', () => {
   });
 
   it('surfaces a database error instead of returning an empty list', async () => {
-    const failing = { from: () => ({
-      select: () => ({ then: (resolve) => Promise.resolve({ data: null, error: { message: 'permission denied' } }).then(resolve) })
-    }) };
+    const failing = { from: () => {
+      const chain = {
+        select: () => chain,
+        limit: () => chain,
+        then: (resolve) => Promise.resolve({ data: null, error: { message: 'permission denied' } }).then(resolve)
+      };
+      return chain;
+    } };
     await expect(createSupabaseAdapter(failing, 'school-1').listInvoices()).rejects.toThrow(/permission denied/);
   });
 
@@ -295,7 +302,7 @@ describe('supabase adapter · query shape', () => {
     expect(call.payload.selected_answers).toEqual({ MP01: 'B' });
   });
 
-  it('does not send the browser-only id to Postgres, which has no such column', async () => {
+  it('does not send the app-shaped field name, which Postgres has no column for', async () => {
     const { calls, client } = fakeClient();
     await createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper({ localId: 'local-1' }));
 
@@ -307,6 +314,124 @@ describe('supabase adapter · query shape', () => {
     await createSupabaseAdapter(client, 'school-1').listMockExamResults();
 
     expect(find(calls, 'order', 'mock_exam_results').options).toMatchObject({ ascending: false });
+  });
+
+  it('sends the outbox key, so the database can refuse the same paper twice', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper({ localId: 'local-42' }));
+
+    expect(find(calls, 'insert', 'mock_exam_results').payload.local_id).toBe('local-42');
+  });
+
+  it('sends no key for a paper that did not come through the outbox', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper());
+
+    expect(find(calls, 'insert', 'mock_exam_results').payload.local_id).toBeNull();
+  });
+});
+
+/**
+ * A client whose insert is always refused, so the adapter's reading of that
+ * refusal can be tested. `single` answers the insert, `maybeSingle` the read
+ * back — the same two calls the adapter makes.
+ */
+function refusingClient(error, stored = null) {
+  const calls = [];
+  const chain = {
+    insert: (payload) => { calls.push({ op: 'insert', payload }); return chain; },
+    select: () => chain,
+    eq: (field, value) => { calls.push({ op: 'eq', field, value }); return chain; },
+    single: () => Promise.resolve({ data: null, error }),
+    maybeSingle: () => Promise.resolve({ data: stored, error: null })
+  };
+  return { calls, client: { from: () => chain } };
+}
+
+describe('a paper the outbox sent twice', () => {
+  const duplicate = { code: '23505', message: 'duplicate key value violates unique constraint' };
+
+  it('is a paper already stored, not a send that failed', async () => {
+    const stored = { id: 'row-1', local_id: 'local-42', student_id: 'HS001' };
+    const { calls, client } = refusingClient(duplicate, stored);
+
+    const saved = await createSupabaseAdapter(client, 'school-1').saveMockExamResult(
+      mockPaper({ localId: 'local-42' })
+    );
+
+    // Handed back rather than thrown: the outbox must drop this paper from the
+    // queue instead of retrying it until it is called stuck.
+    expect(saved).toEqual(stored);
+    expect(calls).toContainEqual({ op: 'eq', field: 'local_id', value: 'local-42' });
+  });
+
+  it('does not hide a refusal that is not a duplicate', async () => {
+    const { client } = refusingClient({ code: '42501', message: 'permission denied' });
+
+    await expect(
+      createSupabaseAdapter(client, 'school-1').saveMockExamResult(mockPaper({ localId: 'local-42' }))
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('is stored once by the browser store too', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'local-42' }));
+    const again = await localAdapter.saveMockExamResult(mockPaper({ localId: 'local-42', score: 3 }));
+
+    const rows = await localAdapter.listMockExamResults({});
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].score)).toBe(8.25);
+    expect(again.id).toBe('local-42');
+  });
+});
+
+describe('bounded reads', () => {
+  const limitFor = (calls, table) => calls.find((c) => c.op === 'limit' && c.table === table)?.value;
+
+  it('never asks Postgres for every row of a table', async () => {
+    const { calls, client } = fakeClient();
+    const adapter = createSupabaseAdapter(client, 'school-1');
+
+    await adapter.listAssessments();
+    await adapter.listCommentResults();
+    await adapter.listAttendance();
+    await adapter.listLeaveRequests();
+    await adapter.listInvoices();
+    await adapter.listMockExamResults();
+
+    [
+      'assessment_records',
+      'comment_results',
+      'attendance_records',
+      'leave_requests',
+      'invoices',
+      'mock_exam_results'
+    ].forEach((table) => {
+      expect(limitFor(calls, table), table).toBeGreaterThan(0);
+    });
+  });
+
+  it('lets a caller that knows what it needs ask for less', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').listMockExamResults({ limit: 25 });
+
+    expect(limitFor(calls, 'mock_exam_results')).toBe(25);
+  });
+
+  it('caps the browser store the same way', async () => {
+    for (let i = 0; i < 5; i++) {
+      await localAdapter.saveMockExamResult(mockPaper({ localId: `local-${i}` }));
+    }
+
+    expect(await localAdapter.listMockExamResults({ limit: 2 })).toHaveLength(2);
+  });
+
+  it('drops the oldest sittings rather than an arbitrary handful when it caps', async () => {
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'old', takenAt: '2026-01-04T07:00:00.000Z' }));
+    await localAdapter.saveMockExamResult(mockPaper({ localId: 'new', takenAt: '2026-08-03T07:00:00.000Z' }));
+
+    const [only] = await localAdapter.listMockExamResults({ limit: 1 });
+
+    expect(only.id).toBe('new');
   });
 });
 

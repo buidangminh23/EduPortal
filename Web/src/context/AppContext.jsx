@@ -11,7 +11,7 @@ import { applySubjectComment, applySubjectRecord, computeSemesterAverage, valida
 import { currentSchoolDay } from '../config/demoClock';
 import { getRepository, resetRepository, isBrowserStore } from '../lib/db';
 import { fromMockExamRow } from '../lib/db/repository';
-import { enqueue, flushOutbox, pendingCount } from '../lib/exam/submissionOutbox';
+import { enqueue, flushOutbox, nextRetryDelay, pendingCount } from '../lib/exam/submissionOutbox';
 import { safeStorage } from '../lib/safeStorage';
 
 
@@ -24,6 +24,22 @@ import { safeStorage } from '../lib/safeStorage';
  * is one place that stops being a constant.
  */
 const CURRENT_SEMESTER = 2;
+
+/**
+ * Ceilings on the two reads that run once per session, for every role.
+ *
+ * Neither is a page size — the screens above these have no paging — so both sit
+ * well above what a school of this size produces: a thousand students carrying
+ * a dozen subjects for one semester is twelve thousand marks, and a mock exam
+ * season is a few papers each. They are here so that a table which has outgrown
+ * that, or a query that one day escapes its filter, cannot ask a browser tab to
+ * hold every record the school has ever kept.
+ *
+ * Sittings come back newest first, so if the mock exam ceiling is ever reached
+ * what the screens lose is the oldest papers rather than an arbitrary slice.
+ */
+const GRADEBOOK_ROW_LIMIT = 20000;
+const MOCK_EXAM_ROW_LIMIT = 5000;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
@@ -957,6 +973,23 @@ export const AppProvider = ({ children }) => {
 
   const currentRole = userSession?.role || '';
 
+  /**
+   * The one student this session is about, when it is about one student.
+   *
+   * A student and a parent read one person's records; a teacher or the head
+   * teacher read a class or a school. Asking the database for that one student
+   * rather than asking for everything and letting row-level security cut it
+   * down afterwards is the difference between a dozen rows and every row the
+   * caller is entitled to — which for an admin is the whole school.
+   *
+   * Null for a signed-in parent, whose child is named by the guardians table
+   * rather than by anything the browser holds; row-level security still narrows
+   * that read to their own children, it is simply not narrowed twice.
+   */
+  const ownStudentId = (currentRole === 'student' || currentRole === 'parent')
+    ? (userSession?.studentId || null)
+    : null;
+
   // State is the session; storage is a copy of it kept so a refresh does not
   // sign the user out. Mirroring here rather than in each setter means the two
   // can no longer disagree — which they did, because a setter could write
@@ -1221,14 +1254,22 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('mockExamHistory', JSON.stringify(mockExamHistory));
   }, [mockExamHistory]);
 
-  /** How many handed-in papers have not reached the database yet. */
-  const [pendingSubmissions, setPendingSubmissions] = useState(() => pendingCount());
+  /**
+   * How many handed-in papers have not reached the database yet, and how many
+   * flushes have finished.
+   *
+   * The count alone cannot re-arm the retry below: a flush where every send
+   * failed leaves it exactly where it was, and an effect watching an unchanged
+   * number never runs again — which is how a paper ends up parked until
+   * somebody reloads the tab. `runs` is what makes the same number a new fact.
+   */
+  const [outbox, setOutbox] = useState(() => ({ pending: pendingCount(), runs: 0 }));
 
   const flushMockExamOutbox = useCallback(() => {
     const repo = getRepository(profile?.school_id ?? null);
     flushOutbox((result) => repo.saveMockExamResult(result))
-      .then(({ remaining }) => setPendingSubmissions(remaining))
-      .catch(() => setPendingSubmissions(pendingCount()));
+      .then(({ remaining }) => setOutbox((prev) => ({ pending: remaining, runs: prev.runs + 1 })))
+      .catch(() => setOutbox((prev) => ({ pending: pendingCount(), runs: prev.runs + 1 })));
   }, [profile?.school_id]);
 
   // Papers left over from a session that ended badly — the tab was closed, the
@@ -1241,19 +1282,47 @@ export const AppProvider = ({ children }) => {
   }, [flushMockExamOutbox]);
 
   /**
+   * Tries again, on its own, while the browser stays online.
+   *
+   * The failure this covers is the quiet one: the server was busy for ten
+   * seconds during a hand-in spike, `navigator.onLine` never flickered, and the
+   * student will not sit another paper because they have already sat this one.
+   * Without a timer their result waits for a reload that never comes.
+   *
+   * The gap widens with each failure and is scattered so a hall of machines
+   * does not come back in step. A queue holding nothing, or nothing but papers
+   * that have used up their attempts, schedules no timer at all — those stay in
+   * the outbox and stay counted, for a person to deal with.
+   */
+  useEffect(() => {
+    if (outbox.pending === 0) return undefined;
+
+    const delay = nextRetryDelay();
+    if (delay === null) return undefined;
+
+    const timer = setTimeout(flushMockExamOutbox, delay);
+    return () => clearTimeout(timer);
+  }, [flushMockExamOutbox, outbox]);
+
+  /**
    * Replaces the seeded history with what the database holds.
    *
    * In a real deployment the database is the whole truth, empty included: a
    * school looking at its own dashboard must not see the demo's invented
    * results. In the browser store the seed is all there is to look at, so
    * stored attempts are merged in beside it instead.
+   *
+   * A student reads their own sittings; a teacher and the head teacher read
+   * the school's, because the history table, the leaderboard and the top-scorer
+   * panels are all about more than one person. Both are bounded, and both come
+   * back newest first.
    */
   useEffect(() => {
     let cancelled = false;
     const repo = getRepository(profile?.school_id ?? null);
 
     Promise.resolve()
-      .then(() => repo.listMockExamResults())
+      .then(() => repo.listMockExamResults({ studentId: ownStudentId, limit: MOCK_EXAM_ROW_LIMIT }))
       .then((rows) => {
         if (cancelled) return;
         const stored = (rows || []).map(fromMockExamRow);
@@ -1274,7 +1343,7 @@ export const AppProvider = ({ children }) => {
       });
 
     return () => { cancelled = true; };
-  }, [profile?.school_id]);
+  }, [profile?.school_id, ownStudentId]);
 
   const [customExams, setCustomExams] = useState(() => {
     const saved = localStorage.getItem('customExams');
@@ -1709,13 +1778,21 @@ export const AppProvider = ({ children }) => {
    * something to look at while a real deployment sees its own records. Only
    * subjects present in the store are touched — a seeded subject nobody has
    * entered marks for is left alone rather than blanked.
+   *
+   * A student or a parent asks for that one student's marks: a dozen rows
+   * instead of the whole gradebook filtered down to a dozen rows afterwards.
+   * Staff ask for the class or the school, bounded.
    */
   useEffect(() => {
     let cancelled = false;
     const repo = getRepository(profile?.school_id ?? null);
 
     Promise.resolve()
-      .then(() => repo.listAssessments({ semester: CURRENT_SEMESTER }))
+      .then(() => repo.listAssessments({
+        studentId: ownStudentId,
+        semester: CURRENT_SEMESTER,
+        limit: GRADEBOOK_ROW_LIMIT
+      }))
       .then((rows) => {
         if (cancelled || !rows?.length) return;
 
@@ -1747,7 +1824,7 @@ export const AppProvider = ({ children }) => {
       });
 
     return () => { cancelled = true; };
-  }, [profile?.school_id]);
+  }, [profile?.school_id, ownStudentId]);
 
   /**
    * Records Đạt / Chưa đạt for a nhận xét-only subject.
@@ -3228,7 +3305,7 @@ export const AppProvider = ({ children }) => {
       setSelectedStudentId: selectStudentSafely,
       mockExamHistory: scopeStudentRows(mockExamHistory),
       saveMockExamResult,
-      pendingSubmissions,
+      pendingSubmissions: outbox.pending,
       flushMockExamOutbox,
       customExams,
       addCustomExam,

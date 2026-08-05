@@ -7,8 +7,12 @@ import {
   clearOutbox,
   pendingCount,
   stuckCount,
+  retryDelay,
+  nextRetryDelay,
   OUTBOX_KEY,
-  MAX_ATTEMPTS
+  MAX_ATTEMPTS,
+  RETRY_BASE_MS,
+  RETRY_CEILING_MS
 } from './submissionOutbox';
 
 function memoryStorage({ failOnWrite = false } = {}) {
@@ -128,6 +132,114 @@ describe('flushOutbox', () => {
 
     await expect(flushOutbox(send, { storage })).resolves.toMatchObject({ sent: 0, remaining: 0 });
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('two flushes at once', () => {
+  it('sends a paper once when the mount flush and the online flush overlap', async () => {
+    enqueue(paper({ examId: 'only' }), { storage });
+
+    let answer;
+    const serverReply = new Promise((resolve) => { answer = resolve; });
+    const send = vi.fn(async () => { await serverReply; });
+
+    const first = flushOutbox(send, { storage });
+    const second = flushOutbox(send, { storage });
+    answer();
+    await Promise.all([first, second]);
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(listOutbox(storage)).toHaveLength(0);
+  });
+
+  it('counts one paper as sent once, not once per caller', async () => {
+    enqueue(paper(), { storage });
+
+    let answer;
+    const serverReply = new Promise((resolve) => { answer = resolve; });
+    const send = vi.fn(async () => { await serverReply; });
+
+    const first = flushOutbox(send, { storage });
+    const second = flushOutbox(send, { storage });
+    answer();
+    const [outcome] = await Promise.all([first, second]);
+
+    expect(outcome).toMatchObject({ sent: 1, failed: 0, remaining: 0 });
+  });
+
+  it('still sends a paper handed in mid-flush, on the pass that follows', async () => {
+    enqueue(paper({ examId: 'first' }), { storage });
+
+    const sent = [];
+    const send = vi.fn(async (result) => {
+      sent.push(result.examId);
+      if (result.examId !== 'first') return;
+      // What handing in during a flush actually does: queue, then ask for a
+      // flush that finds one already running.
+      enqueue(paper({ examId: 'second' }), { storage });
+      flushOutbox(send, { storage });
+    });
+
+    const outcome = await flushOutbox(send, { storage });
+
+    expect(sent).toEqual(['first', 'second']);
+    expect(outcome).toMatchObject({ sent: 2, remaining: 0 });
+    expect(listOutbox(storage)).toHaveLength(0);
+  });
+
+  it('lets the next flush start once the last one has finished', async () => {
+    enqueue(paper({ examId: 'a' }), { storage });
+    const send = vi.fn(async () => {});
+
+    await flushOutbox(send, { storage });
+    enqueue(paper({ examId: 'b' }), { storage });
+    await flushOutbox(send, { storage });
+
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(listOutbox(storage)).toHaveLength(0);
+  });
+});
+
+describe('automatic retry', () => {
+  const noJitter = () => 1;
+
+  it('waits longer after each failure, up to a ceiling', () => {
+    expect(retryDelay(0, noJitter)).toBe(RETRY_BASE_MS);
+    expect(retryDelay(1, noJitter)).toBe(RETRY_BASE_MS * 2);
+    expect(retryDelay(2, noJitter)).toBe(RETRY_BASE_MS * 4);
+    expect(retryDelay(MAX_ATTEMPTS - 1, noJitter)).toBe(RETRY_CEILING_MS);
+  });
+
+  it('scatters the wait, so a hall of machines does not come back in step', () => {
+    expect(retryDelay(0, () => 0)).toBe(RETRY_BASE_MS / 2);
+    expect(retryDelay(0, () => 1)).toBe(RETRY_BASE_MS);
+  });
+
+  it('asks for no timer when there is nothing waiting', () => {
+    expect(nextRetryDelay(storage)).toBeNull();
+  });
+
+  it('asks for no timer when everything left has used up its attempts', async () => {
+    enqueue(paper(), { storage });
+    const send = vi.fn(async () => { throw new Error('vẫn lỗi'); });
+
+    for (let i = 0; i < MAX_ATTEMPTS; i++) await flushOutbox(send, { storage });
+
+    expect(stuckCount(storage)).toBe(1);
+    expect(nextRetryDelay(storage)).toBeNull();
+  });
+
+  it('times the next attempt from the paper that has been tried least', async () => {
+    enqueue(paper({ examId: 'failing' }), { storage });
+    const send = vi.fn(async () => { throw new Error('lỗi'); });
+    await flushOutbox(send, { storage });
+    await flushOutbox(send, { storage });
+
+    expect(nextRetryDelay(storage, noJitter)).toBe(retryDelay(2, noJitter));
+
+    enqueue(paper({ examId: 'fresh' }), { storage });
+
+    expect(nextRetryDelay(storage, noJitter)).toBe(retryDelay(0, noJitter));
   });
 });
 

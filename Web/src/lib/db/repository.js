@@ -26,6 +26,26 @@ const KEYS = {
   mockExams: 'db_mock_exam_results'
 };
 
+/**
+ * Rows a list hands back when the caller does not say otherwise.
+ *
+ * Not a page size — nothing above this layer pages — but a ceiling. Row-level
+ * security decides which rows a caller may see, and for an admin that is the
+ * whole school: without a bound, one screen asking for "the results" is asking
+ * a browser tab to hold every result the school has ever recorded. A caller
+ * that genuinely needs more says so and says why.
+ */
+export const DEFAULT_ROW_LIMIT = 1000;
+
+/**
+ * Postgres unique_violation.
+ *
+ * On mock_exam_results it means the outbox sent a paper that had already
+ * arrived, which is a write that already happened rather than a write that
+ * failed. See supabase/migrations/008_mock_exam_idempotency.sql.
+ */
+const UNIQUE_VIOLATION = '23505';
+
 function readAll(key) {
   try {
     const raw = safeStorage.getItem(key);
@@ -65,11 +85,11 @@ function upsertRow(key, identity, patch) {
 export const localAdapter = {
   name: 'local',
 
-  async listAssessments({ studentId, semester } = {}) {
+  async listAssessments({ studentId, semester, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = {};
     if (studentId) filter.student_id = studentId;
     if (semester) filter.semester = semester;
-    return readAll(KEYS.assessments).filter((row) => matches(row, filter));
+    return readAll(KEYS.assessments).filter((row) => matches(row, filter)).slice(0, limit);
   },
 
   async saveAssessment({ studentId, subject, semester, regular, midterm, final, average, updatedBy }) {
@@ -95,16 +115,16 @@ export const localAdapter = {
     );
   },
 
-  async listCommentResults({ studentId } = {}) {
+  async listCommentResults({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = studentId ? { student_id: studentId } : {};
-    return readAll(KEYS.comments).filter((row) => matches(row, filter));
+    return readAll(KEYS.comments).filter((row) => matches(row, filter)).slice(0, limit);
   },
 
-  async listAttendance({ studentId, date } = {}) {
+  async listAttendance({ studentId, date, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = {};
     if (studentId) filter.student_id = studentId;
     if (date) filter.date = date;
-    return readAll(KEYS.attendance).filter((row) => matches(row, filter));
+    return readAll(KEYS.attendance).filter((row) => matches(row, filter)).slice(0, limit);
   },
 
   async saveAttendance({ studentId, date, status, checkInTime, note, recordedBy }) {
@@ -121,9 +141,9 @@ export const localAdapter = {
     );
   },
 
-  async listLeaveRequests({ studentId } = {}) {
+  async listLeaveRequests({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = studentId ? { student_id: studentId } : {};
-    return readAll(KEYS.leave).filter((row) => matches(row, filter));
+    return readAll(KEYS.leave).filter((row) => matches(row, filter)).slice(0, limit);
   },
 
   async createLeaveRequest({ id, studentId, fromDate, toDate, reason, requestedBy }) {
@@ -153,11 +173,11 @@ export const localAdapter = {
     });
   },
 
-  async listInvoices({ studentId, status } = {}) {
+  async listInvoices({ studentId, status, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = {};
     if (studentId) filter.student_id = studentId;
     if (status) filter.status = status;
-    return readAll(KEYS.invoices).filter((row) => matches(row, filter));
+    return readAll(KEYS.invoices).filter((row) => matches(row, filter)).slice(0, limit);
   },
 
   async createInvoice({ id, studentId, title, amount, dueDate }) {
@@ -197,17 +217,28 @@ export const localAdapter = {
     });
   },
 
-  async listMockExamResults({ studentId } = {}) {
+  async listMockExamResults({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = studentId ? { student_id: studentId } : {};
+    // Sorted before the cap, so a capped list is the newest sittings rather
+    // than whichever ones happen to sit at the front of storage.
     return readAll(KEYS.mockExams)
       .filter((row) => matches(row, filter))
-      .sort((a, b) => String(b.taken_at).localeCompare(String(a.taken_at)));
+      .sort((a, b) => String(b.taken_at).localeCompare(String(a.taken_at)))
+      .slice(0, limit);
   },
 
   async saveMockExamResult(result) {
     // Appended, never upserted: sitting the same paper twice is two results,
     // and the second must not overwrite the first.
     const rows = readAll(KEYS.mockExams);
+
+    // The same guarantee the unique index on local_id gives Postgres, so the
+    // browser store cannot end up with the duplicate the database refuses: a
+    // paper the outbox sends twice is stored once, and the second send is told
+    // the paper is already there rather than told it failed.
+    const already = result.localId ? rows.find((row) => row.id === result.localId) : null;
+    if (already) return already;
+
     const row = { ...toMockExamRow(result), id: result.localId || `local-${rows.length + 1}-${Date.now()}` };
     rows.push(row);
 
@@ -285,8 +316,8 @@ export function createSupabaseAdapter(client, schoolId) {
   return {
     name: 'supabase',
 
-    async listAssessments({ studentId, semester } = {}) {
-      let query = rows('assessment_records').select('*');
+    async listAssessments({ studentId, semester, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('assessment_records').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       if (semester) query = query.eq('semester', semester);
       return unwrap(await query);
@@ -313,8 +344,8 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
-    async listCommentResults({ studentId } = {}) {
-      let query = rows('comment_results').select('*');
+    async listCommentResults({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('comment_results').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       return unwrap(await query);
     },
@@ -339,8 +370,8 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
-    async listAttendance({ studentId, date } = {}) {
-      let query = rows('attendance_records').select('*');
+    async listAttendance({ studentId, date, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('attendance_records').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       if (date) query = query.eq('date', date);
       return unwrap(await query);
@@ -367,8 +398,8 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
-    async listLeaveRequests({ studentId } = {}) {
-      let query = rows('leave_requests').select('*');
+    async listLeaveRequests({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('leave_requests').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       return unwrap(await query);
     },
@@ -399,8 +430,8 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
-    async listInvoices({ studentId, status } = {}) {
-      let query = rows('invoices').select('*');
+    async listInvoices({ studentId, status, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('invoices').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       if (status) query = query.eq('status', status);
       return unwrap(await query);
@@ -446,8 +477,12 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
-    async listMockExamResults({ studentId } = {}) {
-      let query = rows('mock_exam_results').select('*').order('taken_at', { ascending: false });
+    async listMockExamResults({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
+      // Newest first and then capped, so a capped list is the recent sittings.
+      let query = rows('mock_exam_results')
+        .select('*')
+        .order('taken_at', { ascending: false })
+        .limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
       return unwrap(await query);
     },
@@ -455,13 +490,30 @@ export function createSupabaseAdapter(client, schoolId) {
     async saveMockExamResult(result) {
       // Insert, not upsert. Two sittings of the same paper are two rows, and
       // the table grants no UPDATE to anybody: a handed-in paper stays as it
-      // was handed in.
-      return unwrap(
-        await rows('mock_exam_results')
-          .insert({ school_id: schoolId, ...toMockExamRow(result) })
-          .select()
-          .single()
-      );
+      // was handed in. `local_id` is the outbox's key travelling with the
+      // paper, and the unique index on it is what refuses a second copy of one
+      // sitting without needing that UPDATE privilege.
+      const { data, error } = await rows('mock_exam_results')
+        .insert({ school_id: schoolId, local_id: result.localId ?? null, ...toMockExamRow(result) })
+        .select()
+        .single();
+
+      if (!error) return data;
+
+      // A unique violation here means this paper is already in the table: the
+      // send succeeded, on an attempt whose answer never got back to the
+      // browser. Reporting it as a failure would leave the outbox retrying a
+      // paper that is safely stored, ten times, and then calling it stuck.
+      if (error.code === UNIQUE_VIOLATION) {
+        if (!result.localId) return null;
+        const stored = await rows('mock_exam_results')
+          .select('*')
+          .eq('local_id', result.localId)
+          .maybeSingle();
+        return stored.data ?? null;
+      }
+
+      throw new Error(error.message || 'Lỗi truy cập cơ sở dữ liệu.');
     }
   };
 }

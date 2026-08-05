@@ -26,6 +26,19 @@ export const OUTBOX_KEY = 'mock_exam_outbox';
  */
 export const MAX_ATTEMPTS = 10;
 
+/**
+ * How long the outbox waits before trying a failed paper again.
+ *
+ * The first retry comes after a couple of seconds and each further failure
+ * doubles the wait, up to five minutes — a server that is refusing everything
+ * is not helped by being asked more often. Half of every wait is drawn at
+ * random: a hall full of machines failed at the same moment for the same
+ * reason, and if they all came back in step they would rebuild the spike that
+ * knocked them over.
+ */
+export const RETRY_BASE_MS = 2_000;
+export const RETRY_CEILING_MS = 5 * 60 * 1_000;
+
 function readRaw(storage) {
   try {
     const raw = storage.getItem(OUTBOX_KEY);
@@ -79,12 +92,102 @@ export function removeFromOutbox(localId, storage = safeStorage) {
 }
 
 /**
+ * How long to wait before the next automatic attempt.
+ *
+ * @param {number} attempts Failures the paper has already had.
+ * @param {() => number} random Injectable so a test can pin the jitter.
+ */
+export function retryDelay(attempts, random = Math.random) {
+  const steady = Math.min(RETRY_BASE_MS * 2 ** Math.max(attempts, 0), RETRY_CEILING_MS);
+  return Math.round(steady / 2 + random() * (steady / 2));
+}
+
+/**
+ * When the outbox should try again, or null when it should not try at all.
+ *
+ * Null covers both an empty queue and one holding nothing but papers that have
+ * used up their attempts, so the caller sets no timer rather than waking every
+ * few seconds to find nothing to do. The wait is timed from the paper that has
+ * been tried least, so a freshly queued one is not made to serve the sentence
+ * of the one that has been failing all morning.
+ */
+export function nextRetryDelay(storage = safeStorage, random = Math.random) {
+  const waiting = readRaw(storage).filter((item) => item.attempts < MAX_ATTEMPTS);
+  if (waiting.length === 0) return null;
+
+  return retryDelay(Math.min(...waiting.map((item) => item.attempts)), random);
+}
+
+/**
+ * The flush currently running, and whether another was asked for while it ran.
+ *
+ * All four triggers can fire together — the app mounts, the browser announces
+ * it is online, a paper is handed in, a student presses the retry button — and
+ * two flushes reading the same snapshot would each find the same pending paper
+ * and each send it. Module state rather than per-call, because the thing being
+ * guarded is the queue in storage, which is shared by every caller.
+ */
+let inFlight = null;
+let followUpRequested = false;
+
+/**
  * Try to send everything waiting.
+ *
+ * A call that arrives while a flush is running does not start a second walk of
+ * the queue: it asks the one already running to go round again when it is
+ * done, and gets that same promise back. So a paper handed in mid-flight is
+ * still sent, and however many callers arrived meanwhile it is one extra pass
+ * rather than one per caller. `send` and `storage` are taken from whichever
+ * call started the flush; in this app there is only one of each.
  *
  * @param {(result: object) => Promise<unknown>} send Usually the repository.
  * @returns {Promise<{ sent: number, failed: number, remaining: number }>}
  */
-export async function flushOutbox(send, { storage = safeStorage } = {}) {
+export function flushOutbox(send, { storage = safeStorage } = {}) {
+  if (inFlight) {
+    followUpRequested = true;
+    return inFlight;
+  }
+
+  followUpRequested = false;
+
+  // Deferred by one turn on purpose. `send` runs synchronously up to its own
+  // first await, so calling drain here would let it send a paper — and let
+  // anything it triggers call back in here — before this assignment had
+  // happened, which is the guard being open at the one moment it matters.
+  //
+  // The slot is only cleared by the run that still owns it. Clearing it
+  // unconditionally lets a run that settles late wipe the marker belonging to
+  // the run after it, and the next caller — often `send` itself, handing in a
+  // second paper — then finds the guard open and starts a second walk of the
+  // same queue. Two walks write each other's stale snapshots back, so the
+  // paper each has just sent reappears, and the outbox sends it for as long as
+  // that lasts.
+  const run = Promise.resolve()
+    .then(() => drain(send, storage))
+    .finally(() => { if (inFlight === run) inFlight = null; });
+
+  inFlight = run;
+  return run;
+}
+
+async function drain(send, storage) {
+  let total = await sendPending(send, storage);
+
+  while (followUpRequested) {
+    followUpRequested = false;
+    const again = await sendPending(send, storage);
+    total = {
+      sent: total.sent + again.sent,
+      failed: total.failed + again.failed,
+      remaining: again.remaining
+    };
+  }
+
+  return total;
+}
+
+async function sendPending(send, storage) {
   const items = readRaw(storage);
   let sent = 0;
   let failed = 0;
