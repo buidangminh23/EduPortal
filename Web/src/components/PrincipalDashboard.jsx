@@ -2,6 +2,12 @@ import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import FeeReconciliation from './FeeReconciliation';
 import { currentSchoolDay } from '../config/demoClock';
+import {
+  ATTENDANCE_LABEL,
+  ATTENDANCE_STATUS,
+  resolveAttendanceStatus,
+  summariseDailyAttendance
+} from '../lib/domain/attendance';
 import { 
   Users, 
   TrendingUp,
@@ -23,6 +29,14 @@ import {
   ClipboardList
 } from 'lucide-react';
 import AdminOverview from './dash/AdminOverview';
+
+/** Badge styling per resolved attendance status. */
+const ATTENDANCE_BADGE = {
+  [ATTENDANCE_STATUS.PRESENT]: 'badge-success',
+  [ATTENDANCE_STATUS.LATE]: 'badge-warning',
+  [ATTENDANCE_STATUS.EXCUSED]: 'badge-secondary',
+  [ATTENDANCE_STATUS.UNEXCUSED]: 'badge-danger'
+};
 
 
 export default function PrincipalDashboard({ setActiveTab }) {
@@ -116,24 +130,23 @@ export default function PrincipalDashboard({ setActiveTab }) {
 
   const financeLedger = getFinanceLedger();
 
-  // Attendance calculations
+  // Attendance calculations — the same domain rule a student's own page uses, so
+  // the figure reported upward and the figure a family sees can be reconciled.
+  // The rate covers the sessions actually recorded; students nobody has ticked
+  // off yet are reported separately rather than counted as vắng.
   const todayLogs = attendanceLogs ? attendanceLogs.filter(l => l.date === currentSchoolDay()) : [];
-  const presentToday = todayLogs.filter(l => l.status === 'present').length;
-  const lateToday = todayLogs.filter(l => l.status === 'late').length;
-  const totalStudentsCount = students.length;
-  const totalPresentAndLate = presentToday + lateToday;
-  const attendancePct = totalStudentsCount > 0 ? Math.round((totalPresentAndLate / totalStudentsCount) * 100) : 0;
+  const schoolAttendance = summariseDailyAttendance(
+    students.map(s => s.id),
+    todayLogs,
+    leaveRequests
+  );
+  /** Null until the first register is opened — "chưa điểm danh", not 0%. */
+  const attendancePct = schoolAttendance.rate;
 
   // Class-wise attendance rate calculator
   const getClassAttendanceStats = (className) => {
-    const classStudents = students.filter(s => s.class === className);
-    if (classStudents.length === 0) return { pct: 0, present: 0, late: 0, total: 0 };
-    const classLogs = todayLogs.filter(l => classStudents.some(s => s.id === l.studentId));
-    const pres = classLogs.filter(l => l.status === 'present').length;
-    const lat = classLogs.filter(l => l.status === 'late').length;
-    const total = classStudents.length;
-    const pct = Math.round(((pres + lat) / total) * 100);
-    return { pct, present: pres, late: lat, total };
+    const classStudentIds = students.filter(s => s.class === className).map(s => s.id);
+    return summariseDailyAttendance(classStudentIds, todayLogs, leaveRequests);
   };
 
   // RIASEC counts aggregator
@@ -1314,30 +1327,42 @@ export default function PrincipalDashboard({ setActiveTab }) {
                   <circle cx="90" cy="90" r="75" fill="none" stroke="rgba(0,0,0,0.03)" strokeWidth="14" />
                   <circle cx="90" cy="90" r="75" fill="none" stroke="url(#attendance-grad)" strokeWidth="14"
                           strokeDasharray={2 * Math.PI * 75}
-                          strokeDashoffset={(2 * Math.PI * 75) * (1 - attendancePct / 100)}
+                          strokeDashoffset={(2 * Math.PI * 75) * (1 - (attendancePct ?? 0) / 100)}
                           strokeLinecap="round" transform="rotate(-90 90 90)"
                           style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
                 </svg>
                 <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'Outfit, sans-serif' }}>
-                    {attendancePct}%
+                  <span style={{ fontSize: attendancePct === null ? '1.1rem' : '2.2rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'Outfit, sans-serif' }}>
+                    {attendancePct === null ? 'Chưa điểm danh' : `${attendancePct}%`}
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>CÓ MẶT</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'center' }}>
+                    {attendancePct === null
+                      ? 'CHƯA LỚP NÀO GHI SỔ'
+                      : `CÓ MẶT · ĐÃ ĐIỂM DANH ${schoolAttendance.recorded}/${schoolAttendance.enrolled}`}
+                  </span>
                 </div>
               </div>
-              
-              <div style={{ display: 'flex', gap: '20px', marginTop: '24px', width: '100%', justifyContent: 'space-around', borderTop: '1px solid var(--border-card)', paddingTop: '16px' }}>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', width: '100%', justifyContent: 'space-around', borderTop: '1px solid var(--border-card)', paddingTop: '16px', flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>{presentToday}</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>{schoolAttendance.present}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Đi học đúng giờ</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-warning)' }}>{lateToday}</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-warning)' }}>{schoolAttendance.late}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vào lớp muộn</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-danger)' }}>{totalStudentsCount - presentToday - lateToday}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vắng mặt</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{schoolAttendance.excused}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Nghỉ có phép</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-danger)' }}>{schoolAttendance.unexcused}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vắng không phép</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-muted)' }}>{schoolAttendance.notRecorded}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Chưa điểm danh</div>
                 </div>
               </div>
             </div>
@@ -1355,18 +1380,28 @@ export default function PrincipalDashboard({ setActiveTab }) {
                     <div key={className} style={{ padding: '14px', borderRadius: '12px', background: 'rgba(0,0,0,0.01)', border: '1px solid var(--border-card)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Lớp {className}</span>
-                        <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{stats.pct}% ({stats.present + stats.late}/{stats.total})</span>
+                        <span style={{ fontWeight: 700, color: stats.rate === null ? 'var(--text-muted)' : 'var(--accent-primary)' }}>
+                          {stats.rate === null
+                            ? 'Chưa điểm danh'
+                            : `${stats.rate}% (${stats.present + stats.late}/${stats.recorded})`}
+                        </span>
                       </div>
-                      
+
                       {/* Bar indicator */}
                       <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.04)', borderRadius: '99px', overflow: 'hidden' }}>
-                        <div style={{ 
-                          width: `${stats.pct}%`, 
-                          height: '100%', 
+                        <div style={{
+                          width: `${stats.rate ?? 0}%`,
+                          height: '100%',
                           background: 'linear-gradient(to right, var(--accent-secondary), #3b82f6)',
                           borderRadius: '99px'
                         }} />
                       </div>
+
+                      {stats.notRecorded > 0 && (
+                        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Còn {stats.notRecorded}/{stats.enrolled} em chưa được ghi sổ điểm danh hôm nay.
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1378,7 +1413,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
               <Activity size={18} color="var(--accent-secondary)" />
-              <span>Nhật Ký Quẹt Thẻ RFID Cổng Trường (Mô phỏng thời gian thực)</span>
+              <span>Nhật Ký Điểm Danh Gần Nhất (quẹt thẻ cổng trường & ghi nhận thủ công)</span>
             </h2>
             
             <div style={{ overflowX: 'auto' }}>
@@ -1394,24 +1429,31 @@ export default function PrincipalDashboard({ setActiveTab }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {attendanceLogs && attendanceLogs.slice().reverse().slice(0, 10).map(log => (
-                    <tr key={log.id}>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{log.studentId}</td>
-                      <td style={{ fontWeight: 600 }}>{log.studentName}</td>
-                      <td>
-                        <span className="badge badge-info">
-                          Lớp {students.find(s => s.id === log.studentId)?.class || '12A1'}
-                        </span>
-                      </td>
-                      <td style={{ fontWeight: 700 }}>{log.checkInTime}</td>
-                      <td>
-                        <span className={`badge ${log.status === 'present' ? 'badge-success' : 'badge-warning'}`}>
-                          {log.status === 'present' ? 'Có mặt' : 'Đi muộn'}
-                        </span>
-                      </td>
-                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>RFID_GATE_01</td>
-                    </tr>
-                  ))}
+                  {attendanceLogs && attendanceLogs.slice().reverse().slice(0, 10).map(log => {
+                    const status = resolveAttendanceStatus(log, leaveRequests);
+                    return (
+                      <tr key={log.id}>
+                        <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{log.studentId}</td>
+                        <td style={{ fontWeight: 600 }}>{log.studentName}</td>
+                        <td>
+                          <span className="badge badge-info">
+                            Lớp {students.find(s => s.id === log.studentId)?.class || '12A1'}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 700 }}>{log.checkInTime || '--:--'}</td>
+                        <td>
+                          <span className={`badge ${ATTENDANCE_BADGE[status] || 'badge-secondary'}`}>
+                            {ATTENDANCE_LABEL[status] || status}
+                          </span>
+                        </td>
+                        {/* An absence has no scan behind it, so it must not be
+                            attributed to a gate reader. */}
+                        <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          {log.checkInTime ? 'RFID_GATE_01' : 'Không có lượt quét'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

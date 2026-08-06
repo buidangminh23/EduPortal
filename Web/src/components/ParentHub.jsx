@@ -16,6 +16,21 @@ import {
 import VietQRPayment from './VietQRPayment';
 import ParentOverview from './dash/ParentOverview';
 import { INVOICE_LABEL, INVOICE_STATUS } from '../lib/domain/fees';
+import {
+  ATTENDANCE_LABEL,
+  ATTENDANCE_STATUS,
+  UNEXCUSED_STREAK_ALERT,
+  countConsecutiveUnexcusedAbsences,
+  resolveAttendanceStatus
+} from '../lib/domain/attendance';
+
+/** Badge styling per resolved attendance status. */
+const ATTENDANCE_BADGE = {
+  [ATTENDANCE_STATUS.PRESENT]: 'badge-success',
+  [ATTENDANCE_STATUS.LATE]: 'badge-warning',
+  [ATTENDANCE_STATUS.EXCUSED]: 'badge-secondary',
+  [ATTENDANCE_STATUS.UNEXCUSED]: 'badge-danger'
+};
 
 
 export default function ParentHub({ setActiveTab }) {
@@ -69,11 +84,21 @@ export default function ParentHub({ setActiveTab }) {
   // Active student and parent data
   const student = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
 
-  const hasAbsenceAlert = useMemo(() => {
-    if (!attendanceLogs || !student) return false;
-    // For demonstration, trigger warning for HS001 (Nam) as requested by the system
-    return student.id === 'HS001';
-  }, [attendanceLogs, student]);
+  /**
+   * Buổi vắng không phép liên tiếp gần nhất của con.
+   *
+   * Counted from the attendance register itself, by the same domain rule the
+   * child's own attendance log uses — so an absence the school has excused
+   * never raises the alarm, and a child who really has stopped coming does.
+   */
+  const unexcusedStreak = useMemo(() => {
+    if (!student) return 0;
+    const myRecords = (attendanceLogs || []).filter((log) => log.studentId === student.id);
+    const myLeaves = (leaveRequests || []).filter((request) => request.studentId === student.id);
+    return countConsecutiveUnexcusedAbsences(myRecords, myLeaves);
+  }, [attendanceLogs, leaveRequests, student]);
+
+  const hasAbsenceAlert = unexcusedStreak >= UNEXCUSED_STREAK_ALERT;
 
   const handleSubTabChange = (tab) => {
     setParentSubTab(tab);
@@ -93,6 +118,7 @@ export default function ParentHub({ setActiveTab }) {
 
   const qas = parentQAs && student ? parentQAs.filter(q => q.parentName === student.parentName) : [];
   const studentLeaves = leaveRequests && student ? leaveRequests.filter(l => l.studentId === student.id) : [];
+  const studentAttendance = attendanceLogs ? attendanceLogs.filter(l => l.studentId === student.id) : [];
   const myEvaluations = teacherEvaluations && student ? teacherEvaluations.filter(e => e.raterRole === 'parent' && e.raterName === student.parentName) : [];
 
 
@@ -175,7 +201,7 @@ export default function ParentHub({ setActiveTab }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.92rem' }}>CẢNH BÁO VẮNG HỌC LIÊN TIẾP</div>
             <div style={{ fontSize: '0.82rem', color: '#991b1b', marginTop: '2px', lineHeight: 1.4 }}>
-              Hệ thống phát hiện em <strong>{student.name}</strong> đã vắng học liên tiếp 3 buổi gần đây mà không có đơn xin nghỉ phép từ phụ huynh. Vui lòng liên hệ với GVCN gấp để làm rõ tình hình.
+              Sổ điểm danh ghi nhận em <strong>{student.name}</strong> vắng học <strong>{unexcusedStreak} buổi liên tiếp</strong> gần đây mà chưa có đơn xin nghỉ phép nào được duyệt. Vui lòng liên hệ với GVCN gấp để làm rõ tình hình.
             </div>
           </div>
           <button 
@@ -609,30 +635,31 @@ export default function ParentHub({ setActiveTab }) {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>01/06/2026</td>
-                <td style={{ fontWeight: 600 }}>07:12 AM</td>
-                <td><span className="badge badge-success">Có mặt</span></td>
-                <td>Cổng chính A</td>
-              </tr>
-              <tr>
-                <td>02/06/2026</td>
-                <td style={{ fontWeight: 600 }}>07:18 AM</td>
-                <td><span className="badge badge-success">Có mặt</span></td>
-                <td>Cổng chính A</td>
-              </tr>
-              {attendanceLogs && attendanceLogs.filter(l => l.studentId === student.id).map(log => (
-                <tr key={log.id}>
-                  <td>{log.date.split('-').reverse().join('/')}</td>
-                  <td style={{ fontWeight: 600 }}>{log.checkInTime} AM</td>
-                  <td>
-                    <span className={`badge ${log.status === 'present' ? 'badge-success' : log.status === 'late' ? 'badge-danger' : 'badge-secondary'}`}>
-                      {log.status === 'present' ? 'Có mặt' : log.status === 'late' ? 'Đi muộn' : 'Vắng học'}
-                    </span>
+              {studentAttendance.map(log => {
+                // Resolved per row, so a buổi vắng shows "Nghỉ có phép" the moment
+                // the family's leave request is duyệt — the same rule that decides
+                // whether the warning banner above appears.
+                const status = resolveAttendanceStatus(log, studentLeaves);
+                return (
+                  <tr key={log.id}>
+                    <td>{log.date.split('-').reverse().join('/')}</td>
+                    <td style={{ fontWeight: 600 }}>{log.checkInTime || '--:--'}</td>
+                    <td>
+                      <span className={`badge ${ATTENDANCE_BADGE[status] || 'badge-secondary'}`}>
+                        {ATTENDANCE_LABEL[status] || status}
+                      </span>
+                    </td>
+                    <td>{log.checkInTime ? 'Cổng B (Nhận diện Camera)' : 'Không có lượt quét'}</td>
+                  </tr>
+                );
+              })}
+              {studentAttendance.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                    Chưa có buổi điểm danh nào được ghi nhận cho con.
                   </td>
-                  <td>Cổng B (Nhận diện Camera)</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

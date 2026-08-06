@@ -124,12 +124,14 @@ export function transitionLeave(request, nextStatus, { decidedBy, decidedAt } = 
 
 /** Whether an approved leave request covers the given date. */
 export function isDateCoveredByLeave(date, leaveRequests) {
-  return (leaveRequests || []).some(
-    (request) =>
-      request.status === LEAVE_STATUS.APPROVED &&
-      request.fromDate <= date &&
-      request.toDate >= date
-  );
+  return (leaveRequests || []).some((request) => {
+    if (request.status !== LEAVE_STATUS.APPROVED) return false;
+    // A one-day request is filed with a single `date`; read it as a range whose
+    // ends are that day, otherwise an approved single-day leave excuses nothing.
+    const fromDate = request.fromDate || request.date;
+    const toDate = request.toDate || request.date;
+    return Boolean(fromDate) && Boolean(toDate) && fromDate <= date && toDate >= date;
+  });
 }
 
 /**
@@ -182,4 +184,70 @@ export function summariseAttendance(records, leaveRequests = []) {
     unexcused: counts[ATTENDANCE_STATUS.UNEXCUSED],
     rate: total === 0 ? null : Math.round((attended / total) * 1000) / 10
   };
+}
+
+/**
+ * Summarises one day for a whole roster: a class, a grade, the school.
+ *
+ * The rate is the same one a student sees on their own page — attended over
+ * *recorded* sessions — so the two screens can be reconciled. Students nobody
+ * has ticked off yet are reported apart as `notRecorded`: "chưa điểm danh" is a
+ * different fact from "vắng", and counting the first as the second is what made
+ * a morning before the register opens read as 0% chuyên cần.
+ *
+ * `rate` is null while nothing has been recorded, which the caller should show
+ * as "chưa điểm danh" rather than as a number.
+ */
+export function summariseDailyAttendance(studentIds, records, leaveRequests = []) {
+  const roster = new Set(studentIds || []);
+  const onRoster = (records || []).filter((record) => roster.has(record.studentId));
+  const summary = summariseAttendance(onRoster, leaveRequests);
+
+  return {
+    enrolled: roster.size,
+    recorded: summary.total,
+    notRecorded: Math.max(roster.size - summary.total, 0),
+    present: summary.present,
+    late: summary.late,
+    excused: summary.excused,
+    unexcused: summary.unexcused,
+    rate: summary.rate
+  };
+}
+
+/** How many unexcused absences in a row warrant telling the parent. */
+export const UNEXCUSED_STREAK_ALERT = 3;
+
+/**
+ * Counts the run of unexcused absences ending at a student's latest session.
+ *
+ * "Liên tiếp" is counted over *recorded sessions*, newest first, not over
+ * calendar days: a weekend, a holiday or a day the register was never opened
+ * leaves no record, and such a gap neither counts as an absence nor breaks the
+ * run. The run stops at the first session the student attended or that an
+ * approved leave request excuses — the same call `resolveAttendanceStatus`
+ * makes, so the warning can never disagree with the child's own attendance log.
+ *
+ * `records` must belong to one student.
+ */
+export function countConsecutiveUnexcusedAbsences(records, leaveRequests = []) {
+  const sessions = (records || [])
+    .filter((record) => isValidIsoDate(record.date))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  let run = 0;
+  for (const session of sessions) {
+    if (resolveAttendanceStatus(session, leaveRequests) !== ATTENDANCE_STATUS.UNEXCUSED) break;
+    run += 1;
+  }
+  return run;
+}
+
+/** Whether a student's latest sessions form a run long enough to warn about. */
+export function hasUnexcusedAbsenceStreak(
+  records,
+  leaveRequests = [],
+  { threshold = UNEXCUSED_STREAK_ALERT } = {}
+) {
+  return countConsecutiveUnexcusedAbsences(records, leaveRequests) >= threshold;
 }

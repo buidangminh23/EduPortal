@@ -11,11 +11,32 @@ import {
   explainSemesterAverage,
   toAssessmentRecord
 } from '../lib/domain/grading';
+import {
+  ATTENDANCE_LABEL,
+  ATTENDANCE_STATUS,
+  resolveAttendanceStatus
+} from '../lib/domain/attendance';
 
 /** Conduct points every student starts the term on. */
 const CONDUCT_BASE_POINTS = 100;
 const CONDUCT_GOOD = 90;
 const CONDUCT_FAIR = 70;
+
+/** Badge styling per resolved attendance status. */
+const ATTENDANCE_BADGE = {
+  [ATTENDANCE_STATUS.PRESENT]: 'badge-success',
+  [ATTENDANCE_STATUS.LATE]: 'badge-warning',
+  [ATTENDANCE_STATUS.EXCUSED]: 'badge-secondary',
+  [ATTENDANCE_STATUS.UNEXCUSED]: 'badge-danger'
+};
+
+/** What the teacher is told after each manual entry. */
+const ATTENDANCE_CONFIRMATION = {
+  [ATTENDANCE_STATUS.PRESENT]: (name, time) => `Đã điểm danh CÓ MẶT cho ${name} lúc ${time}.`,
+  [ATTENDANCE_STATUS.LATE]: (name, time) => `Đã ghi nhận ĐI MUỘN cho ${name} lúc ${time}.`,
+  [ATTENDANCE_STATUS.UNEXCUSED]: (name) =>
+    `Đã ghi nhận VẮNG cho ${name}. Buổi này tự chuyển thành "Nghỉ có phép" khi đơn xin nghỉ của gia đình được duyệt.`
+};
 
 /** Draft wording per band. The teacher edits it before it reaches a học bạ. */
 const COMMENT_BY_BAND = {
@@ -333,10 +354,31 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const classLeaves = leaveRequests ? leaveRequests.filter(l => l.class === '12A1') : [];
   const myLessonPlans = lessonPlans ? lessonPlans.filter(p => p.teacherName === 'Nguyễn Minh Triết') : [];
   const teacherConductLogs = conductLogs ? conductLogs.filter(l => l.teacherName === 'Nguyễn Minh Triết') : [];
-  
+
   // Teacher Leaves data
   const myCoverSchedules = teacherLeaveRequests ? teacherLeaveRequests.filter(r => r.substituteTeacherId === 'T01' && r.status === 'approved') : [];
   const myTeacherLeaves = teacherLeaveRequests ? teacherLeaveRequests.filter(r => r.teacherId === 'T01') : [];
+
+  /**
+   * Records what the teacher saw in the room.
+   *
+   * An absence is filed raw: the teacher never chooses "có phép", the approved
+   * leave request does that on its own the moment it is duyệt. A present or
+   * late entry carries the clock time the teacher pressed the button — a real
+   * time of record rather than a fixed 07:20 dressed up as a gate scan — and an
+   * absence carries none, because nobody arrived.
+   */
+  const recordAttendance = (student, status) => {
+    const checkInTime =
+      status === ATTENDANCE_STATUS.UNEXCUSED ? null : new Date().toTimeString().slice(0, 5);
+    const outcome = logAttendance(student.id, status, checkInTime);
+
+    if (!outcome.ok) {
+      alert(`Chưa ghi được điểm danh cho ${student.name}: ${outcome.errors.join(' ')}`);
+      return;
+    }
+    alert(ATTENDANCE_CONFIRMATION[status](student.name, checkInTime));
+  };
 
 
   const saveCommentSubject = (name) => {
@@ -1313,13 +1355,16 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                 <th>Ảnh</th>
                 <th>Họ và Tên</th>
                 <th>Giờ check-in</th>
-                <th>Trạng thái hôm nay (03/06)</th>
+                <th>Trạng thái hôm nay ({currentSchoolDay().split('-').reverse().slice(0, 2).join('/')})</th>
                 <th>Ghi nhận thủ công</th>
               </tr>
             </thead>
             <tbody>
               {classStudents.map(std => {
                 const log = attendanceLogs ? attendanceLogs.find(l => l.studentId === std.id && l.date === currentSchoolDay()) : null;
+                // Resolved per row, so an absence flips to "Nghỉ có phép" as soon
+                // as the family's leave request is approved.
+                const status = log ? resolveAttendanceStatus(log, classLeaves) : null;
                 return (
                   <tr key={std.id}>
                     <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{std.id}</td>
@@ -1331,20 +1376,21 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                       />
                     </td>
                     <td style={{ fontWeight: 600 }}>{std.name}</td>
-                    <td style={{ fontWeight: 700 }}>{log ? `${log.checkInTime} AM` : '--:--'}</td>
+                    <td style={{ fontWeight: 700 }}>{log?.checkInTime || '--:--'}</td>
                     <td>
-                      {log ? (
-                        <span className={`badge ${log.status === 'present' ? 'badge-success' : log.status === 'late' ? 'badge-danger' : 'badge-secondary'}`}>
-                          {log.status === 'present' ? 'Có mặt' : log.status === 'late' ? 'Đi muộn' : 'Vắng học'}
+                      {status ? (
+                        <span className={`badge ${ATTENDANCE_BADGE[status] || 'badge-secondary'}`}>
+                          {ATTENDANCE_LABEL[status] || status}
                         </span>
                       ) : (
-                        <span className="badge badge-secondary" style={{ opacity: 0.6 }}>Chưa check-in</span>
+                        <span className="badge badge-secondary" style={{ opacity: 0.6 }}>Chưa điểm danh</span>
                       )}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => { logAttendance(std.id, 'present', '07:20'); alert(`Đã điểm danh CÓ MẶT cho ${std.name}`); }} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Có mặt</button>
-                        <button onClick={() => { logAttendance(std.id, 'late', '07:45'); alert(`Đã ghi nhận ĐI MUỘN cho ${std.name}`); }} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--accent-danger)' }}>Muộn</button>
+                        <button onClick={() => recordAttendance(std, ATTENDANCE_STATUS.PRESENT)} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Có mặt</button>
+                        <button onClick={() => recordAttendance(std, ATTENDANCE_STATUS.LATE)} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--accent-warning)' }}>Muộn</button>
+                        <button onClick={() => recordAttendance(std, ATTENDANCE_STATUS.UNEXCUSED)} className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--accent-danger)' }}>Vắng</button>
                       </div>
                     </td>
                   </tr>
