@@ -5,7 +5,12 @@
   width: 280px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--accent) 10%, var(--line));
+  /* dvh, because a phone browser's 100vh is the height with the address bar
+     hidden — a height the drawer never actually has while the bar is showing,
+     so the panel ends short of the screen and the page shows through beneath
+     it. The vh line stays as the fallback for browsers without dvh. */
   height: 100vh;
+  height: 100dvh;
   position: fixed;
   left: 0;
   top: 0;

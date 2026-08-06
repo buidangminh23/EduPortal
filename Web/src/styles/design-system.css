@@ -111,7 +111,42 @@
 .cols-3 { grid-template-columns: repeat(3, 1fr); }
 .cols-4 { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 1100px) { .cols-4 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 760px)  { .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; } }
+
+/* Phones.
+ *
+ * One column is right for a card holding a table, a list or a chart. It was
+ * wrong for the stat row, and that is what a phone screen was mostly showing:
+ * four cards each carrying a single number became four full-width blocks, over
+ * 800px of scrolling before the first piece of real content. A number and its
+ * label need about half a phone's width, so that is what they get.
+ *
+ * The :has() rule is deliberately separate. Where a browser does not support
+ * it the selector is dropped and the stat row falls back to one column — the
+ * old behaviour, not a broken one.
+ */
+@media (max-width: 760px) {
+  .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; }
+  .ds-grid { gap: 14px; }
+
+  .card { padding: 16px; }
+  .stat { gap: 10px; }
+  .stat .stat-val { font-size: 1.55rem; }
+  .stat .stat-label { font-size: 0.8rem; }
+
+  /* 2rem of Fredoka is a desktop heading. On 375px it took two lines and
+     pushed the page's own action below the fold before anything was read. */
+  .page-title { font-size: 1.5rem; }
+  .page-sub { font-size: 0.88rem; }
+
+  /* flex-end alignment only reads as alignment while the row fits. Once it
+     wraps, the action lands under the heading half-width and off-baseline, so
+     it stacks on purpose instead. */
+  .page-head { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 18px; }
+}
+
+@media (max-width: 760px) {
+  .ds-grid:has(> .card.stat) { grid-template-columns: repeat(2, 1fr); }
+}
 
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
