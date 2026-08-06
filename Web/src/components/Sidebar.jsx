@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
+import { SCHOOL } from '../config/school';
 import {
   LayoutDashboard,
   Users,
@@ -420,10 +421,15 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClo
   return (
     <aside id="app-sidebar" className={`sidebar ${isOpen ? 'open' : ''}`} style={{ overflowY: 'auto' }}>
       <div style={{ flex: 1 }}>
-        {/* Logo */}
+        {/* Logo — the school's own emblem when it has given us one, and the
+            built-in mark when it has not. Never a placeholder crest: a school
+            badge is an official mark, so the fallback is deliberately generic
+            rather than somebody else's shield. */}
         <div className="logo-container">
-          <GraduationCap className="logo-icon" size={32} color="var(--accent)" />
-          <span className="logo-text">EduPortal</span>
+          {SCHOOL.logo
+            ? <img className="logo-icon" src={SCHOOL.logo} alt={`Logo ${SCHOOL.name}`} height={32} />
+            : <GraduationCap className="logo-icon" size={32} color="var(--accent)" />}
+          <span className="logo-text">{SCHOOL.isDemoSchool ? 'EduPortal' : SCHOOL.shortName}</span>
         </div>
 
         {/* Workspace Card */}

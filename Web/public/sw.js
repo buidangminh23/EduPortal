@@ -45,13 +45,21 @@ const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE]);
 const SHELL_URL = '/index.html';
 
 const STATIC_PATHS = new Set([
-  '/favicon.svg',
+  '/logo.png',
+  '/logo-mark.png',
   '/icons.svg',
-  '/icon-maskable.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+  '/apple-touch-icon.png',
   '/site.webmanifest'
 ]);
 
-const PRECACHE = [SHELL_URL, '/favicon.svg', '/icon-maskable.svg', '/site.webmanifest'];
+// Precache only what the first paint needs. The launcher icons are fetched by
+// the operating system at install time, not by the page, so caching them here
+// buys nothing and every entry that 404s aborts the whole install — which is
+// how a service worker silently stops updating.
+const PRECACHE = [SHELL_URL, '/logo-mark.png', '/site.webmanifest'];
 
 /**
  * Long enough that a slow-but-working 3G tether still answers, short enough

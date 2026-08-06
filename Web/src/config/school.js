@@ -63,6 +63,17 @@ export const SCHOOL = {
   /** One sentence about the school, shown in the footer. */
   tagline: read(env.VITE_SCHOOL_TAGLINE, ''),
 
+  /**
+   * Path to the school's own emblem, served from `Web/public`.
+   *
+   * Empty means "use the built-in mark", which is the honest default: a school
+   * crest is an institution's official mark, so shipping one school's crest as
+   * the product default would put it in front of every other school that
+   * installs this. It is a deployment fact like the name and the address, and
+   * it sits beside them here for the same reason.
+   */
+  logo: read(env.VITE_SCHOOL_LOGO, ''),
+
   /** True while the school identity is still the built-in demo one. */
   isDemoSchool: read(env.VITE_SCHOOL_NAME, '') === ''
 };
