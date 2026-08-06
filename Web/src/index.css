@@ -540,6 +540,28 @@ h1 {
   .dock-status span {
     display: none;
   }
+
+  /*
+   * Six icons, no labels, sharing the bar.
+   *
+   * Left-aligned they bunched into the first half and left 187px of the 512px
+   * bar empty — a full-width control doing a third of a control's work. `flex`
+   * hands each one an equal share instead, so the row reads as six targets
+   * rather than a cluster and a gap.
+   *
+   * `min-height: 44px` is the floor, not a preference: the buttons measured
+   * 44x38, and a 38px tall tap target on a phone is under both WCAG 2.5.5 and
+   * the platform minimums. `min-width` holds the same floor sideways, which is
+   * what makes the `overflow-x` above load-bearing — below roughly 320px the
+   * six no longer fit at 44px each, and the row scrolls rather than shrinking
+   * the targets past the floor. Never shrink the target.
+   */
+  .app-command-dock .dock-action {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {
