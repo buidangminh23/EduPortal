@@ -456,14 +456,19 @@ h1 {
   border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+/*
+ * Sits in the content flow, above the page it navigates.
+ *
+ * It used to be `position: fixed; top: 96px` — the same 96px `.content-pane`
+ * reserves for the navbar — as a sibling of the whole layout. Nothing reserved
+ * room for it, so it covered the first band of every page and the text slid
+ * underneath its blur on every scroll. In the flow it takes its own space, it
+ * covers nothing, and it leaves the screen with the content it belongs to.
+ */
 .app-command-dock {
-  position: fixed;
-  left: calc(280px + 24px);
-  right: 24px;
-  top: 96px;
-  bottom: auto;
-  z-index: 85;
+  margin-bottom: 20px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -474,10 +479,6 @@ h1 {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 18px 44px -24px rgba(35, 38, 80, 0.45);
-}
-
-[data-role="student"] .app-command-dock {
-  right: 24px;
 }
 
 .dock-status,
@@ -531,13 +532,9 @@ h1 {
 
 @media (max-width: 900px) {
   .app-command-dock {
-    right: 14px;
     overflow-x: auto;
     justify-content: flex-start;
-  }
-  [data-role="student"] .app-command-dock {
-    right: 14px;
-    bottom: auto;
+    flex-wrap: nowrap;
   }
   .dock-action span,
   .dock-status span {
@@ -553,10 +550,6 @@ h1 {
   .account-chip,
   .parent-student-switcher span {
     display: none;
-  }
-  /* The sidebar is off-canvas here, so the dock no longer clears its width */
-  .app-command-dock {
-    left: 14px;
   }
 }
 

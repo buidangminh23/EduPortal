@@ -285,13 +285,16 @@ function App() {
         {/* Main Content Viewport */}
         <main className="content-pane">
           <StoreErrorBanner />
+          {/* Inside the pane, above the content it belongs to. It used to be a
+              sibling of this whole layout and positioned fixed, which put it on
+              top of the first 60px of every page — nothing reserved the space,
+              so the text simply passed underneath it as you scrolled. */}
+          <AppCommandDock activeTab={activeTab} setActiveTab={setActiveTab} />
           <Suspense fallback={<AppLoadingState />}>
             {renderTabContent()}
           </Suspense>
         </main>
       </div>
-
-      <AppCommandDock activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Floating AI Chat Widget — chỉ hiện với học sinh */}
       <Suspense fallback={null}>
