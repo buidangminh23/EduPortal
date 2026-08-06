@@ -444,7 +444,7 @@ export default function OverviewTab({ student, setActiveTab }) {
         />
       </div>
 
-      <div className="ds-grid" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
+      <div className="ds-grid ds-split">
         {/* Left */}
         <div className="col" style={{ gap: 20 }}>
           {/* Timetable */}

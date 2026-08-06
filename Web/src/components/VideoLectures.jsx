@@ -56,7 +56,7 @@ export default function VideoLectures() {
             <span>Quay lại thư viện</span>
           </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px' }}>
+          <div className="ds-grid ds-split">
             {/* Player Container */}
             <div className="glass-panel" style={{ padding: '16px' }}>
               <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-card)', marginBottom: '16px' }}>

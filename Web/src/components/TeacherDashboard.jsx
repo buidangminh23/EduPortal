@@ -1519,7 +1519,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       )}
 
       {activeTab === 'conduct' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '1.2fr' }}>
           {/* Students Conduct List */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -1911,7 +1911,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       )}
 
       {activeTab === 'resources' && (
-        <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+        <div className="glass-panel animate-fade ds-split" style={{ '--split-main': '1.2fr', gap: '24px', alignItems: 'start' }}>
           
           {/* Uploader log history list */}
           <div>

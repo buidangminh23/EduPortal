@@ -488,7 +488,7 @@ export default function AdminOverview({
         />
       </div>
 
-      <div className="ds-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+      <div className="ds-grid ds-split">
         <div className="col" style={{ gap: 20 }}>
           {/*
             Sĩ số only. The bars used to carry a per-khối GPA (7.8 / 8.1 / 8.4)

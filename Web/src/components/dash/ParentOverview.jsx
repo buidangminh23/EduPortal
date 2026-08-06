@@ -223,7 +223,7 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
         </div>
       </div>
 
-      <div className="ds-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+      <div className="ds-grid ds-split">
         <div className="col" style={{ gap: 20 }}>
           <SectionCard title={`Điểm các môn của con (${CURRENT_SEMESTER_LABEL})`} icon={BarChart3} delay="d2" action={<button className="btn btn-soft btn-sm" onClick={() => setShowTranscript(true)}>Xem học bạ</button>}>
             {subjectCards.length === 0 ? (

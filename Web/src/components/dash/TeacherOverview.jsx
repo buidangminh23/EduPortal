@@ -217,7 +217,7 @@ export default function TeacherOverview({ teacherName, onEnterGradesClick, onAss
           />
         </div>
 
-        <div className="ds-grid" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
+        <div className="ds-grid ds-split">
           <div className="col" style={{ gap: 20 }}>
             <SectionCard
               title="Lớp của tôi"

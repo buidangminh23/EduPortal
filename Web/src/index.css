@@ -643,3 +643,22 @@ h1 {
   }
 }
 
+
+/*
+ * Touch floor.
+ *
+ * Measured on a phone: `.btn` came out 42px tall (min-height 40 plus its
+ * border), `.icon-btn` is a fixed 40x40, and `.tab-btn` computed to 33 from
+ * padding alone. All three are under the 44px a finger needs — WCAG 2.5.5 and
+ * both platform minimums — and the smallest of them, the tab row, is the
+ * control a head teacher taps most on the admin screen.
+ *
+ * Raised rather than repadded: these are the whole target, not an icon inside
+ * a larger hit area, so there is no hit box to grow separately. Widths are left
+ * alone; only `.icon-btn` is square enough to need both.
+ */
+@media (max-width: 768px) {
+  .btn { min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .tab-btn { min-height: 44px; }
+}

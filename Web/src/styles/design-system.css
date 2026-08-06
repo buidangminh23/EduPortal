@@ -148,6 +148,27 @@
   .ds-grid:has(> .card.stat) { grid-template-columns: repeat(2, 1fr); }
 }
 
+/*
+ * The main split of every dashboard — a wide column of content beside a narrow
+ * one of side panels.
+ *
+ * It was written inline on four screens (`style={{ gridTemplateColumns: '1.5fr
+ * 1fr' }}`), and an inline style outranks a media query, so the phone
+ * breakpoint below could not reach it: the admin, teacher, parent and pupil
+ * dashboards all stayed two-column on a phone, the narrow side dropping to
+ * 107px — a column that holds a heading and nothing else.
+ *
+ * As a class it collapses like everything else. One ratio for all four, where
+ * three said 1.5fr and one said 1.6fr for no reason anybody recorded.
+ *
+ * A screen wanting different proportions sets the variable, not the property:
+ * `style={{ '--split-main': '1.2fr' }}`. That is the whole point — an inline
+ * property outranks a media query and a variable does not, so the collapse
+ * below stays reachable no matter what a screen asks for.
+ */
+.ds-split { display: grid; grid-template-columns: var(--split-main, 1.5fr) 1fr; }
+@media (max-width: 760px) { .ds-split { grid-template-columns: 1fr; } }
+
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
 .card-pad-sm { padding: 16px; }

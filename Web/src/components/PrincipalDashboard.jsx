@@ -902,7 +902,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+          <div className="ds-grid ds-split" style={{ '--split-main': '1.2fr' }}>
             {/* List of assignments across the school */}
             <div className="glass-panel">
               <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Danh sách bài tập toàn trường</h2>
@@ -1309,7 +1309,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
       {/* Attendance Monitor subtab pane */}
       {subTab === 'attendance_monitor' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+          <div className="ds-grid ds-split" style={{ '--split-main': '1.2fr' }}>
             <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
               <h2 style={{ marginBottom: '20px', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
                 <Activity size={18} color="var(--accent-primary)" />
@@ -1496,7 +1496,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
+          <div className="ds-grid ds-split">
             {/* Club proposals and budget oversight */}
             <div className="glass-panel">
               <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -1629,7 +1629,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
       {/* AI Counselor and Career Guidance Psychology Report subtab pane */}
       {subTab === 'career_psychology' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fade">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+          <div className="ds-grid ds-split" style={{ '--split-main': '1.2fr' }}>
             
             {/* RIASEC vertical SVG column chart */}
             <div className="glass-panel">
