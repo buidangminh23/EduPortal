@@ -10,6 +10,7 @@ import { validateAttendanceEntry } from '../lib/domain/attendance';
 import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
 import { applyConductResult, conductSemesterKey, conductSemesterNumber } from '../lib/domain/conduct';
 import { clearPortfolioConfirmation, confirmPortfolio, normalisePortfolios } from '../lib/domain/portfolio';
+import { currentSchoolYear, schoolYearOf } from '../lib/domain/schoolYear';
 import { currentSchoolDay } from '../config/demoClock';
 import { getRepository, resetRepository, isBrowserStore } from '../lib/db';
 import { fromMockExamRow } from '../lib/db/repository';
@@ -26,6 +27,27 @@ import { safeStorage } from '../lib/safeStorage';
  * is one place that stops being a constant.
  */
 const CURRENT_SEMESTER = 2;
+
+/**
+ * Năm học the gradebook is currently writing to and reading from.
+ *
+ * The other half of the pair above, and it has to travel with it everywhere:
+ * học kỳ II on its own names a row in three different năm học of a pupil's học
+ * bạ, and the write that does not say which one lands on the earliest of them.
+ *
+ * A function rather than a constant. `currentSchoolDay()` is the demo clock on
+ * demo data and the machine's clock otherwise, and a value computed once at
+ * import would leave a tab that was open on 31 August still filing marks under
+ * the năm học that ended, all through September.
+ *
+ * Null is possible in principle — `currentSchoolYear` refuses a date it cannot
+ * read — and is not papered over: the repository refuses a write with no valid
+ * năm học, so the teacher is told, rather than the mark being filed under a
+ * guess.
+ */
+function currentGradebookYear() {
+  return currentSchoolYear(currentSchoolDay());
+}
 
 /**
  * Ceilings on the reads that run once per session, for every role.
@@ -944,6 +966,12 @@ export const AppProvider = ({ children }) => {
       .catch((error) => setStoreError({ what, message: error?.message || 'Lỗi không rõ.' }));
   }, [profile?.school_id]);
 
+  /**
+   * The năm học every read and write below is about, recomputed each render so
+   * a long-open tab does not keep filing marks under the năm học it opened in.
+   */
+  const schoolYear = currentGradebookYear();
+
   const defaultDemoSession = {
     username: 'hoangnam',
     role: 'student',
@@ -996,6 +1024,113 @@ export const AppProvider = ({ children }) => {
   const ownStudentId = (currentRole === 'student' || currentRole === 'parent')
     ? (userSession?.studentId || null)
     : null;
+
+  /**
+   * The sổ điểm that have been closed this năm học — one row per học kỳ, and
+   * an open học kỳ is simply absent, the shape gradebook_locks has.
+   *
+   * Both học kỳ are held rather than only the one being written to. A nhận xét
+   * and a mức rèn luyện can be entered against học kỳ I while học kỳ II is the
+   * working term, so a client that only knew about học kỳ II would refuse
+   * writes the database allows and wave through writes it refuses — a courtesy
+   * check that lies in both directions is worse than none.
+   *
+   * The rows rather than booleans, because a closed sổ điểm is worth naming:
+   * locked_at and locked_by are what the school answers with when a teacher
+   * asks why their write was refused.
+   */
+  const [gradebookLocks, setGradebookLocks] = useState([]);
+
+  const gradebookLockFor = (semester) =>
+    gradebookLocks.find((row) => row.semester === semester) ?? null;
+
+  const gradebookLock = gradebookLockFor(CURRENT_SEMESTER);
+  const isGradebookLocked = gradebookLock !== null;
+
+  useEffect(() => {
+    let cancelled = false;
+    const repo = getRepository(profile?.school_id ?? null);
+
+    Promise.resolve()
+      .then(() => repo.listGradebookLocks({ schoolYear }))
+      .then((locks) => {
+        if (!cancelled) setGradebookLocks(locks ?? []);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        // Left as it was rather than assumed open. Reading "not locked" out of
+        // a failed read is the one wrong answer here: it would hand a teacher a
+        // gradebook the screen calls editable and the database refuses.
+        setStoreError({ what: 'kiểm tra trạng thái khoá sổ điểm', message: error?.message || 'Lỗi không rõ.' });
+      });
+
+    return () => { cancelled = true; };
+  }, [profile?.school_id, schoolYear]);
+
+  /**
+   * Closes or re-opens the sổ điểm for the current học kỳ — Ban Giám Hiệu only.
+   *
+   * The role check here is a courtesy, the same as the refusals in the save
+   * actions below: it keeps a teacher from being offered a button that will
+   * fail. The control is the row-level policy on gradebook_locks, which admits
+   * nobody but an admin of that school whatever this browser believes.
+   *
+   * Who closed the book is recorded, so `lockedBy` falls back to the demo
+   * session's username when there is no signed-in profile. Sending nothing
+   * would be refused — locked_by is NOT NULL, because a lock nobody closed
+   * cannot answer the only question it exists to answer.
+   *
+   * @returns {{ ok: boolean, errors: string[] }}
+   */
+  const setGradebookLocked = (locked) => {
+    if (currentRole !== 'admin') {
+      return { ok: false, errors: ['Chỉ Ban Giám Hiệu mới khoá hoặc mở lại sổ điểm.'] };
+    }
+
+    const lockedBy = profile?.id ?? userSession?.username ?? null;
+    if (locked && !lockedBy) {
+      return { ok: false, errors: ['Chưa xác định được người khoá sổ điểm, nên sổ điểm không được khoá.'] };
+    }
+
+    persist(
+      (repo) => repo
+        .setGradebookLock({ schoolYear, semester: CURRENT_SEMESTER, locked, lockedBy })
+        // The stored row, not the one asked for: locking a học kỳ somebody else
+        // already closed keeps their name on it.
+        .then((row) => setGradebookLocks((prev) => {
+          const others = prev.filter((lock) => lock.semester !== CURRENT_SEMESTER);
+          return row ? [...others, row] : others;
+        })),
+      locked ? 'khoá sổ điểm' : 'mở lại sổ điểm'
+    );
+
+    return { ok: true, errors: [] };
+  };
+
+  /**
+   * The refusal a closed sổ điểm earns, or null while that học kỳ is open.
+   *
+   * A courtesy, not the control. The database refuses the same write through a
+   * trigger, and it is the trigger that decides — a browser with the developer
+   * console open is not something a lock can be built on. This exists so that a
+   * teacher is told in Vietnamese, before their screen has already shown the
+   * new number, rather than after a round trip.
+   *
+   * Ban Giám Hiệu passes, as they pass the trigger. That is the correction path
+   * and the change is written to nhật ký sửa điểm on the way through, which is
+   * how the school answers for it afterwards.
+   */
+  const refuseIfLocked = (semester = CURRENT_SEMESTER) => {
+    if (currentRole === 'admin') return null;
+    if (!gradebookLockFor(semester)) return null;
+
+    return {
+      ok: false,
+      errors: [
+        `Sổ điểm học kỳ ${semester} năm học ${schoolYear} đã khoá, chỉ Ban Giám Hiệu mới sửa được.`
+      ]
+    };
+  };
 
   // State is the session; storage is a copy of it kept so a refresh does not
   // sign the user out. Mirroring here rather than in each setter means the two
@@ -1755,6 +1890,9 @@ export const AppProvider = ({ children }) => {
     const check = validateAssessmentRecord(record);
     if (!check.valid) return { ok: false, errors: check.errors, average: null };
 
+    const refusal = refuseIfLocked(CURRENT_SEMESTER);
+    if (refusal) return { ...refusal, average: null };
+
     const average = computeSemesterAverage(record);
 
     setStudents(prev => prev.map(std =>
@@ -1769,11 +1907,13 @@ export const AppProvider = ({ children }) => {
         studentId,
         subject,
         semester: CURRENT_SEMESTER,
+        schoolYear,
         regular: record.regular,
         midterm: record.midterm,
         final: record.final,
         average,
-        updatedBy: profile?.id ?? null
+        updatedBy: profile?.id ?? null,
+        actorRole: currentRole
       }),
       `lưu điểm môn ${subject}`
     );
@@ -1792,6 +1932,12 @@ export const AppProvider = ({ children }) => {
    * A student or a parent asks for that one student's marks: a dozen rows
    * instead of the whole gradebook filtered down to a dozen rows afterwards.
    * Staff ask for the class or the school, bounded.
+   *
+   * The năm học is part of the question, not a detail. `grades` is this year's
+   * học kỳ II and nothing else; without the filter a pupil in lớp 11 would be
+   * handed their lớp 10 Toán row as well and whichever arrived last would be
+   * the mark on the screen — the same collision as the overwrite, moved from
+   * the database into the reducer below.
    */
   useEffect(() => {
     let cancelled = false;
@@ -1801,6 +1947,7 @@ export const AppProvider = ({ children }) => {
       .then(() => repo.listAssessments({
         studentId: ownStudentId,
         semester: CURRENT_SEMESTER,
+        schoolYear,
         limit: GRADEBOOK_ROW_LIMIT
       }))
       .then((rows) => {
@@ -1834,7 +1981,7 @@ export const AppProvider = ({ children }) => {
       });
 
     return () => { cancelled = true; };
-  }, [profile?.school_id, ownStudentId]);
+  }, [profile?.school_id, ownStudentId, schoolYear]);
 
   /**
    * Records Đạt / Chưa đạt for a nhận xét-only subject.
@@ -1843,11 +1990,22 @@ export const AppProvider = ({ children }) => {
    * the học bạ through `commentResults`, and a Chưa đạt is what feeds
    * `commentOnlyFailures` into the classification.
    *
+   * The học kỳ is translated on the way out, the same translation
+   * `saveConductResult` makes below and for the same reason: the student
+   * carries 'semester1' / 'semester2' and `comment_results.semester` is the
+   * SMALLINT 1 or 2 that 006 declared. Sending the string reached a column that
+   * cannot hold it, so every nhận xét written since has been refused by
+   * Postgres and kept only in this browser.
+   *
+   * @param {'semester1'|'semester2'} semester
    * @returns {{ ok: boolean, errors: string[] }}
    */
   const saveSubjectComment = (studentId, subject, semester, result) => {
     const check = applySubjectComment({}, subject, semester, result);
     if (check.errors.length > 0) return { ok: false, errors: check.errors };
+
+    const refusal = refuseIfLocked(conductSemesterNumber(semester));
+    if (refusal) return refusal;
 
     setStudents(prev => prev.map(std =>
       std.id === studentId ? applySubjectComment(std, subject, semester, result).student : std
@@ -1855,7 +2013,13 @@ export const AppProvider = ({ children }) => {
 
     persist(
       (repo) => repo.saveCommentResult({
-        studentId, subject, semester, result, updatedBy: profile?.id ?? null
+        studentId,
+        subject,
+        semester: conductSemesterNumber(semester),
+        schoolYear,
+        result,
+        updatedBy: profile?.id ?? null,
+        actorRole: currentRole
       }),
       `lưu nhận xét môn ${subject}`
     );
@@ -1895,6 +2059,11 @@ export const AppProvider = ({ children }) => {
     const check = applyConductResult({}, semester, band);
     if (check.errors.length > 0) return { ok: false, errors: check.errors };
 
+    const semesterNumber = conductSemesterNumber(semester);
+
+    const refusal = refuseIfLocked(semesterNumber);
+    if (refusal) return refusal;
+
     setStudents(prev => prev.map(std =>
       std.id === studentId ? applyConductResult(std, semester, band).student : std
     ));
@@ -1902,9 +2071,11 @@ export const AppProvider = ({ children }) => {
     persist(
       (repo) => repo.saveConductResult({
         studentId,
-        semester: conductSemesterNumber(semester),
+        semester: semesterNumber,
+        schoolYear,
         band: band ?? null,
-        updatedBy: profile?.id ?? null
+        updatedBy: profile?.id ?? null,
+        actorRole: currentRole
       }),
       'lưu kết quả rèn luyện'
     );
@@ -1927,13 +2098,21 @@ export const AppProvider = ({ children }) => {
    *
    * A semester the store has no row for is left as it stands, so a fresh demo
    * still has something to look at while a real deployment sees its own record.
+   *
+   * One năm học, for the reason the gradebook read gives: `conductResults` on
+   * the student holds two mức, one per học kỳ, and three years of rows folded
+   * into those two slots is a mức from lớp 10 deciding a danh hiệu in lớp 12.
    */
   useEffect(() => {
     let cancelled = false;
     const repo = getRepository(profile?.school_id ?? null);
 
     Promise.resolve()
-      .then(() => repo.listConductResults({ studentId: ownStudentId, limit: CONDUCT_ROW_LIMIT }))
+      .then(() => repo.listConductResults({
+        studentId: ownStudentId,
+        schoolYear,
+        limit: CONDUCT_ROW_LIMIT
+      }))
       .then((rows) => {
         if (cancelled || !rows?.length) return;
 
@@ -1959,7 +2138,7 @@ export const AppProvider = ({ children }) => {
       });
 
     return () => { cancelled = true; };
-  }, [profile?.school_id, ownStudentId]);
+  }, [profile?.school_id, ownStudentId, schoolYear]);
 
   const addTeacher = (teacher) => {
     const randAvatar = teacherAvatars[Math.floor(Math.random() * teacherAvatars.length)];
@@ -3327,6 +3506,30 @@ export const AppProvider = ({ children }) => {
     if (!parentLinkedStudentId) return [];
     return (rows || []).filter(row => row.studentId === parentLinkedStudentId);
   };
+
+  /**
+   * Điểm danh of the current năm học, and nothing from the years before it.
+   *
+   * attendance_records carries no school_year column and should not: every row
+   * has a date, and a date already says which năm học it is in — storing the
+   * year beside it would be the same fact twice, disagreeing the first time a
+   * misfiled date was corrected. So the bound is the date, read through the
+   * same rule the writes are stamped with.
+   *
+   * Without it, chuyên cần spans a pupil's whole time at the school: every
+   * caller of `summariseAttendance` — the parent's overview, the teacher's
+   * class list, the student's own tab, the hồ sơ năng lực — reads this list and
+   * divides the days present by the days recorded. Three years in the numerator
+   * and denominator is not a tỷ lệ chuyên cần of anything, and it moves less
+   * and less as the years accumulate, so a pupil absent all term still reads
+   * near ninety per cent.
+   *
+   * A record whose date cannot be read belongs to no năm học and is left out
+   * rather than counted into this one.
+   */
+  const attendanceThisYear = (attendanceLogs || []).filter(
+    (log) => schoolYearOf(log.date) === schoolYear
+  );
   const scopedParentQAs = isParentView
     ? (parentQAs || []).filter(qa => (
         parentLinkedStudent
@@ -3440,7 +3643,7 @@ export const AppProvider = ({ children }) => {
       toggleDeadlineDone,
       deleteDeadline,
       submissions: scopeStudentRows(submissions),
-      attendanceLogs: scopeStudentRows(attendanceLogs),
+      attendanceLogs: scopeStudentRows(attendanceThisYear),
       clubs,
       clubApplications: scopeStudentRows(clubApplications),
       learningResources,
@@ -3468,6 +3671,14 @@ export const AppProvider = ({ children }) => {
       saveSubjectGrades,
       saveSubjectComment,
       saveConductResult,
+      // The năm học and học kỳ every mark on these screens belongs to, named so
+      // a header can say so out loud. A học bạ that does not say which year it
+      // is showing is a học bạ nobody can check against the paper one.
+      schoolYear,
+      semester: CURRENT_SEMESTER,
+      gradebookLock,
+      isGradebookLocked,
+      setGradebookLocked,
       storeError,
       addTeacher,
       addAnnouncement,

@@ -1,20 +1,39 @@
-import { useContext, useMemo } from 'react';
-import { Users, GraduationCap, CheckCircle, BarChart3, Bell, Clock, Calendar, Wallet, LayoutGrid, Megaphone, ClipboardList, FileText } from 'lucide-react';
+import { useContext, useMemo, useState } from 'react';
+import { Users, GraduationCap, CheckCircle, BarChart3, Bell, Clock, Calendar, Wallet, LayoutGrid, Megaphone, ClipboardList, FileText, Lock, Unlock } from 'lucide-react';
 import { AppContext } from '../../context/AppContext';
 import { SCHOOL } from '../../config/school';
 import { Stat, SectionCard, Bar } from './DashUI';
 import { isValidIsoDate, summariseDailyAttendance } from '../../lib/domain/attendance';
+import { isValidSchoolYear } from '../../lib/domain/schoolYear';
 
 /**
- * The semester every figure on this page belongs to.
+ * The semester every figure on this page belongs to, when the context has not
+ * said which.
  *
  * The store keeps semester I in `gradesSem1` and writes everything new into
  * `grades`, with no term selector to change that, so semester II is the only
- * term this screen can be describing. The school *year* is deliberately not
- * printed beside it: nothing in the app records which year is running, and a
- * hiệu trưởng reading "Năm học 2025–2026" would be reading a literal.
+ * term this screen can be describing.
+ *
+ * The năm học beside it is no longer a literal: the store stamps every mark,
+ * nhận xét and kết quả rèn luyện with one and the context hands it to this
+ * screen, so it is printed when it arrives and left off when it does not.
  */
 const CURRENT_SEMESTER_LABEL = 'Học kỳ II';
+
+/**
+ * What `AppContext` calls the read that fills the lock state, word for word.
+ *
+ * The same constant, and the same reasoning, as in `TeacherDashboard`:
+ * `isGradebookLocked` reads false while that read is in flight and false again
+ * when it failed, and neither is the school saying the sổ điểm is open. Kept in
+ * both files rather than shared because the two screens need different
+ * sentences out of it; when the context grows an honest status of its own, both
+ * copies go.
+ */
+const LOCK_CHECK_LABEL = 'kiểm tra trạng thái khoá sổ điểm';
+
+/** Học kỳ as a school writes it. A value that is not a term has no numeral. */
+const SEMESTER_NUMERAL = { 1: 'I', 2: 'II' };
 
 /**
  * Cycled over derived rows so bars can be told apart. Carries no meaning — the
@@ -33,10 +52,191 @@ const formatDayMonth = (iso) => (isValidIsoDate(iso) ? `${iso.slice(8, 10)}/${is
 
 const formatFullDate = (iso) => (isValidIsoDate(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '—');
 
+/**
+ * A timestamp as a school reads it, or null when the value is not one.
+ *
+ * Null rather than a dash, so the caller drops the clause instead of printing
+ * "lúc —" beside an act it cannot date.
+ */
+function formatMoment(value) {
+  if (typeof value !== 'string' || value === '') return null;
+  const at = new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+
+  const pad = (part) => String(part).padStart(2, '0');
+  return `${pad(at.getHours())}:${pad(at.getMinutes())} ngày `
+    + `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${at.getFullYear()}`;
+}
+
+/**
+ * The sổ điểm being talked about, named so the answer belongs to one năm học.
+ *
+ * A lock is keyed by (năm học, học kỳ), and a học bạ follows a pupil for three
+ * years — "đã khoá học kỳ II" without the year names one of three books.
+ */
+function describePeriod(schoolYear, semester) {
+  const numeral = SEMESTER_NUMERAL[semester];
+  if (numeral && isValidSchoolYear(schoolYear)) return `học kỳ ${numeral} năm học ${schoolYear}`;
+  if (numeral) return `học kỳ ${numeral}`;
+  return 'học kỳ này';
+}
+
+/**
+ * What this screen actually knows about the lock, as opposed to what an absent
+ * lock row looks like. `known: false` is neither mở nor khoá — it is the state
+ * where nobody has answered, and it is shown as that.
+ */
+function readGradebookLock({ isGradebookLocked, gradebookLock, storeError }) {
+  if (storeError?.what === LOCK_CHECK_LABEL) return { known: false, locked: false, row: null };
+  if (typeof isGradebookLocked !== 'boolean') return { known: false, locked: false, row: null };
+  return { known: true, locked: isGradebookLocked, row: gradebookLock ?? null };
+}
+
+/**
+ * Who an account id belongs to when the staff list can say, and the id itself,
+ * labelled as an id, when it cannot. `locked_by` is a profile UUID; printed
+ * bare after "do" it would read as somebody's name.
+ */
+function describeActor(id, staff) {
+  if (!id) return 'không rõ tài khoản';
+  const match = (staff || []).find((person) => person.id === id);
+  return match?.name || `tài khoản ${id}`;
+}
+
 /** What a card says when the school has recorded nothing of this kind yet. */
 function EmptyNote({ children }) {
   return (
     <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>{children}</p>
+  );
+}
+
+/**
+ * Closing and re-opening the sổ điểm, which is Ban Giám Hiệu's alone.
+ *
+ * Closing stops every teacher in the school entering or correcting a mark for
+ * that học kỳ, so it is not a toggle: the button opens a sentence that says
+ * what happens and asks again. Re-opening is not the peer of closing and is not
+ * drawn as one — it hands a chốt học kỳ back to the whole staff, and the school
+ * almost never wants that, because Ban Giám Hiệu can correct a mark inside a
+ * closed book and the correction goes into nhật ký sửa điểm on the way.
+ *
+ * The row-level policy on gradebook_locks is the control. This card is the part
+ * a person reads before they use it.
+ */
+export function GradebookLockCard({ lock, schoolYear, semester, staff, onSetLocked }) {
+  const [pending, setPending] = useState(null);
+  const [errors, setErrors] = useState([]);
+
+  const period = describePeriod(schoolYear, semester);
+
+  const apply = (locked) => {
+    const outcome = onSetLocked ? onSetLocked(locked) : { ok: false, errors: ['Màn hình chưa nối được với thao tác khoá sổ điểm.'] };
+    setErrors(outcome?.ok ? [] : (outcome?.errors || ['Lỗi không rõ.']));
+    if (outcome?.ok) setPending(null);
+  };
+
+  const confirmation = pending && (
+    <div style={{ marginTop: 12, border: '1px solid var(--line-strong)', borderRadius: 12, padding: '12px 14px' }}>
+      <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: 1.55 }}>
+        {pending === 'lock'
+          ? `Khoá sổ điểm ${period} sẽ chặn mọi giáo viên trong trường nhập hoặc sửa điểm, `
+            + 'nhận xét và kết quả rèn luyện của học kỳ này. Ban Giám Hiệu vẫn sửa được, và mỗi lần '
+            + 'sửa được ghi vào nhật ký sửa điểm. Xác nhận khoá?'
+          : `Mở lại sổ điểm ${period} trả quyền sửa điểm cho toàn bộ giáo viên trong một học kỳ nhà `
+            + 'trường đã chốt. Nếu chỉ cần sửa vài điểm, Ban Giám Hiệu sửa trực tiếp được mà không phải '
+            + 'mở sổ. Vẫn mở lại?'}
+      </p>
+      <div className="flex gap-12" style={{ marginTop: 12 }}>
+        {pending === 'lock' ? (
+          <>
+            <button className="btn btn-primary btn-sm" onClick={() => apply(true)}>Xác nhận khoá sổ điểm</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setPending(null); setErrors([]); }}>Huỷ</button>
+          </>
+        ) : (
+          <>
+            {/* Cancel is the emphasised button on this path on purpose. */}
+            <button className="btn btn-primary btn-sm" onClick={() => { setPending(null); setErrors([]); }}>Giữ sổ đã khoá</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => apply(false)}>Vẫn mở lại sổ điểm</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  const body = () => {
+    if (!lock.known) {
+      return (
+        <EmptyNote>
+          Chưa đọc được trạng thái khoá sổ điểm {period}. Màn hình không kết luận sổ đang mở —
+          tải lại trang để hỏi lại nhà trường.
+        </EmptyNote>
+      );
+    }
+
+    if (!lock.locked) {
+      return (
+        <>
+          <p style={{ margin: 0, fontSize: '0.86rem', lineHeight: 1.55 }}>
+            Sổ điểm {period} <b>đang mở</b>. Giáo viên nhập và sửa được điểm của học kỳ này.
+          </p>
+          {!pending && (
+            <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={() => setPending('lock')}>
+              <Lock size={15} />
+              {SEMESTER_NUMERAL[semester]
+                ? ` Khoá sổ điểm học kỳ ${SEMESTER_NUMERAL[semester]}`
+                : ' Khoá sổ điểm'}
+            </button>
+          )}
+        </>
+      );
+    }
+
+    const at = formatMoment(lock.row?.locked_at);
+    const by = lock.row?.locked_by ? describeActor(lock.row.locked_by, staff) : null;
+
+    return (
+      <>
+        <p style={{ margin: 0, fontSize: '0.86rem', lineHeight: 1.55 }}>
+          Sổ điểm {period} <b>đã khoá</b>{at ? ` lúc ${at}` : ''}{by ? `, do ${by}` : ''}.
+          Giáo viên không sửa được nữa; Ban Giám Hiệu sửa được, và mỗi lần sửa được ghi vào nhật ký sửa điểm.
+        </p>
+        {!pending && (
+          <button
+            onClick={() => setPending('unlock')}
+            style={{
+              marginTop: 10,
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              font: 'inherit',
+              fontSize: '0.78rem',
+              color: 'var(--text-muted)',
+              textDecoration: 'underline',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <Unlock size={13} /> Mở lại sổ điểm — trường hợp ngoại lệ
+          </button>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <SectionCard title="Khoá sổ điểm" icon={Lock} delay="d1">
+      {body()}
+      {confirmation}
+      {errors.length > 0 && (
+        <div role="alert" style={{ marginTop: 12 }}>
+          {errors.map(error => (
+            <div key={error} style={{ fontSize: '0.8rem', color: 'var(--danger, #b91c1c)' }}>{error}</div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
   );
 }
 
@@ -58,7 +258,20 @@ export default function AdminOverview({
     bulletins,
     journalEntries,
     lessonPlans,
+    schoolYear,
+    semester,
+    gradebookLock,
+    isGradebookLocked,
+    setGradebookLocked,
+    storeError,
   } = useContext(AppContext) || {};
+
+  /** Khoá, mở, or — the third state — not answered. See `readGradebookLock`. */
+  const lockState = readGradebookLock({ isGradebookLocked, gradebookLock, storeError });
+
+  const semesterLabel = SEMESTER_NUMERAL[semester]
+    ? `Học kỳ ${SEMESTER_NUMERAL[semester]}`
+    : CURRENT_SEMESTER_LABEL;
 
   /**
    * The school as its own roster describes it.
@@ -232,7 +445,10 @@ export default function AdminOverview({
       <div className="page-head">
         <div>
           <h2 className="page-title">Tổng quan nhà trường 🏫</h2>
-          <p className="page-sub">{SCHOOL.name} · {CURRENT_SEMESTER_LABEL}</p>
+          <p className="page-sub">
+            {SCHOOL.name} · {semesterLabel}
+            {isValidSchoolYear(schoolYear) ? ` · Năm học ${schoolYear}` : ''}
+          </p>
         </div>
         <div className="flex gap-12">
           <button className="btn btn-ghost" onClick={handleExportReport}><BarChart3 size={17} /> Xuất báo cáo</button>
@@ -334,6 +550,14 @@ export default function AdminOverview({
         </div>
 
         <div className="col" style={{ gap: 20 }}>
+          <GradebookLockCard
+            lock={lockState}
+            schoolYear={schoolYear}
+            semester={semester}
+            staff={teachers}
+            onSetLocked={setGradebookLocked}
+          />
+
           <SectionCard title="Truy cập nhanh" icon={LayoutGrid} delay="d2">
             <div className="ds-grid cols-2" style={{ gap: 12 }}>
               {quickActions.map(quick => {

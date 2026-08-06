@@ -1,6 +1,7 @@
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
+import { isValidSchoolYear } from '../lib/domain/schoolYear';
 import { SUBJECT_NAMES, BLOCKS } from '../data/mockExamsData';
 import { currentSchoolDay } from '../config/demoClock';
 import { COMMENT_SUBJECTS, SCORED_SUBJECTS, isScored, regularSlotsFor, subjectName } from '../config/curriculum';
@@ -124,12 +125,306 @@ import {
   ClipboardList,
   Sparkles,
   Upload,
-  Paperclip
+  Paperclip,
+  Lock,
+  History
 } from 'lucide-react';
 import TeacherOverview from './dash/TeacherOverview';
 import AiLessonPlannerTab from './teacher/AiLessonPlannerTab';
 import AiTutorTrainerTab from './teacher/AiTutorTrainerTab';
 
+/**
+ * What `AppContext` calls the read that fills the lock state, word for word.
+ *
+ * `isGradebookLocked` is false in three different situations: the sổ điểm is
+ * open, the read has not come back yet, and the read failed. Only the first is
+ * an answer. The context reports the third by putting this label in
+ * `storeError`, and that is the one signal it gives, so it is matched here.
+ * Matching on a Vietnamese sentence is not a nice dependency; it is still
+ * narrower than the alternative, which is telling a teacher the book is open
+ * because nobody managed to tell us it was shut.
+ */
+const LOCK_CHECK_LABEL = 'kiểm tra trạng thái khoá sổ điểm';
+
+/** Học kỳ as a school writes it. A value that is not a term has no numeral. */
+const SEMESTER_NUMERAL = { 1: 'I', 2: 'II' };
+
+/** What each row of nhật ký sửa điểm records, in the words a teacher uses. */
+const HISTORY_OPERATION = {
+  INSERT: 'nhập lần đầu',
+  UPDATE: 'sửa',
+  DELETE: 'xoá'
+};
+
+/** The mark columns a history row can differ in, in the order the form shows. */
+const HISTORY_SCALAR_COLUMNS = [
+  { label: 'Giữa kỳ', before: 'old_midterm', after: 'new_midterm' },
+  { label: 'Cuối kỳ', before: 'old_final', after: 'new_final' },
+  { label: 'ĐTB môn', before: 'old_average', after: 'new_average' }
+];
+
+/**
+ * The sổ điểm this screen is writing into, named so a refusal can say which
+ * one. Degrades rather than inventing: a năm học the context has not supplied
+ * is left out instead of being guessed at.
+ */
+function describePeriod(schoolYear, semester) {
+  const numeral = SEMESTER_NUMERAL[semester];
+  if (numeral && isValidSchoolYear(schoolYear)) return `học kỳ ${numeral} năm học ${schoolYear}`;
+  if (numeral) return `học kỳ ${numeral}`;
+  return 'học kỳ này';
+}
+
+/**
+ * What this screen actually knows about the lock, as opposed to what the
+ * absence of a lock row looks like.
+ *
+ * `known: false` is not "mở" and is not "khoá" — it is the state where the
+ * school has not answered, and the screen says so rather than picking the
+ * answer that lets a teacher start typing.
+ */
+function readGradebookLock({ isGradebookLocked, gradebookLock, storeError }) {
+  if (storeError?.what === LOCK_CHECK_LABEL) return { known: false, locked: false, row: null };
+  if (typeof isGradebookLocked !== 'boolean') return { known: false, locked: false, row: null };
+  return { known: true, locked: isGradebookLocked, row: gradebookLock ?? null };
+}
+
+/**
+ * A timestamp as a school reads it, or null when the value is not one.
+ *
+ * Null rather than a dash: the caller drops the clause entirely, so the screen
+ * never prints "lúc —" and never implies a time it does not hold. Local fields
+ * on purpose — the school reads its own clock, and locked_at is a timestamptz
+ * so there is no ambiguity to resolve.
+ */
+function formatMoment(value) {
+  if (typeof value !== 'string' || value === '') return null;
+  const at = new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+
+  const pad = (part) => String(part).padStart(2, '0');
+  return `${pad(at.getHours())}:${pad(at.getMinutes())} ngày `
+    + `${pad(at.getDate())}/${pad(at.getMonth() + 1)}/${at.getFullYear()}`;
+}
+
+/**
+ * Who an id belongs to, when the staff list can say, and the id itself when it
+ * cannot.
+ *
+ * `locked_by` and `changed_by` are account ids — profile UUIDs in Postgres. An
+ * unresolved UUID printed after "do" would read as a name, so it is labelled as
+ * the account it is. An id that no longer resolves is still evidence, which is
+ * exactly why the log stores identifiers and not references.
+ */
+function describeActor(id, staff) {
+  if (!id) return 'không rõ tài khoản';
+  const match = (staff || []).find((person) => person.id === id);
+  return match?.name || `tài khoản ${id}`;
+}
+
+/** Whether two recorded marks are the same value, treating nothing as nothing. */
+function sameMark(before, after) {
+  const missingBefore = before === null || before === undefined;
+  const missingAfter = after === null || after === undefined;
+  if (missingBefore || missingAfter) return missingBefore && missingAfter;
+  return Number(before) === Number(after);
+}
+
+/** A mark as it is shown in the log; an empty slot says it was empty. */
+function markLabel(value) {
+  return value === null || value === undefined || value === '' ? 'chưa có' : String(value);
+}
+
+/**
+ * The columns one history row actually moved, ĐĐGtx by ĐĐGtx.
+ *
+ * Only what changed, because "từ mấy sang mấy" is the question, and a row that
+ * repeated every unchanged column would bury the one digit somebody edited.
+ * An empty list is possible and is stated as such by the caller rather than
+ * rendered as a blank row.
+ */
+function changedColumns(entry) {
+  const changes = [];
+
+  const before = Array.isArray(entry.old_regular) ? entry.old_regular : [];
+  const after = Array.isArray(entry.new_regular) ? entry.new_regular : [];
+  const slots = Math.max(before.length, after.length);
+  for (let index = 0; index < slots; index += 1) {
+    if (sameMark(before[index], after[index])) continue;
+    changes.push({ label: `Thường xuyên ${index + 1}`, from: before[index], to: after[index] });
+  }
+
+  for (const column of HISTORY_SCALAR_COLUMNS) {
+    if (sameMark(entry[column.before], entry[column.after])) continue;
+    changes.push({ label: column.label, from: entry[column.before], to: entry[column.after] });
+  }
+
+  return changes;
+}
+
+/** Shared shell for the two amber/red notices below, in the modal's palette. */
+function NoticeBox({ tone, icon: Icon, children }) {
+  const palette = tone === 'stop'
+    ? { background: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.45)', text: '#fca5a5' }
+    : { background: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.45)', text: '#fcd34d' };
+
+  return (
+    <div
+      role="status"
+      style={{
+        display: 'flex',
+        gap: 10,
+        alignItems: 'flex-start',
+        background: palette.background,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 12,
+        padding: '10px 14px',
+        marginBottom: 16,
+        fontSize: '0.8rem',
+        lineHeight: 1.5,
+        color: palette.text
+      }}
+    >
+      <Icon size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+      <div>{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Whether the sổ điểm is closed, said before a teacher types rather than after
+ * they press Cập nhật.
+ *
+ * Renders nothing when the school has answered that the book is open — a
+ * banner on every open học kỳ is a banner nobody reads by the second week.
+ * Everything else earns a sentence, including the state where the answer never
+ * arrived: this component never lets "chưa biết" look like "mở".
+ */
+export function GradebookLockNotice({ lock, isAdmin, schoolYear, semester, staff }) {
+  const period = describePeriod(schoolYear, semester);
+
+  if (!lock.known) {
+    return (
+      <NoticeBox tone="warn" icon={Lock}>
+        Chưa đọc được trạng thái khoá sổ điểm {period}. Màn hình không kết luận sổ đang mở,
+        nên chưa mở ô nhập điểm — tải lại trang để hỏi lại, hoặc báo Ban Giám Hiệu nếu vẫn không đọc được.
+      </NoticeBox>
+    );
+  }
+
+  if (!lock.locked) return null;
+
+  const at = formatMoment(lock.row?.locked_at);
+  const by = lock.row?.locked_by ? describeActor(lock.row.locked_by, staff) : null;
+  const closing = [at && `lúc ${at}`, by && `do ${by}`].filter(Boolean).join(' ');
+
+  return (
+    <NoticeBox tone={isAdmin ? 'warn' : 'stop'} icon={Lock}>
+      <b>Sổ điểm {period} đã khoá{closing ? ` ${closing}` : ''}.</b>{' '}
+      {isAdmin
+        ? 'Ban Giám Hiệu vẫn sửa được — đây là đường sửa sai, và mỗi lần sửa được ghi vào nhật ký sửa điểm.'
+        : 'Giáo viên không nhập hay sửa được điểm của học kỳ này. Nếu có điểm cần sửa, đề nghị Ban Giám Hiệu.'}
+    </NoticeBox>
+  );
+}
+
+/**
+ * Nhật ký sửa điểm for one học sinh và một môn: ai sửa, lúc nào, từ mấy sang mấy.
+ *
+ * The panel is careful about the difference between "không có lần sửa nào" and
+ * "màn hình này không được đọc". Row-level security shows assessment_history to
+ * Ban Giám Hiệu of that school and nobody else, so an empty result handed to a
+ * teacher is not evidence that the mark was never touched — it is the absence
+ * of an answer, and saying otherwise would let this screen clear somebody on a
+ * question it never asked.
+ */
+export function MarkHistoryPanel({ state, isAdmin, subjectLabel, staff }) {
+  if (state.status === 'idle') return null;
+
+  const frame = (children) => (
+    <div
+      style={{
+        marginTop: 12,
+        background: '#27272a',
+        border: '1px solid #3f3f46',
+        borderRadius: 12,
+        padding: '12px 14px',
+        fontSize: '0.78rem',
+        color: '#cbd5e1',
+        lineHeight: 1.5
+      }}
+    >
+      {children}
+    </div>
+  );
+
+  if (state.status === 'loading') return frame('Đang đọc nhật ký sửa điểm…');
+
+  if (state.status === 'unavailable') {
+    return frame(
+      'Màn hình chưa nối được với nhật ký sửa điểm nên không đọc được lần sửa nào. '
+      + 'Đây là thiếu sót của phần mềm, không phải câu trả lời rằng điểm chưa từng bị sửa.'
+    );
+  }
+
+  if (state.status === 'failed') {
+    return frame(
+      `Không đọc được nhật ký sửa điểm: ${state.error}. `
+      + 'Màn hình không kết luận điểm chưa từng bị sửa.'
+    );
+  }
+
+  const entries = state.entries || [];
+
+  if (entries.length === 0) {
+    return frame(
+      isAdmin
+        ? `Nhật ký chưa ghi nhận lần sửa nào cho môn ${subjectLabel} của học sinh này.`
+        : `Không có dòng nào hiện ra. Nhật ký sửa điểm chỉ Ban Giám Hiệu đọc được, nên màn hình `
+          + `này không kết luận điểm môn ${subjectLabel} chưa từng bị sửa — hỏi Ban Giám Hiệu để có câu trả lời.`
+    );
+  }
+
+  return frame(
+    <div className="col" style={{ gap: 12 }}>
+      {entries.map((entry) => {
+        const at = formatMoment(entry.changed_at);
+        const changes = changedColumns(entry);
+
+        return (
+          <div key={entry.id} style={{ borderLeft: '2px solid #52525b', paddingLeft: 10 }}>
+            <div style={{ color: '#e2e8f0', fontWeight: 600 }}>
+              {at || 'Không rõ thời điểm'} · {describeActor(entry.changed_by, staff)}
+              {' · '}{HISTORY_OPERATION[entry.operation] || entry.operation}
+            </div>
+            {changes.length === 0 ? (
+              <div style={{ marginTop: 4 }}>Không có cột điểm nào đổi giá trị.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: '#94a3b8' }}>
+                    <th style={{ fontWeight: 600, padding: '2px 0' }}>Cột điểm</th>
+                    <th style={{ fontWeight: 600, padding: '2px 0' }}>Trước</th>
+                    <th style={{ fontWeight: 600, padding: '2px 0' }}>Sau</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {changes.map((change) => (
+                    <tr key={change.label}>
+                      <td style={{ padding: '2px 0' }}>{change.label}</td>
+                      <td style={{ padding: '2px 0' }}>{markLabel(change.from)}</td>
+                      <td style={{ padding: '2px 0', color: '#f8fafc', fontWeight: 600 }}>{markLabel(change.to)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const { 
@@ -160,10 +455,46 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     submitTeacherLeaveRequest,
     userSession,
     teacherSubTab,
-    setTeacherSubTab
+    setTeacherSubTab,
+    schoolYear,
+    semester,
+    gradebookLock,
+    isGradebookLocked,
+    listAssessmentHistory,
+    storeError
   } = useContext(AppContext);
 
   const activeTab = teacherSubTab || 'students';
+
+  const isAdmin = userSession?.role === 'admin';
+
+  /** Khoá hay mở — and, third, not answered. See `readGradebookLock`. */
+  const lockState = readGradebookLock({ isGradebookLocked, gradebookLock, storeError });
+
+  /**
+   * Whether this screen may offer mark entry at all.
+   *
+   * A closed sổ điểm stops a teacher and lets Ban Giám Hiệu through, which is
+   * how the database trigger behaves too. An unread lock state stops everybody:
+   * the whole point of asking before the teacher types is that they learn the
+   * book is shut before the column is full, and a screen that opened the form
+   * on a state it never read would be back to finding out at Cập nhật.
+   */
+  const marksEditable = lockState.known && (!lockState.locked || isAdmin);
+
+  /** The refusal shown in the form when a save is attempted anyway. */
+  const lockRefusal = lockState.known
+    ? `Sổ điểm ${describePeriod(schoolYear, semester)} đã khoá, chỉ Ban Giám Hiệu mới sửa được.`
+    : `Chưa đọc được trạng thái khoá sổ điểm ${describePeriod(schoolYear, semester)}, nên chưa nhập được điểm.`;
+
+  /**
+   * The short form of that refusal, for a placeholder or a button face.
+   *
+   * Two wordings rather than one, because the two states are different facts. A
+   * disabled box reading "Sổ điểm đã khoá" when nobody has managed to read the
+   * lock would be this screen asserting a closure the school never told it about.
+   */
+  const blockedLabel = lockState.locked ? 'Sổ điểm đã khoá' : 'Chưa rõ trạng thái sổ điểm';
 
   const handleSubTabChange = (tab) => {
     setTeacherSubTab(tab);
@@ -205,11 +536,53 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     semester2: student?.commentResults?.[subject]?.semester2 ?? null
   });
 
+  /**
+   * Nhật ký sửa điểm for whichever học sinh và môn the form is showing.
+   *
+   * `idle` until asked for: the log is read per student per subject, and
+   * fetching it for every row a teacher merely opened would be a read of a
+   * table the school treats as evidence. The status is carried rather than
+   * inferred from an empty array, because an empty array is precisely the value
+   * that must not be read as "chưa từng bị sửa".
+   */
+  const [markHistory, setMarkHistory] = useState({ status: 'idle', entries: [], error: null });
+
+  // Which read the answer on screen belongs to. A teacher who changes subject
+  // mid-load would otherwise be shown the previous subject's log under the new
+  // subject's heading — the log naming the wrong môn is worse than no log.
+  const markHistoryRequest = useRef(0);
+
+  const loadMarkHistory = (student, subject) => {
+    const token = markHistoryRequest.current + 1;
+    markHistoryRequest.current = token;
+
+    if (typeof listAssessmentHistory !== 'function') {
+      setMarkHistory({ status: 'unavailable', entries: [], error: null });
+      return;
+    }
+
+    setMarkHistory({ status: 'loading', entries: [], error: null });
+    Promise.resolve()
+      .then(() => listAssessmentHistory({ studentId: student.id, subject }))
+      .then((rows) => {
+        if (markHistoryRequest.current !== token) return;
+        setMarkHistory({ status: 'ready', entries: rows || [], error: null });
+      })
+      .catch((error) => {
+        if (markHistoryRequest.current !== token) return;
+        setMarkHistory({ status: 'failed', entries: [], error: error?.message || 'Lỗi không rõ.' });
+      });
+  };
+
   /** Loads whichever form the subject needs, and clears any stale errors. */
   const loadSubject = (student, subject) => {
     setGradeRecord(getAssessmentRecord(student, subject));
     setCommentDraft(getCommentDraft(student, subject));
     setGradeErrors([]);
+    // Back to idle, and the in-flight read disowned: a log belongs to one
+    // student and one subject, and this is now a different pair.
+    markHistoryRequest.current += 1;
+    setMarkHistory({ status: 'idle', entries: [], error: null });
   };
 
   // Null until every slot the circular needs is filled, so the teacher sees a
@@ -478,6 +851,15 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     e.preventDefault();
     if (!selectedStudent) return;
     const name = selectedStudent.name;
+
+    // The form is already disabled in this state; this catches the submit that
+    // arrives anyway — Enter in a text field, a stale render — and covers the
+    // one case the context would wave through, which is a lock state nobody
+    // managed to read.
+    if (!marksEditable) {
+      setGradeErrors([lockRefusal]);
+      return;
+    }
 
     // Nhận xét-only subjects take Đạt / Chưa đạt and never touch the marks,
     // so they save through a different action entirely.
@@ -2542,7 +2924,17 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                 <X size={20} />
               </button>
             </div>
-            
+
+            {/* Before the list, not after a failed save: a teacher who opens
+                this to fill a column learns here that the book is shut. */}
+            <GradebookLockNotice
+              lock={lockState}
+              isAdmin={isAdmin}
+              schoolYear={schoolYear}
+              semester={semester}
+              staff={teachers}
+            />
+
             <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -2569,8 +2961,10 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                       <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.Physics ?? '—'}</td>
                       <td style={{ padding: '12px 10px', fontWeight: 700, color: '#e2e8f0' }}>{std.grades.English ?? '—'}</td>
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                        <button 
+                        <button
                           type="button"
+                          disabled={!marksEditable}
+                          title={marksEditable ? undefined : lockRefusal}
                           onClick={() => {
                             setSelectedStudent(std);
                             setGeneratedComment('');
@@ -2578,7 +2972,15 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                             loadSubject(std, 'Math');
                           }}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '0.8rem',
+                            background: '#3f3f46',
+                            border: '1px solid #52525b',
+                            color: '#ffffff',
+                            opacity: marksEditable ? 1 : 0.45,
+                            cursor: marksEditable ? 'pointer' : 'not-allowed'
+                          }}
                         >
                           Nhập điểm
                         </button>
@@ -2610,6 +3012,14 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
           <div className="modal-content animate-fade" style={{ background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>
+              <GradebookLockNotice
+                lock={lockState}
+                isAdmin={isAdmin}
+                schoolYear={schoolYear}
+                semester={semester}
+                staff={teachers}
+              />
+
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label" style={{ color: '#cbd5e1', fontWeight: 600 }}>Môn học</label>
                 <select
@@ -2659,13 +3069,16 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                               key={label}
                               type="button"
                               aria-pressed={active}
+                              disabled={!marksEditable}
+                              title={marksEditable ? undefined : lockRefusal}
                               onClick={() => setCommentDraft(prev => ({ ...prev, [semester]: option }))}
                               style={{
                                 padding: '8px 16px',
                                 borderRadius: 10,
                                 fontSize: '0.85rem',
                                 fontWeight: 600,
-                                cursor: 'pointer',
+                                cursor: marksEditable ? 'pointer' : 'not-allowed',
+                                opacity: marksEditable ? 1 : 0.45,
                                 background: active ? 'rgba(99,102,241,0.25)' : '#27272a',
                                 border: `1px solid ${active ? '#6366f1' : '#52525b'}`,
                                 color: active ? '#c7d2fe' : '#cbd5e1'
@@ -2700,9 +3113,11 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                       id={`gtx-${index}`}
                       type="number" step="0.1" min="0" max="10" className="form-control"
                       value={mark ?? ''}
-                      placeholder="Chưa nhập"
+                      placeholder={marksEditable ? 'Chưa nhập' : blockedLabel}
+                      disabled={!marksEditable}
+                      title={marksEditable ? undefined : lockRefusal}
                       onChange={e => setRegularMark(index, e.target.value === '' ? null : Number(e.target.value))}
-                      style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                      style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', opacity: marksEditable ? 1 : 0.5 }}
                     />
                   </div>
                 ))}
@@ -2712,9 +3127,11 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                     id="gtx-midterm"
                     type="number" step="0.1" min="0" max="10" className="form-control"
                     value={gradeRecord.midterm ?? ''}
-                    placeholder="Chưa nhập"
+                    placeholder={marksEditable ? 'Chưa nhập' : blockedLabel}
+                    disabled={!marksEditable}
+                    title={marksEditable ? undefined : lockRefusal}
                     onChange={e => setGradeRecord(prev => ({ ...prev, midterm: e.target.value === '' ? null : Number(e.target.value) }))}
-                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', opacity: marksEditable ? 1 : 0.5 }}
                   />
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
@@ -2723,9 +3140,11 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                     id="gtx-final"
                     type="number" step="0.1" min="0" max="10" className="form-control"
                     value={gradeRecord.final ?? ''}
-                    placeholder="Chưa nhập"
+                    placeholder={marksEditable ? 'Chưa nhập' : blockedLabel}
+                    disabled={!marksEditable}
+                    title={marksEditable ? undefined : lockRefusal}
                     onChange={e => setGradeRecord(prev => ({ ...prev, final: e.target.value === '' ? null : Number(e.target.value) }))}
-                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff' }}
+                    style={{ background: '#27272a', borderColor: '#52525b', color: '#ffffff', opacity: marksEditable ? 1 : 0.5 }}
                   />
                 </div>
               </div>
@@ -2753,6 +3172,38 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                     : 'Nhập đủ điểm thường xuyên, giữa kỳ và cuối kỳ để tính được ĐTB môn.'}
                 </div>
               </div>
+              )}
+
+              {/*
+                Nhật ký sửa điểm, beside the marks it is about.
+
+                Scored subjects only: a nhận xét môn is stored in
+                comment_results, which has no history table, so offering the
+                button there would promise a log that does not exist.
+              */}
+              {subjectIsScored && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600 }}>
+                      Nhật ký sửa điểm — ai sửa, lúc nào, từ mấy sang mấy
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadMarkHistory(selectedStudent, selectedSubject)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <History size={13} />
+                      {markHistory.status === 'idle' ? 'Xem nhật ký' : 'Đọc lại'}
+                    </button>
+                  </div>
+                  <MarkHistoryPanel
+                    state={markHistory}
+                    isAdmin={isAdmin}
+                    subjectLabel={subjectName(selectedSubject)}
+                    staff={teachers}
+                  />
+                </div>
               )}
 
               {/* Report-card comment drafter */}
@@ -2791,7 +3242,15 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
               
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                 <button type="button" onClick={() => setSelectedStudent(null)} className="btn btn-secondary" style={{ flex: 1, background: '#3f3f46', border: '1px solid #52525b', color: '#ffffff' }}>Hủy</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1, fontWeight: 700 }}>Cập nhật</button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={!marksEditable}
+                  title={marksEditable ? undefined : lockRefusal}
+                  style={{ flex: 1, fontWeight: 700, opacity: marksEditable ? 1 : 0.45, cursor: marksEditable ? 'pointer' : 'not-allowed' }}
+                >
+                  {marksEditable ? 'Cập nhật' : blockedLabel}
+                </button>
               </div>
             </form>
           </div>
