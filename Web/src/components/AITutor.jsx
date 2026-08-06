@@ -2,32 +2,19 @@ import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Send, Sparkles, MessageSquare, Paperclip, Camera, X, FileText } from 'lucide-react';
 import RuleBasedNotice from './RuleBasedNotice';
-
-function latexToHtml(tex) {
-  if (!tex) return '';
-  return tex
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
-    .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
-    .replace(/\\int/g, '∫')
-    .replace(/\\vec\{([^}]+)\}/g, 'vec($1)')
-    .replace(/\\mathbf\{([^}]+)\}/g, '<b>$1</b>')
-    .replace(/\\text\{([^}]+)\}/g, '$1')
-    .replace(/\\alpha/g, 'α')
-    .replace(/\\beta/g, 'β')
-    .replace(/\\omega/g, 'ω')
-    .replace(/\\pi/g, 'π')
-    .replace(/\\Omega/g, 'Ω')
-    .replace(/\\rightarrow/g, '→')
-    .replace(/\\uparrow/g, '↑')
-    .replace(/\\cdot/g, '·')
-    .replace(/\\times/g, '×')
-    .replace(/\\le/g, '≤')
-    .replace(/\\ge/g, '≥')
-    .replace(/\\neq/g, '≠')
-    .replace(/\\in/g, '∈')
-    .replace(/\\mathbb\{Z\}/g, 'ℤ')
-    .replace(/\\quad/g, '  ');
-}
+/**
+ * One LaTeX converter for the whole app.
+ *
+ * This file used to carry its own, and the two drifted: the local copy never
+ * learned \Delta, \mathbb{R}, or subscripts and superscripts, and it ran \frac
+ * before \sqrt — so on `\frac{-b + \sqrt{\Delta}}{2a}` the fraction's own
+ * `[^}]+` stopped at the brace closing \Delta, the pattern failed, and a pupil
+ * asking about phương trình bậc hai was shown the raw markup instead of the
+ * formula. Presentation stays local (this panel is light, the counselling one
+ * is dark); the conversion is shared, so a symbol learned once is learned
+ * everywhere.
+ */
+import { latexToHtml } from '../lib/tutor/formatText';
 
 export default function AITutor() {
   const { tutorChat, sendTutorMessage } = useContext(AppContext);
@@ -145,7 +132,9 @@ export default function AITutor() {
       .replace(/\$\$(.*?)\$\$/gs, (_, tex) => {
         return `<div style="background:rgba(99,102,241,0.08); padding:10px 14px; border-radius:8px; font-family:'Cambria Math','STIX Two Math',serif; margin:6px 0; font-size:1.05em; line-height:1.6; letter-spacing:0.3px">${latexToHtml(tex)}</div>`;
       })
-      .replace(/\$([^$]+)\$/g, (_, tex) => {
+      /* `[^$\n]+?` and not `[^$]+`: a stray unpaired $ in an answer would
+         otherwise swallow whole paragraphs into one inline math chip. */
+      .replace(/\$([^$\n]+?)\$/g, (_, tex) => {
         return `<code style="background:rgba(99,102,241,0.1); padding:2px 5px; border-radius:4px; font-family:'Cambria Math','STIX Two Math',serif; font-size:0.95em">${latexToHtml(tex)}</code>`;
       })
       .replace(/^-\s(.*?)(?:\n|$)/gm, '<li style="margin-left:14px; margin-bottom:4px;">$1</li>')

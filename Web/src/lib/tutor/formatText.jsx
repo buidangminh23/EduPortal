@@ -44,6 +44,88 @@ export function decodeHtmlEntities(str) {
   return res;
 }
 
+/**
+ * Reads a balanced `{...}` beginning at `i`, or null if one does not start there.
+ *
+ * The regexes this replaces matched arguments with `[^}]*`, which cannot count
+ * braces. On `\frac{x^{n+1}}{n+1}` the numerator stopped at the brace closing
+ * the exponent; on `\sqrt{\frac{m}{k}}` it stopped inside the fraction. Both
+ * left the command on the page for a pupil to read.
+ */
+function readGroup(s, i) {
+  if (s[i] !== '{') return null;
+  let depth = 0;
+  for (let j = i; j < s.length; j += 1) {
+    if (s[j] === '{') depth += 1;
+    else if (s[j] === '}') {
+      depth -= 1;
+      if (depth === 0) return { body: s.slice(i + 1, j), end: j + 1 };
+    }
+  }
+  return null;
+}
+
+const FRACTION_WRAP = 'display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px;font-size:0.95em';
+const FRACTION_TOP = 'border-bottom:1.5px solid currentColor;padding:0 4px;width:100%;text-align:center';
+const FRACTION_BOTTOM = 'padding:0 4px;width:100%;text-align:center';
+const BLACKBOARD = { R: 'ℝ', Z: 'ℤ', N: 'ℕ', Q: 'ℚ', C: 'ℂ' };
+const UPRIGHT = 'font-style:normal';
+
+/** Commands taking `{...}` arguments: how many, and what they become. */
+const BRACE_COMMANDS = [
+  ['frac', 2, (a, b) => `<span style="${FRACTION_WRAP}"><span style="${FRACTION_TOP}">${a}</span><span style="${FRACTION_BOTTOM}">${b}</span></span>`],
+  ['sqrt', 1, (a) => `√(${a})`],
+  ['text', 1, (a) => `<span style="${UPRIGHT}">${a}</span>`],
+  ['mathrm', 1, (a) => `<span style="${UPRIGHT}">${a}</span>`],
+  ['mathbf', 1, (a) => `<b>${a}</b>`],
+  ['vec', 1, (a) => `${a}⃗`],
+  ['mathbb', 1, (a) => BLACKBOARD[a] ?? a],
+  ['overline', 1, (a) => `<span style="border-top:1.5px solid currentColor">${a}</span>`]
+];
+
+/**
+ * Expands every brace-taking command, innermost first.
+ *
+ * Rightmost-first *is* innermost-first: a nested command always begins after
+ * the backslash of the one holding it, so the inner fraction becomes HTML —
+ * which carries no braces — before the outer command reads its argument. That
+ * is what the old three-pass loop was reaching for and could not get, because
+ * the passes re-ran a regex that had already failed.
+ *
+ * A malformed command loses its name rather than surviving. Its arguments still
+ * read as maths, whereas a bare `\frac` in the middle of a formula reads as a
+ * bug — which it is, but a pupil revising for an exam is the wrong person to
+ * show it to.
+ */
+function expandBraceCommands(input) {
+  let s = input;
+  for (let guard = 0; guard < 200; guard += 1) {
+    let at = -1;
+    let cmd = null;
+    for (const entry of BRACE_COMMANDS) {
+      const idx = s.lastIndexOf(`\\${entry[0]}`);
+      if (idx > at) { at = idx; cmd = entry; }
+    }
+    if (at < 0) return s;
+
+    const [name, arity, render] = cmd;
+    let i = at + name.length + 1;
+    const args = [];
+    for (let k = 0; k < arity; k += 1) {
+      while (s[i] === ' ') i += 1;
+      const group = readGroup(s, i);
+      if (!group) break;
+      args.push(group.body);
+      i = group.end;
+    }
+
+    s = args.length === arity
+      ? s.slice(0, at) + render(...args) + s.slice(i)
+      : s.slice(0, at) + s.slice(at + name.length + 1);
+  }
+  return s;
+}
+
 export function latexToHtml(latex) {
   if (!latex) return '';
   let s = latex;
@@ -56,25 +138,35 @@ export function latexToHtml(latex) {
        .replace(/\\theta/g, 'θ').replace(/\\sigma/g, 'σ')
        .replace(/\\mu/g, 'μ').replace(/\\phi/g, 'φ');
 
-  // 2. Process \sqrt{x} or \sqrt(x) FIRST before \frac so nested braces inside \frac numerators are expanded
-  s = s.replace(/\\sqrt\s*\{([^}]*)\}/g, '√($1)');
+  s = s.replace(/\\Omega/g, 'Ω').replace(/\\varphi/g, 'φ').replace(/\\varepsilon/g, 'ε')
+       .replace(/\\rho/g, 'ρ').replace(/\\tau/g, 'τ').replace(/\\psi/g, 'ψ');
+
+  // \left( \right] — sizing hints with no meaning outside a real TeX engine.
+  // Dropped before \frac, or the command text survives inside a rendered
+  // fraction: \log_a\left(\frac{b}{c}\right) showed a literal "\left(".
+  s = s.replace(/\\left\s*([([\]{|.])?/g, (_, d) => (d && d !== '.' ? d : ''));
+  s = s.replace(/\\right\s*([)\]([{|.])?/g, (_, d) => (d && d !== '.' ? d : ''));
+
+  // Brace-taking commands, innermost first, with real brace matching — see
+  // expandBraceCommands. The `{...}` forms below are gone from here because a
+  // regex cannot count braces.
+  s = expandBraceCommands(s);
   s = s.replace(/\\sqrt\s*\(([^)]*)\)/g, '√($1)');
   s = s.replace(/\\sqrt\s*([a-zA-Z0-9Δπθ]+)/g, '√$1');
-  s = s.replace(/\\vec\{([^}]*)\}/g, '$1\u20D7');
-  s = s.replace(/\\(sin|cos|tan|cot|sec|csc|log|ln|lim|max|min|sup|inf)\b/g, '<span style="font-style:normal;font-weight:500">$1</span>');
-  s = s.replace(/\\text\{([^}]*)\}/g, '<span style="font-style:normal">$1</span>');
-
-  // 3. Process \frac{a}{b} or \frac(a)(b) repeatedly to handle fractions
-  for (let i = 0; i < 3; i++) {
-    s = s.replace(/\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}/g, '<span style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px;font-size:0.95em"><span style="border-bottom:1.5px solid currentColor;padding:0 4px;width:100%;text-align:center">$1</span><span style="padding:0 4px;width:100%;text-align:center">$2</span></span>');
-    s = s.replace(/\\frac\s*\(([^)]*)\)\s*\(([^)]*)\)/g, '<span style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px;font-size:0.95em"><span style="border-bottom:1.5px solid currentColor;padding:0 4px;width:100%;text-align:center">$1</span><span style="padding:0 4px;width:100%;text-align:center">$2</span></span>');
-  }
+  /* `(?![a-zA-Z])` and not `\b`: an underscore is a word character, so `\b`
+     never fires after `log` in `\log_a` — the most common form in the whole
+     knowledge base. It rendered as a literal "\loga". */
+  s = s.replace(/\\(sin|cos|tan|cot|sec|csc|log|ln|lg|exp|lim|max|min|sup|inf|deg|arg|gcd)(?![a-zA-Z])/g,
+                '<span style="font-style:normal;font-weight:500">$1</span>');
 
   // Math operators
   s = s.replace(/\\cdot/g, '·').replace(/\\times/g, '×').replace(/\\div/g, '÷')
        .replace(/\\pm/g, '±').replace(/\\mp/g, '∓').replace(/\\neq/g, '≠')
        .replace(/\\leq/g, '≤').replace(/\\geq/g, '≥').replace(/\\approx/g, '≈')
+       .replace(/\\xrightarrow\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}/g, ' —<sup>$1</sup>→ ')
        .replace(/\\Rightarrow/g, '⇒').replace(/\\rightarrow/g, '→').replace(/\\Leftarrow/g, '⇐')
+       .replace(/\\Leftrightarrow/g, '⇔').replace(/\\leftrightarrow/g, '↔')
+       .replace(/\\uparrow/g, '↑').replace(/\\downarrow/g, '↓')
        .replace(/\\infty/g, '∞').replace(/\\quad/g, '&nbsp;&nbsp;').replace(/\\qquad/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
        .replace(/\\in/g, '∈').replace(/\\subset/g, '⊂').replace(/\\cup/g, '∪').replace(/\\cap/g, '∩');
 
