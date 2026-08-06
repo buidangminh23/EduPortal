@@ -4,6 +4,8 @@ import {
   CONDUCT_SEMESTERS,
   applyConductResult,
   conductBandForYear,
+  conductSemesterKey,
+  conductSemesterNumber,
   isValidConductBand,
   readConductBand,
   readConductYearBand
@@ -50,6 +52,62 @@ describe('isValidConductBand', () => {
     expect(isValidConductBand('Cần cố gắng')).toBe(false);
     expect(isValidConductBand('Trung bình')).toBe(false);
     expect(isValidConductBand('Yếu')).toBe(false);
+  });
+});
+
+describe('CONDUCT_SEMESTERS', () => {
+  it('is the two học kỳ, in the order Điều 8 khoản 2 assesses them', () => {
+    expect(CONDUCT_SEMESTERS).toEqual(['semester1', 'semester2']);
+  });
+});
+
+describe('the học kỳ the database stores', () => {
+  it('numbers the two học kỳ the way assessment_records and comment_results do', () => {
+    expect(conductSemesterNumber('semester1')).toBe(1);
+    expect(conductSemesterNumber('semester2')).toBe(2);
+  });
+
+  it('has a number for every key the module publishes', () => {
+    CONDUCT_SEMESTERS.forEach((semester) => {
+      expect([1, 2]).toContain(conductSemesterNumber(semester));
+    });
+  });
+
+  it('reads a stored number back as the key the student record carries', () => {
+    expect(conductSemesterKey(1)).toBe('semester1');
+    expect(conductSemesterKey(2)).toBe('semester2');
+  });
+
+  it('round-trips, so a saved mức comes back on the học kỳ it was saved for', () => {
+    CONDUCT_SEMESTERS.forEach((semester) => {
+      expect(conductSemesterKey(conductSemesterNumber(semester))).toBe(semester);
+    });
+  });
+
+  it('reads a numeric string, because a driver may hand a SMALLINT back as one', () => {
+    expect(conductSemesterKey('2')).toBe('semester2');
+  });
+
+  it('has no key for a number the CHECK constraint would not have admitted', () => {
+    expect(conductSemesterKey(0)).toBeNull();
+    expect(conductSemesterKey(3)).toBeNull();
+    expect(conductSemesterKey(null)).toBeNull();
+    expect(conductSemesterKey(undefined)).toBeNull();
+    expect(conductSemesterKey('học kỳ 2')).toBeNull();
+  });
+
+  it('has no number for anything that is not a học kỳ', () => {
+    expect(conductSemesterNumber('semester3')).toBeNull();
+    expect(conductSemesterNumber('year')).toBeNull();
+    expect(conductSemesterNumber(2)).toBeNull();
+    expect(conductSemesterNumber(undefined)).toBeNull();
+  });
+
+  it('does not mistake an inherited property for a học kỳ', () => {
+    // A bare map lookup answers `constructor` with a function, which would be
+    // sent to Postgres as the semester of a row nobody can explain.
+    expect(conductSemesterNumber('constructor')).toBeNull();
+    expect(conductSemesterNumber('toString')).toBeNull();
   });
 });
 

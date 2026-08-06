@@ -64,6 +64,15 @@ INSERT INTO assessment_records (school_id, student_id, subject, semester, regula
     ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 'Toán', 2, ARRAY[8.0, 9.0], 7.0, 6.0, 6.9),
     ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 'Toán', 2, ARRAY[5.0, 5.0], 5.0, 5.0, 5.0);
 
+-- Kết quả rèn luyện học kỳ I, as the teacher entered it. Student One is Khá and
+-- Student Two is Đạt, deliberately neither of them Tốt, so that an attempt below
+-- to write 'Tốt' is a real change rather than a value that was already there.
+INSERT INTO conduct_results (school_id, student_id, semester, band, updated_by) VALUES
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 1, 'Khá',
+     'ff000000-0000-0000-0000-000000000002'),
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 1, 'Đạt',
+     'ff000000-0000-0000-0000-000000000002');
+
 INSERT INTO invoices (id, school_id, student_id, title, amount, due_date) VALUES
     ('ff000000-0000-0000-0000-0000000000f1', 'ffffffff-1111-1111-1111-111111111111',
      'ff000000-0000-0000-0000-000000000003', 'Học phí tháng 6', 2500000, '2026-06-15');
@@ -183,6 +192,159 @@ SELECT expect('hiệu trưởng thấy toàn trường',
 
 SELECT expect('hiệu trưởng đọc được hồ sơ toàn trường',
     (SELECT count(*) FROM profiles), 5);
+
+-- ── Kết quả rèn luyện belongs to the teacher who assessed it ───────────────
+-- Thông tư 22 Điều 8 khoản 1 leaves the mức to the giáo viên chủ nhiệm. 011
+-- hands the write to can_edit_student, which admits staff and refuses everybody
+-- the circular never asked — the half of that rule a database can enforce, and
+-- the half worth proving. A mức decides a danh hiệu, so the two people with the
+-- clearest reason to improve one are the student it is about and the parent
+-- reading it, and neither of them may.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000004');
+
+SELECT expect('học sinh chỉ thấy kết quả rèn luyện của chính mình',
+    (SELECT count(*) FROM conduct_results), 1);
+
+-- Filing a mức for a học kỳ nobody has assessed yet. The row is refused by the
+-- WITH CHECK clause, which raises rather than writing nothing quietly.
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        INSERT INTO conduct_results (school_id, student_id, semester, band)
+        VALUES ('ffffffff-1111-1111-1111-111111111111',
+                'ff000000-0000-0000-0000-000000000004', 2, 'Tốt');
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — học sinh tự ghi kết quả rèn luyện cho mình được';
+    END IF;
+    RAISE NOTICE 'ok — học sinh không tự ghi kết quả rèn luyện được';
+END;
+$$;
+
+-- And rewriting the mức the teacher already gave them. This one is refused by
+-- the USING clause, which matches no row instead of raising, so the check is
+-- that nothing was updated.
+DO $$
+DECLARE blocked BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE conduct_results SET band = 'Tốt'
+        WHERE student_id = 'ff000000-0000-0000-0000-000000000004';
+        IF NOT FOUND THEN blocked := TRUE; END IF;
+    EXCEPTION WHEN OTHERS THEN
+        blocked := TRUE;
+    END;
+
+    IF NOT blocked THEN
+        RAISE EXCEPTION 'FAIL — học sinh tự sửa mức rèn luyện của mình được';
+    END IF;
+    RAISE NOTICE 'ok — học sinh không tự sửa mức rèn luyện được';
+END;
+$$;
+
+SELECT expect('mức rèn luyện của học sinh vẫn đúng mức giáo viên đã ghi',
+    (SELECT count(*) FROM conduct_results
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000004' AND band = 'Đạt'), 1);
+
+-- A parent, on their own child's record.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000005');
+
+SELECT expect('phụ huynh chỉ thấy kết quả rèn luyện của con mình',
+    (SELECT count(*) FROM conduct_results), 1);
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        INSERT INTO conduct_results (school_id, student_id, semester, band)
+        VALUES ('ffffffff-1111-1111-1111-111111111111',
+                'ff000000-0000-0000-0000-000000000003', 2, 'Tốt');
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — phụ huynh tự ghi kết quả rèn luyện cho con được';
+    END IF;
+    RAISE NOTICE 'ok — phụ huynh không tự ghi kết quả rèn luyện cho con được';
+END;
+$$;
+
+DO $$
+DECLARE blocked BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE conduct_results SET band = 'Tốt'
+        WHERE student_id = 'ff000000-0000-0000-0000-000000000003';
+        IF NOT FOUND THEN blocked := TRUE; END IF;
+    EXCEPTION WHEN OTHERS THEN
+        blocked := TRUE;
+    END;
+
+    IF NOT blocked THEN
+        RAISE EXCEPTION 'FAIL — phụ huynh tự nâng mức rèn luyện của con được';
+    END IF;
+    RAISE NOTICE 'ok — phụ huynh không nâng được mức rèn luyện của con';
+END;
+$$;
+
+-- Deleting is the other way to get rid of an unwelcome mức, because 011 makes
+-- chưa đánh giá the absence of a row. It is the same policy, so it fails the
+-- same silent way, and it is asked separately because "nobody may edit" and
+-- "nobody may erase" are two different sentences.
+DO $$
+DECLARE blocked BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        DELETE FROM conduct_results
+        WHERE student_id = 'ff000000-0000-0000-0000-000000000003';
+        IF NOT FOUND THEN blocked := TRUE; END IF;
+    EXCEPTION WHEN OTHERS THEN
+        blocked := TRUE;
+    END;
+
+    IF NOT blocked THEN
+        RAISE EXCEPTION 'FAIL — phụ huynh xoá được kết quả rèn luyện của con';
+    END IF;
+    RAISE NOTICE 'ok — phụ huynh không xoá được kết quả rèn luyện của con';
+END;
+$$;
+
+SELECT expect('mức rèn luyện của con vẫn nguyên là Khá',
+    (SELECT count(*) FROM conduct_results
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND band = 'Khá'), 1);
+
+-- And the teacher's own entry still works, including taking one back. A lock
+-- that also stops the GVCN correcting a mức they typed wrong is a bug reported
+-- as a lock — and with no "chưa đánh giá" value to write, undoing one is a
+-- DELETE or it is nothing.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+INSERT INTO conduct_results (school_id, student_id, semester, band, updated_by)
+VALUES ('ffffffff-1111-1111-1111-111111111111',
+        'ff000000-0000-0000-0000-000000000003', 2, 'Tốt',
+        'ff000000-0000-0000-0000-000000000002');
+
+SELECT expect('giáo viên ghi được mức rèn luyện học kỳ II',
+    (SELECT count(*) FROM conduct_results
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'), 2);
+
+DELETE FROM conduct_results
+ WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND semester = 2;
+
+SELECT expect('giáo viên xoá lại được mức vừa ghi nhầm',
+    (SELECT count(*) FROM conduct_results
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'), 1);
 
 -- ── Reading one's own profile must not recurse ─────────────────────────────
 -- This is the query that ran on every sign-in and aborted before the fix.

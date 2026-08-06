@@ -46,11 +46,12 @@ psql "$DB_URL" -f supabase/migrations/007_mock_exams.sql
 psql "$DB_URL" -f supabase/migrations/008_mock_exam_idempotency.sql
 psql "$DB_URL" -f supabase/migrations/009_policy_indexes.sql
 psql "$DB_URL" -f supabase/migrations/010_profile_privilege_guard.sql
+psql "$DB_URL" -f supabase/migrations/011_conduct_results.sql
 ```
 
-Chạy đúng thứ tự: 005 định nghĩa `can_view_student` / `can_edit_student`, và 006, 007 đều dựa vào hai hàm đó để quyết định ai đọc được điểm của ai.
+Chạy đúng thứ tự: 005 định nghĩa `can_view_student` / `can_edit_student`, và 006, 007, 011 đều dựa vào hai hàm đó để quyết định ai đọc được điểm của ai.
 
-Chạy đủ cả mười, không dừng ở 007. 008 thêm cột `local_id` mà mã nguồn nộp bài thi ghi vào — thiếu nó thì mọi bài thi nộp lên đều lỗi. 010 là bản vá bảo mật: thiếu nó thì bất kỳ tài khoản nào đã đăng nhập, kể cả học sinh, cũng tự đặt mình thành `admin` được bằng một dòng lệnh trong trình duyệt, và admin thì xem được toàn bộ điểm, học phí, hồ sơ tư vấn tâm lý lẫn camera.
+Chạy đủ cả mười một, không dừng ở 007. 008 thêm cột `local_id` mà mã nguồn nộp bài thi ghi vào — thiếu nó thì mọi bài thi nộp lên đều lỗi. 010 là bản vá bảo mật: thiếu nó thì bất kỳ tài khoản nào đã đăng nhập, kể cả học sinh, cũng tự đặt mình thành `admin` được bằng một dòng lệnh trong trình duyệt, và admin thì xem được toàn bộ điểm, học phí, hồ sơ tư vấn tâm lý lẫn camera. 011 là bảng kết quả rèn luyện: thiếu nó thì mức giáo viên chủ nhiệm đánh giá nằm lại đúng trên chiếc máy đã gõ nó — học bạ mở ở máy khác trống mục rèn luyện, và danh hiệu không xét được vì danh hiệu cần cả kết quả học tập lẫn kết quả rèn luyện.
 
 Xong thì chạy `psql "$DB_URL" -f supabase/tests/rls_check.sql`. File này đóng vai từng nhóm người dùng rồi tự báo lỗi nếu phân quyền sai — trong đó có phép thử "học sinh tự đặt mình thành admin". Phải chạy hết mà không báo lỗi nào; nếu nó dừng giữa chừng thì có migration chưa chạy.
 

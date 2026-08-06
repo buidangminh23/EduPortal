@@ -20,6 +20,7 @@ import { safeStorage } from '../safeStorage';
 const KEYS = {
   assessments: 'db_assessment_records',
   comments: 'db_comment_results',
+  conduct: 'db_conduct_results',
   attendance: 'db_attendance_records',
   leave: 'db_leave_requests',
   invoices: 'db_invoices',
@@ -78,6 +79,14 @@ function upsertRow(key, identity, patch) {
   return next;
 }
 
+/** Drops the row matching `identity`. Returns null — there is no row to hand back. */
+function removeRow(key, identity) {
+  const rows = readAll(key);
+  const remaining = rows.filter((row) => !matches(row, identity));
+  if (remaining.length !== rows.length) writeAll(key, remaining);
+  return null;
+}
+
 /**
  * Records held in the browser. This is the demo store, and it is per-browser:
  * marks entered on one machine are invisible on another.
@@ -118,6 +127,36 @@ export const localAdapter = {
   async listCommentResults({ studentId, limit = DEFAULT_ROW_LIMIT } = {}) {
     const filter = studentId ? { student_id: studentId } : {};
     return readAll(KEYS.comments).filter((row) => matches(row, filter)).slice(0, limit);
+  },
+
+  async listConductResults({ studentId, semester, limit = DEFAULT_ROW_LIMIT } = {}) {
+    const filter = {};
+    if (studentId) filter.student_id = studentId;
+    if (semester) filter.semester = semester;
+    return readAll(KEYS.conduct).filter((row) => matches(row, filter)).slice(0, limit);
+  },
+
+  /**
+   * One mức per student per học kỳ, corrected in place.
+   *
+   * A null band removes the row rather than storing an empty one. Chưa đánh giá
+   * is the absence of a record — a student the giáo viên chủ nhiệm has not
+   * reached yet and one whose mức was entered by mistake and taken back read
+   * the same, because they are the same. See supabase/migrations/011.
+   *
+   * No năm học band is stored. Thông tư 22 Điều 8 khoản 2 điểm b derives it
+   * from these two, and a stored copy would be a second source that disagrees
+   * the moment a semester is edited.
+   */
+  async saveConductResult({ studentId, semester, band, updatedBy }) {
+    const identity = { student_id: studentId, semester };
+    if (band === null || band === undefined) return removeRow(KEYS.conduct, identity);
+
+    return upsertRow(
+      KEYS.conduct,
+      identity,
+      { band, updated_by: updatedBy ?? null, updated_at: new Date().toISOString() }
+    );
   },
 
   async listAttendance({ studentId, date, limit = DEFAULT_ROW_LIMIT } = {}) {
@@ -370,6 +409,55 @@ export function createSupabaseAdapter(client, schoolId) {
       );
     },
 
+    async listConductResults({ studentId, semester, limit = DEFAULT_ROW_LIMIT } = {}) {
+      let query = rows('conduct_results').select('*').limit(limit);
+      if (studentId) query = query.eq('student_id', studentId);
+      if (semester) query = query.eq('semester', semester);
+      return unwrap(await query);
+    },
+
+    /**
+     * One mức per student per học kỳ — the UNIQUE the conflict target names.
+     *
+     * A null band deletes the row. `band` is NOT NULL, on purpose: chưa đánh
+     * giá is the absence of a record, so an empty row is not a thing the table
+     * can hold, and taking a mức back off a child is a delete or it is nothing.
+     * The write policy is FOR ALL and the grant includes DELETE for exactly
+     * this.
+     *
+     * No năm học column is written because there is none: Điều 8 khoản 2 điểm b
+     * derives cả năm from these two rows, and a stored year would drift from
+     * them the first time a semester was corrected.
+     */
+    async saveConductResult({ studentId, semester, band, updatedBy }) {
+      if (band === null || band === undefined) {
+        unwrap(
+          await rows('conduct_results')
+            .delete()
+            .eq('student_id', studentId)
+            .eq('semester', semester)
+        );
+        return null;
+      }
+
+      return unwrap(
+        await rows('conduct_results')
+          .upsert(
+            {
+              school_id: schoolId,
+              student_id: studentId,
+              semester,
+              band,
+              updated_by: updatedBy ?? null,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'student_id,semester' }
+          )
+          .select()
+          .single()
+      );
+    },
+
     async listAttendance({ studentId, date, limit = DEFAULT_ROW_LIMIT } = {}) {
       let query = rows('attendance_records').select('*').limit(limit);
       if (studentId) query = query.eq('student_id', studentId);
@@ -524,6 +612,8 @@ export const REPOSITORY_METHODS = [
   'saveAssessment',
   'listCommentResults',
   'saveCommentResult',
+  'listConductResults',
+  'saveConductResult',
   'listAttendance',
   'saveAttendance',
   'listLeaveRequests',

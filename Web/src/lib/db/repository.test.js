@@ -111,6 +111,85 @@ describe('local adapter · sổ điểm', () => {
   });
 });
 
+describe('local adapter · kết quả rèn luyện', () => {
+  // Học kỳ as the number the database stores, not the 'semester2' key the
+  // student record carries. The translation happens above this layer.
+  const conduct = { studentId: 'HS001', semester: 2, band: 'Khá' };
+
+  it('round-trips a recorded mức', async () => {
+    await localAdapter.saveConductResult({ ...conduct, updatedBy: 'T01' });
+    const [row] = await localAdapter.listConductResults({ studentId: 'HS001' });
+    expect(row).toMatchObject({ student_id: 'HS001', semester: 2, band: 'Khá', updated_by: 'T01' });
+  });
+
+  it('corrects the mức in place rather than recording a second one', async () => {
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, band: 'Tốt' });
+    const found = await localAdapter.listConductResults({ studentId: 'HS001' });
+    expect(found).toHaveLength(1);
+    expect(found[0].band).toBe('Tốt');
+  });
+
+  it('keeps the two học kỳ apart, because cả năm is derived from both', async () => {
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, semester: 1, band: 'Tốt' });
+    expect(await localAdapter.listConductResults({ studentId: 'HS001' })).toHaveLength(2);
+    const [firstTerm] = await localAdapter.listConductResults({ studentId: 'HS001', semester: 1 });
+    expect(firstTerm.band).toBe('Tốt');
+  });
+
+  it('stores no năm học band, which Điều 8 khoản 2 điểm b derives', async () => {
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, semester: 1, band: 'Tốt' });
+    const rows = await localAdapter.listConductResults({ studentId: 'HS001' });
+    rows.forEach((row) => {
+      expect(Object.keys(row)).toEqual(
+        expect.not.arrayContaining(['year', 'year_band', 'band_year', 'conduct_year'])
+      );
+    });
+  });
+
+  it('does not leak one student\'s rèn luyện into another\'s query', async () => {
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, studentId: 'HS002', band: 'Đạt' });
+    const found = await localAdapter.listConductResults({ studentId: 'HS002' });
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ student_id: 'HS002', band: 'Đạt' });
+  });
+
+  it('takes the mức back off the student when it is cleared, rather than emptying it', async () => {
+    await localAdapter.saveConductResult(conduct);
+    const cleared = await localAdapter.saveConductResult({ ...conduct, band: null });
+
+    // Chưa đánh giá is the absence of a row: a student nobody has assessed and
+    // one whose mức was withdrawn have to read back the same.
+    expect(cleared).toBeNull();
+    expect(await localAdapter.listConductResults({ studentId: 'HS001' })).toEqual([]);
+  });
+
+  it('clears only the học kỳ named, leaving the other assessment standing', async () => {
+    await localAdapter.saveConductResult({ ...conduct, semester: 1, band: 'Tốt' });
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, band: null });
+
+    const left = await localAdapter.listConductResults({ studentId: 'HS001' });
+    expect(left).toHaveLength(1);
+    expect(left[0]).toMatchObject({ semester: 1, band: 'Tốt' });
+  });
+
+  it('clears one student without touching another\'s', async () => {
+    await localAdapter.saveConductResult(conduct);
+    await localAdapter.saveConductResult({ ...conduct, studentId: 'HS002' });
+    await localAdapter.saveConductResult({ ...conduct, band: null });
+
+    expect(await localAdapter.listConductResults({ studentId: 'HS002' })).toHaveLength(1);
+  });
+
+  it('clearing a semester nobody assessed is not an error', async () => {
+    await expect(localAdapter.saveConductResult({ ...conduct, band: null })).resolves.toBeNull();
+  });
+});
+
 describe('local adapter · điểm danh', () => {
   const entry = { studentId: 'HS001', date: '2026-06-03', status: 'present', checkInTime: '07:15' };
 
@@ -210,6 +289,7 @@ function fakeClient() {
       limit: (value) => { calls.push({ table, op: 'limit', value }); return chain; },
       insert: (payload) => { calls.push({ table, op: 'insert', payload }); return chain; },
       update: (payload) => { calls.push({ table, op: 'update', payload }); return chain; },
+      delete: () => { calls.push({ table, op: 'delete' }); return chain; },
       upsert: (payload, options) => { calls.push({ table, op: 'upsert', payload, options }); return chain; },
       single: () => Promise.resolve(result),
       maybeSingle: () => Promise.resolve(result),
@@ -235,6 +315,58 @@ describe('supabase adapter · query shape', () => {
     expect(call.payload.student_id).toBe('HS001');
   });
 
+  it('writes kết quả rèn luyện to conduct_results, keyed on student and học kỳ', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveConductResult({
+      studentId: 'HS001', semester: 2, band: 'Khá', updatedBy: 'T01'
+    });
+
+    const call = find(calls, 'upsert', 'conduct_results');
+    expect(call.options.onConflict).toBe('student_id,semester');
+    expect(call.payload).toMatchObject({
+      school_id: 'school-1', student_id: 'HS001', semester: 2, band: 'Khá', updated_by: 'T01'
+    });
+  });
+
+  it('sends no năm học band, so the derived result cannot drift from a stored one', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').saveConductResult({
+      studentId: 'HS001', semester: 1, band: 'Tốt'
+    });
+
+    const { payload } = find(calls, 'upsert', 'conduct_results');
+    ['year', 'year_band', 'band_year', 'conduct_year'].forEach((column) => {
+      expect(payload).not.toHaveProperty(column);
+    });
+  });
+
+  it('deletes the row when a mức is taken back, because band is NOT NULL', async () => {
+    const { calls, client } = fakeClient();
+    const cleared = await createSupabaseAdapter(client, 'school-1').saveConductResult({
+      studentId: 'HS001', semester: 2, band: null
+    });
+
+    expect(find(calls, 'delete', 'conduct_results')).toBeTruthy();
+    // An upsert of an empty band would be refused by the column, and an upsert
+    // of anything else would leave a verdict on a child the teacher withdrew.
+    expect(find(calls, 'upsert', 'conduct_results')).toBeUndefined();
+    expect(calls.filter((c) => c.op === 'eq' && c.table === 'conduct_results')).toEqual([
+      { table: 'conduct_results', op: 'eq', field: 'student_id', value: 'HS001' },
+      { table: 'conduct_results', op: 'eq', field: 'semester', value: 2 }
+    ]);
+    expect(cleared).toBeNull();
+  });
+
+  it('narrows a rèn luyện read to one student and one học kỳ when asked', async () => {
+    const { calls, client } = fakeClient();
+    await createSupabaseAdapter(client, 'school-1').listConductResults({ studentId: 'HS001', semester: 2 });
+
+    expect(calls.filter((c) => c.op === 'eq' && c.table === 'conduct_results')).toEqual([
+      { table: 'conduct_results', op: 'eq', field: 'student_id', value: 'HS001' },
+      { table: 'conduct_results', op: 'eq', field: 'semester', value: 2 }
+    ]);
+  });
+
   it('keys attendance upserts on student and day', async () => {
     const { calls, client } = fakeClient();
     await createSupabaseAdapter(client, 'school-1').saveAttendance({
@@ -248,6 +380,7 @@ describe('supabase adapter · query shape', () => {
     const adapter = createSupabaseAdapter(client, 'school-1');
     await adapter.createInvoice({ studentId: 'HS001', title: 'Học phí', amount: 100, dueDate: '2026-06-15' });
     await adapter.createLeaveRequest({ studentId: 'HS001', fromDate: '2026-06-10', toDate: '2026-06-10', reason: 'Ốm sốt' });
+    await adapter.saveConductResult({ studentId: 'HS001', semester: 2, band: 'Khá' });
     calls.filter((c) => c.op === 'insert' || c.op === 'upsert').forEach((call) => {
       expect(call.payload.school_id, call.table).toBe('school-1');
     });
@@ -393,6 +526,7 @@ describe('bounded reads', () => {
 
     await adapter.listAssessments();
     await adapter.listCommentResults();
+    await adapter.listConductResults();
     await adapter.listAttendance();
     await adapter.listLeaveRequests();
     await adapter.listInvoices();
@@ -401,6 +535,7 @@ describe('bounded reads', () => {
     [
       'assessment_records',
       'comment_results',
+      'conduct_results',
       'attendance_records',
       'leave_requests',
       'invoices',

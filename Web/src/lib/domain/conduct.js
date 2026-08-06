@@ -18,6 +18,11 @@
  * compares a conduct band against LEARNING_BAND.GOOD; a parallel enum would
  * spell the same word and still fail that comparison, quietly denying every
  * danh hiệu in the school.
+ *
+ * The học kỳ is spelled two ways — a string key on the student, a number in the
+ * database — and both spellings are declared here. That is the one storage
+ * concern this module carries, and it carries it because a translation written
+ * at each call site is a translation nobody finds when the other end moves.
  */
 
 import { LEARNING_BAND } from './grading';
@@ -30,8 +35,23 @@ export const CONDUCT_BANDS = [
   LEARNING_BAND.FAIL
 ];
 
-/** Kết quả rèn luyện is assessed per học kỳ — Điều 8 khoản 2 điểm a. */
-export const CONDUCT_SEMESTERS = ['semester1', 'semester2'];
+/**
+ * Kết quả rèn luyện is assessed per học kỳ — Điều 8 khoản 2 điểm a — and the
+ * two học kỳ are numbered 1 and 2 in storage, as assessment_records and
+ * comment_results already number them.
+ *
+ * Declared as one map so the two spellings cannot drift: the keys are what the
+ * student record carries, the values are what the database column checks.
+ */
+const SEMESTER_NUMBER = Object.freeze({ semester1: 1, semester2: 2 });
+
+/** The học kỳ keys, in the order Điều 8 khoản 2 assesses them. */
+export const CONDUCT_SEMESTERS = Object.keys(SEMESTER_NUMBER);
+
+/** The reverse, derived rather than written out, so one edit moves both. */
+const SEMESTER_KEY = Object.freeze(
+  Object.fromEntries(Object.entries(SEMESTER_NUMBER).map(([key, number]) => [number, key]))
+);
 
 /**
  * Ranks the mức so that "từ mức Khá trở lên", the phrasing Điều 8 khoản 2 điểm
@@ -51,6 +71,33 @@ export function isValidConductBand(value) {
 
 function isSemesterKey(semester) {
   return CONDUCT_SEMESTERS.includes(semester);
+}
+
+/**
+ * The học kỳ number a row is stored under, from the key the app carries.
+ *
+ * Membership is checked rather than the map indexed directly: indexing answers
+ * `constructor` with a function off Object.prototype, and that function would
+ * be sent to Postgres as the học kỳ of a row nobody could explain.
+ *
+ * @param {'semester1'|'semester2'} semester
+ * @returns {1|2|null} null for anything that is not a học kỳ.
+ */
+export function conductSemesterNumber(semester) {
+  return isSemesterKey(semester) ? SEMESTER_NUMBER[semester] : null;
+}
+
+/**
+ * The key the app carries, from the number a stored row came back with.
+ *
+ * Null for anything outside 1 and 2 — the same values the database CHECK
+ * allows. A row that somehow holds a third học kỳ is dropped by the caller
+ * rather than folded onto a student, where nobody could then correct it.
+ *
+ * @returns {'semester1'|'semester2'|null}
+ */
+export function conductSemesterKey(number) {
+  return SEMESTER_KEY[Number(number)] ?? null;
 }
 
 /**

@@ -8,7 +8,7 @@ import { INVOICE_STATUS } from '../lib/domain/fees';
 import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
 import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
-import { applyConductResult } from '../lib/domain/conduct';
+import { applyConductResult, conductSemesterKey, conductSemesterNumber } from '../lib/domain/conduct';
 import { clearPortfolioConfirmation, confirmPortfolio, normalisePortfolios } from '../lib/domain/portfolio';
 import { currentSchoolDay } from '../config/demoClock';
 import { getRepository, resetRepository, isBrowserStore } from '../lib/db';
@@ -28,20 +28,22 @@ import { safeStorage } from '../lib/safeStorage';
 const CURRENT_SEMESTER = 2;
 
 /**
- * Ceilings on the two reads that run once per session, for every role.
+ * Ceilings on the reads that run once per session, for every role.
  *
- * Neither is a page size — the screens above these have no paging — so both sit
+ * None is a page size — the screens above these have no paging — so each sits
  * well above what a school of this size produces: a thousand students carrying
- * a dozen subjects for one semester is twelve thousand marks, and a mock exam
- * season is a few papers each. They are here so that a table which has outgrown
- * that, or a query that one day escapes its filter, cannot ask a browser tab to
- * hold every record the school has ever kept.
+ * a dozen subjects for one semester is twelve thousand marks, a mock exam
+ * season is a few papers each, and kết quả rèn luyện is at most two rows per
+ * student per year. They are here so that a table which has outgrown that, or a
+ * query that one day escapes its filter, cannot ask a browser tab to hold every
+ * record the school has ever kept.
  *
  * Sittings come back newest first, so if the mock exam ceiling is ever reached
  * what the screens lose is the oldest papers rather than an arbitrary slice.
  */
 const GRADEBOOK_ROW_LIMIT = 20000;
 const MOCK_EXAM_ROW_LIMIT = 5000;
+const CONDUCT_ROW_LIMIT = 4000;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
@@ -1871,10 +1873,19 @@ export const AppProvider = ({ children }) => {
    * under a teacher's name.
    *
    * It lands on the student beside `commentResults`, so the existing
-   * students → localStorage effect carries it and there is no second store to
-   * keep in step. The repository has no conduct table yet, so unlike marks this
-   * never reaches the server — it stays a record of this device until one
-   * exists.
+   * students → localStorage effect carries the projection, and the same mức
+   * goes to `conduct_results` so it survives the machine it was entered on. A
+   * học bạ is the school's record; until this write existed it was one browser's.
+   *
+   * The học kỳ is translated on the way out. The database numbers it 1 or 2, as
+   * assessment_records and comment_results do; the student carries
+   * 'semester1' / 'semester2'. `conductSemesterNumber` is the only place those
+   * two spellings meet, here and in the read below.
+   *
+   * A null band is sent too, and removes the stored row. The screen offers
+   * "Chưa đánh giá" as a way to take back a mức entered by mistake; leaving
+   * that unsent would clear it here and leave it standing on the server, so the
+   * next load would put the retracted verdict back on the child.
    *
    * @param {'semester1'|'semester2'} semester
    * @param {string|null} band One of LEARNING_BAND, or null to clear the entry.
@@ -1888,8 +1899,67 @@ export const AppProvider = ({ children }) => {
       std.id === studentId ? applyConductResult(std, semester, band).student : std
     ));
 
+    persist(
+      (repo) => repo.saveConductResult({
+        studentId,
+        semester: conductSemesterNumber(semester),
+        band: band ?? null,
+        updatedBy: profile?.id ?? null
+      }),
+      'lưu kết quả rèn luyện'
+    );
+
     return { ok: true, errors: [] };
   };
+
+  /**
+   * Loads the recorded kết quả rèn luyện over the seeded ones.
+   *
+   * Writing this and never reading it back would be the worse half of storing
+   * it at all: the mức a giáo viên chủ nhiệm enters at school is what the
+   * parent's phone has to show, and `readConductYearBand` — and through it every
+   * danh hiệu — reads only what sits on the student.
+   *
+   * Scoped like the gradebook. A student or a parent asks for that one
+   * student's two rows; asking for the school and letting row-level security
+   * cut it down afterwards would pull every rèn luyện the caller is entitled to,
+   * which for an admin is the whole school. Staff do ask for the school, bounded.
+   *
+   * A semester the store has no row for is left as it stands, so a fresh demo
+   * still has something to look at while a real deployment sees its own record.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    const repo = getRepository(profile?.school_id ?? null);
+
+    Promise.resolve()
+      .then(() => repo.listConductResults({ studentId: ownStudentId, limit: CONDUCT_ROW_LIMIT }))
+      .then((rows) => {
+        if (cancelled || !rows?.length) return;
+
+        const byStudent = rows.reduce((acc, row) => {
+          const semester = conductSemesterKey(row.semester);
+          // A row outside học kỳ I and II is one the CHECK constraint should
+          // never have admitted. Dropped rather than folded onto the student,
+          // where it would sit under a key no screen offers to correct.
+          if (semester) (acc[row.student_id] ||= {})[semester] = row.band;
+          return acc;
+        }, {});
+
+        setStudents(prev => prev.map(std => {
+          const stored = byStudent[std.id];
+          if (!stored) return std;
+          return { ...std, conductResults: { ...(std.conductResults || {}), ...stored } };
+        }));
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setStoreError({ what: 'tải kết quả rèn luyện', message: error?.message || 'Lỗi không rõ.' });
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [profile?.school_id, ownStudentId]);
 
   const addTeacher = (teacher) => {
     const randAvatar = teacherAvatars[Math.floor(Math.random() * teacherAvatars.length)];
