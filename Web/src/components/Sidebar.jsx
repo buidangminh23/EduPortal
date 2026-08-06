@@ -288,7 +288,6 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClo
     currentRole,
     selectedStudentId,
     students,
-    teachers,
     studentSubTab,
     setStudentSubTab,
     teacherSubTab,
@@ -375,22 +374,6 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClo
     return ADMIN_SECTIONS;
   };
 
-  const getProfileSub = () => {
-    if (currentRole === 'admin')   return 'Ban Giám Hiệu';
-    if (currentRole === 'teacher') return 'Môn Toán - Lớp 12A1';
-    if (currentRole === 'student') return `Học sinh - Lớp ${activeStudent?.class || '12A1'}`;
-    if (currentRole === 'parent')  return `Phụ huynh lớp ${activeStudent?.class || '12A1'}`;
-    return 'EduPortal';
-  };
-
-  const getRoleSnapshot = () => {
-    if (currentRole === 'admin')   return `${students?.length || 0} HS · ${(teachers || []).length} GV`;
-    if (currentRole === 'teacher') return `${classStudents.length} HS 12A1 · ${pendingQAsCount} Q&A chờ`;
-    if (currentRole === 'student') return `${upcomingDeadlines.length} deadline · ${myAssignments.length} bài tập`;
-    if (currentRole === 'parent')  return `${activeStudent?.name || 'Học sinh'} · ${myAssignments.length} bài tập`;
-    return 'Không gian làm việc';
-  };
-
   const handleItemClick = (item) => {
     if (item.isSubTab) {
       setActiveTab('dashboard');
@@ -430,19 +413,6 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClo
           <span className="logo-text">{SCHOOL.isDemoSchool ? 'EduPortal' : SCHOOL.shortName}</span>
         </div>
 
-        {/* Workspace Card */}
-        <div className="sidebar-mission-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-            <div>
-              <div className="mission-top">
-                <span className="mission-dot" />
-                <span>Workspace</span>
-              </div>
-              <strong>{getProfileSub()}</strong>
-              <p>{getRoleSnapshot()}</p>
-            </div>
-          </div>
-        </div>
 
         {/* Categorized Navigation Menu */}
         <nav className="nav-links" style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '20px' }}>
