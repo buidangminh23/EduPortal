@@ -73,7 +73,10 @@ VITE_SERVER_URL=https://api.truong-cua-ban.edu.vn
 
 Dựng lại (`npm run build`) là xong. **Không sửa code**: [db/index.js](../Web/src/lib/db/index.js) chọn kho lưu trữ theo biến môi trường, nên có `VITE_SUPABASE_URL` là ứng dụng nói chuyện với Postgres, không có thì chạy trong trình duyệt như bản demo.
 
-> Trang web chạy `https://` không gọi được máy chủ `http://` — trình duyệt chặn. Máy trong trường phải có HTTPS: chứng chỉ nội bộ, hoặc Cloudflare Tunnel (miễn phí, không cần IP tĩnh, không phải mở cổng router).
+> Trang web chạy `https://` không gọi được máy chủ `http://` — trình duyệt chặn. Máy trong trường phải có HTTPS. Hai đường:
+>
+> - **Có IP tĩnh** (Trường THPT Phúc Thịnh đi đường này): nginx + Let's Encrypt, trỏ thẳng bản ghi DNS về IP đó. Tên miền con không mất phí và không phải đổi nameserver, nên website sẵn có của trường không bị đụng tới. Đổi lại, máy phơi thẳng ra Internet — **đọc [FIREWALL.md](FIREWALL.md) trước khi mở cổng**, đừng dựng xong rồi mới tính chuyện đóng.
+> - **Không có IP tĩnh**: Cloudflare Tunnel (miễn phí, không phải mở cổng router), nhưng phải chuyển nameserver của cả tên miền sang Cloudflare — tức đụng tới cả website hiện có của trường, cần nhà trường đồng ý. Nhớ `TRUST_PROXY=2` vì khi đó có hai chặng proxy.
 
 ## 4. Sao lưu — phần không được bỏ
 
