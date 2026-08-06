@@ -42,14 +42,19 @@ Tài liệu này hướng dẫn chi tiết từng bước để đưa hệ thố
 
 ### 2. Chạy Migration Khởi Tạo Bảng & Dữ Liệu
 1. Vào mục **SQL Editor** trong Supabase Dashboard.
-2. Mở các file SQL theo thứ tự trong thư mục `supabase/migrations/` của dự án và dán vào SQL Editor để thực thi (Run):
+2. Mở **toàn bộ** file SQL trong thư mục `supabase/migrations/`, theo đúng thứ tự số, dán vào SQL Editor để thực thi (Run). Chạy thiếu một file là để lại một lỗ hổng hoặc một tính năng hỏng — mỗi file dưới đây nói rõ hậu quả nếu bỏ qua:
    - `001_identity.sql`: Khởi tạo bảng danh mục trường học, tài khoản người dùng, lớp học, phân công giảng dạy.
    - `002_tutor.sql`: Khởi tạo bảng lưu trữ cấu hình AI Tutor, bộ quy tắc môn học, lời giải mẫu.
    - `003_conversations.sql`: Khởi tạo bảng lưu trữ lịch sử chat & tin nhắn với AI Tutor.
    - `004_review_golden.sql`: Khởi tạo bảng đánh giá và bài kiểm tra mẫu.
    - `005_fix_profile_recursion.sql`: **Bắt buộc.** Sửa policy đệ quy trên `profiles` (thiếu file này thì đăng nhập hỏng ngay lần đọc hồ sơ đầu tiên), thêm bảng `guardians` và cấp quyền cho toàn bộ bảng ở 001–004.
    - `006_academics.sql`: Bảng điểm, nhận xét, điểm danh, đơn xin nghỉ, hoá đơn học phí và kho tài liệu.
-3. **KHÔNG chạy `supabase/seed.sql` trên cơ sở dữ liệu thật.** File đó tạo tài khoản đăng nhập được ở miền `school.edu.vn` — miền nhà trường không sở hữu — và một trường tên "THPT Nguyễn Du". Nó chỉ dành cho môi trường thử. Dữ liệu thật của trường nhập qua giao diện quản trị.
+   - `007_mock_exams.sql`: Bảng lưu bài thi thử đã nộp. Thiếu file này thì mọi lần nộp bài thi đều lỗi vì không có bảng để ghi vào.
+   - `008_mock_exam_idempotency.sql`: **Bắt buộc.** Thêm cột `local_id` và ràng buộc chống ghi trùng. Thiếu file này thì mọi lần nộp bài thi đều lỗi vì mã nguồn ghi vào cột chưa tồn tại.
+   - `009_policy_indexes.sql`: Các chỉ mục cho cột mà phân quyền và màn hình thật sự lọc theo. Thiếu thì hệ thống vẫn chạy đúng nhưng chậm dần khi dữ liệu nhiều lên.
+   - `010_profile_privilege_guard.sql`: **Bắt buộc — đây là bản vá bảo mật.** Khoá quyền tự sửa cột `role` và `school_id` trên `profiles`. Thiếu file này thì bất kỳ tài khoản nào đã đăng nhập, kể cả học sinh, đều có thể tự đặt mình thành `admin` bằng một dòng lệnh trong trình duyệt — xem được điểm, học phí, hồ sơ tư vấn tâm lý của toàn trường và cả camera.
+3. **Kiểm tra lại sau khi chạy.** Mở `supabase/tests/rls_check.sql` và chạy nó trên chính cơ sở dữ liệu vừa khởi tạo. File này đóng vai từng nhóm người dùng và tự báo lỗi nếu phân quyền sai — trong đó có phép thử "học sinh tự đặt mình thành admin". Nó phải chạy hết mà không báo lỗi nào.
+4. **KHÔNG chạy `supabase/seed.sql` trên cơ sở dữ liệu thật.** File đó tạo tài khoản đăng nhập được ở miền `school.edu.vn` — miền nhà trường không sở hữu — và một trường tên "THPT Nguyễn Du". Nó chỉ dành cho môi trường thử. Dữ liệu thật của trường nhập qua giao diện quản trị.
 
 ### 3. Cấu Hình Biến Môi Trường (Environment Variables) Trên Vercel
 1. Trong Supabase Dashboard, truy cập **Project Settings** -> **API**.
