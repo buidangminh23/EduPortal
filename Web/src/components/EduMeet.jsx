@@ -1,5 +1,6 @@
 import { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import { 
   Video, 
   VideoOff, 
@@ -666,9 +667,18 @@ export default function EduMeet() {
         ].filter(Boolean).join('\n');
         body = { transcript };
       }
+      // Máy chủ hỏi Supabase xem ai gọi trước khi cho dùng model của trường,
+      // nên phải gửi kèm vé đăng nhập. Thiếu nó thì server trả 401 và phần
+      // dưới rơi về bản mô phỏng — có nhãn "ngoại tuyến", không phải im lặng.
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+
       const res = await fetch(`${SERVER_URL}/api/summarize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(body)
       });
       if (!res.ok) throw new Error('server');

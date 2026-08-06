@@ -2,12 +2,27 @@ import http from 'node:http';
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
-import aiRouter from './routes/ai.js';
+import { createAiRouterFromEnv } from './routes/ai.js';
 import { createCameraRouterFromEnv } from './routes/cameras.js';
 import { createSchoolSsoRouterFromEnv } from './routes/sso.js';
 import { attachSignaling } from './signaling.js';
 
 const PORT = process.env.PORT || 8080;
+
+/**
+ * Which network interface to answer on. Loopback unless told otherwise.
+ *
+ * `listen(PORT)` with no address binds every interface, so on the machine
+ * standing in the school this process answered the pupil wifi as readily as it
+ * answered nginx. A packet filter hid that from the internet and from nothing
+ * else — and FIREWALL.md used to tell the installer to set HOST, which did
+ * nothing at all, because until now nothing read it.
+ *
+ * The default is the safe one because every documented deployment puts a
+ * reverse proxy in front (SELF-HOST.md). Answering the LAN directly is the
+ * unusual case, so it is the one you have to ask for: HOST=0.0.0.0.
+ */
+const HOST = process.env.HOST || '127.0.0.1';
 
 /**
  * How far back through `X-Forwarded-For` the real caller is.
@@ -56,7 +71,7 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' })); // audioBase64 có thể lớn
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'eduportal-server' }));
-app.use('/api', aiRouter);
+app.use('/api', createAiRouterFromEnv());
 app.use('/api', createCameraRouterFromEnv());
 app.use('/api', createSchoolSsoRouterFromEnv());
 
@@ -66,8 +81,9 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/rtc' });
 attachSignaling(wss);
 
-server.listen(PORT, () => {
-  console.log(`EduPortal server đang chạy: http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`EduPortal server đang chạy: http://${HOST}:${PORT}`);
+  console.log(`  • Nghe trên: ${HOST}${HOST === '0.0.0.0' ? ' (MỌI giao diện mạng — kể cả wifi trong trường)' : ' (chỉ máy này)'}`);
   console.log(`  • AI REST:   POST /api/transcribe · POST /api/summarize`);
   console.log(`  • Signaling: ws://localhost:${PORT}/rtc?room=<id>`);
   console.log(`  • Camera:    GET /api/cameras · POST /api/cameras/:id/ticket · POST /api/camera-events`);

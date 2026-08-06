@@ -76,12 +76,13 @@ Thêm vào `server/.env`:
 
 ```bash
 CAMERA_CONFIG_FILE=./data/cameras.json
-CAMERA_RELAY_URL=http://192.168.1.10:8889     # địa chỉ MediaMTX, máy trong trường
+CAMERA_RELAY_URL=https://api.truong-cua-ban.edu.vn/relay   # xem ghi chú dưới
 CAMERA_TICKET_SECRET=                          # openssl rand -hex 32
 CAMERA_TICKET_TTL_SECONDS=120
 CAMERA_EVENT_KEY=                              # openssl rand -hex 24, cho lớp AI
 CAMERA_ACCESS_LOG=./data/camera-access.log
 CAMERA_ALLOWED_ROLES=admin
+
 
 # Để server tự hỏi Supabase xem người gọi là ai
 SUPABASE_URL=https://xxx.supabase.co
@@ -89,6 +90,10 @@ SUPABASE_ANON_KEY=...
 ```
 
 Không có `CAMERA_TICKET_SECRET` hoặc `SUPABASE_URL` thì API trả `503 camera_not_configured` — **không** mở camera cho ai cả.
+
+> **`CAMERA_RELAY_URL` phải là địa chỉ trình duyệt gọi được, không phải địa chỉ LAN.** Máy chủ không tự lấy hình rồi chuyển tiếp: nó trả URL này cho **trình duyệt**, và trình duyệt tự gửi lời chào WebRTC tới đó. Nên `http://192.168.1.10:8889` chỉ chạy trong trường, và từ trang HTTPS thì trình duyệt chặn luôn vì gọi sang HTTP. Hiệu trưởng mở tường camera từ nhà sẽ thấy **khung đen, không có thông báo lỗi nào**.
+>
+> Đặt MediaMTX sau nginx như [FIREWALL.md](FIREWALL.md) mục 1 (`location /relay/`), rồi trỏ biến này vào đó. Cổng 8889 giữ nguyên trên `127.0.0.1`.
 
 ## 4. Phía web
 

@@ -90,8 +90,10 @@ server {
     # MediaMTX gọi hook này qua loopback. Ngoài Internet không ai cần.
     location = /api/cameras/authorize { deny all; }
 
-    # Phiên âm và tóm tắt chạy trên model nội bộ, KHÔNG có xác thực,
-    # và nhận body 25MB. Mở ra là biếu không GPU của trường cho người lạ.
+    # Phiên âm và tóm tắt chạy trên model nội bộ và nhận body 25MB. Máy chủ
+    # đã tự hỏi Supabase xem ai gọi (AI_ALLOWED_ROLES, mặc định teacher+admin),
+    # nên đây là lớp thứ hai — bỏ dòng này thì trường vẫn an toàn, giữ thì
+    # người lạ không chạm được tới cả tầng model.
     location = /api/transcribe { deny all; }
     location = /api/summarize  { deny all; }
 
@@ -158,12 +160,17 @@ Mọi cổng hiện ra phải có mặt trong tệp override với tiền tố `
 
 ### 2.2 — Hai tiến trình không nằm trong Docker
 
-Mục trên chỉ chạm tới Supabase. `eduportal-server` và MediaMTX chạy thẳng trên máy và **mặc định nghe trên mọi giao diện** — [`src/index.js`](src/index.js) gọi `server.listen(PORT)` không truyền địa chỉ. Nghĩa là 8080 trả lời cả wifi học sinh, không riêng Internet. UFW chặn phía ngoài; nó không chặn phía trong trường.
+Mục trên chỉ chạm tới Supabase. `eduportal-server` và MediaMTX chạy thẳng trên máy, không trong Docker.
 
-```bash
-# server/.env
-HOST=127.0.0.1
+`eduportal-server` **đã sửa**: [`src/index.js`](src/index.js) trước đây gọi `server.listen(PORT)` không truyền địa chỉ, nên 8080 trả lời cả wifi học sinh chứ không riêng nginx — UFW chặn phía Internet, không chặn phía trong trường. Nay mặc định là `127.0.0.1`, không phải làm gì thêm. Lúc khởi động nó in ra đang nghe ở đâu; đọc dòng đó để biết chắc:
+
 ```
+• Nghe trên: 127.0.0.1 (chỉ máy này)
+```
+
+Thấy `0.0.0.0 (MỌI giao diện mạng — kể cả wifi trong trường)` là ai đó đã đặt `HOST=0.0.0.0` trong `server/.env`. Chỉ làm thế khi biết rõ vì sao cần.
+
+MediaMTX thì vẫn phải khai bằng tay:
 
 ```yaml
 # mediamtx.yml
