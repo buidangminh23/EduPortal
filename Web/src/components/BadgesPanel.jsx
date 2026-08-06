@@ -1,20 +1,7 @@
 import { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Trophy, Star, Medal, Award, Zap, Flame, BookOpen, Clock, Target, Heart } from 'lucide-react';
-
-// Badge definitions
-const BADGE_DEFS = [
-  { id: 'top_gpa',       label: 'Học Bá',           icon: Trophy,   color: '#f59e0b', desc: 'ĐTB HK2 từ 9.0 trở lên',       check: (s) => { const v = Object.values(s.grades||{}); return v.length && v.reduce((a,b)=>a+b,0)/v.length >= 9.0; } },
-  { id: 'improver',      label: 'Tiến Bộ Vượt Bậc', icon: Zap,      color: '#6366f1', desc: 'ĐTB tăng ít nhất 0.5 so với HK1', check: (s) => { const v1=Object.values(s.gradesSem1||{}), v2=Object.values(s.grades||{}); if(!v1.length||!v2.length) return false; return v2.reduce((a,b)=>a+b,0)/v2.length - v1.reduce((a,b)=>a+b,0)/v1.length >= 0.5; } },
-  { id: 'all_paid',      label: 'Công Dân Gương Mẫu',icon: Medal,    color: '#10b981', desc: 'Đóng đủ tất cả học phí',         check: (s) => (s.feeStatus||[]).length > 0 && (s.feeStatus||[]).every(f => f.paid) },
-  { id: 'full_attend',   label: 'Chuyên Cần',        icon: Flame,    color: '#ef4444', desc: 'Điểm danh đầy đủ (không vắng)',  check: (s, al) => { const logs = (al||[]).filter(l=>l.studentId===s.id); return logs.length >= 3 && logs.every(l=>l.status==='present'); } },
-  { id: 'top_english',   label: 'Anh Ngữ Xuất Sắc', icon: Star,     color: '#0891b2', desc: 'Điểm Tiếng Anh HK2 từ 9.0',     check: (s) => (s.grades?.English||0) >= 9.0 },
-  { id: 'top_math',      label: 'Vua Toán Học',      icon: Target,   color: '#8b5cf6', desc: 'Điểm Toán HK2 từ 9.0',          check: (s) => (s.grades?.Math||0) >= 9.0 },
-  { id: 'bookworm',      label: 'Mọt Sách',          icon: BookOpen, color: '#f97316', desc: 'Điểm Ngữ Văn HK2 từ 8.5',       check: (s) => (s.grades?.Literature||0) >= 8.5 },
-  { id: 'on_time',       label: 'Đúng Giờ Vàng',     icon: Clock,    color: '#10b981', desc: 'Không bị muộn trong tháng',      check: (s, al) => { const logs = (al||[]).filter(l=>l.studentId===s.id); return logs.length >= 2 && logs.every(l=>l.status!=='late'); } },
-  { id: 'club_member',   label: 'Hoạt Động CLB',     icon: Heart,    color: '#ec4899', desc: 'Tham gia câu lạc bộ trường',     check: (s, al, ca) => (ca||[]).some(a=>a.studentId===s.id && a.status==='approved') },
-  { id: 'top_science',   label: 'Nhà Khoa Học Trẻ',  icon: Award,    color: '#6366f1', desc: 'Điểm Vật lý HK2 từ 9.0',        check: (s) => (s.grades?.Physics||0) >= 9.0 },
-];
+import { Trophy } from 'lucide-react';
+import { BADGE_DEFS } from '../lib/badges';
 
 export default function BadgesPanel({ studentId, compact = false }) {
   const { students, attendanceLogs, clubApplications, selectedStudentId } = useContext(AppContext);
@@ -28,6 +15,13 @@ export default function BadgesPanel({ studentId, compact = false }) {
     catch { return false; }
   });
   const lockedBadges = BADGE_DEFS.filter(b => !earnedBadges.find(e => e.id === b.id));
+
+  // What the badge is made of, so "chưa đạt" never leaves the student guessing.
+  const noteFor = (badge) => {
+    if (!badge.note) return '';
+    try { return badge.note(student, attendanceLogs, clubApplications) || ''; }
+    catch { return ''; }
+  };
 
   if (compact) {
     return (
@@ -68,6 +62,7 @@ export default function BadgesPanel({ studentId, compact = false }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
             {earnedBadges.map(b => {
               const Icon = b.icon;
+              const note = noteFor(b);
               return (
                 <div key={b.id} style={{
                   border: `1.5px solid ${b.color}40`, borderRadius: 14, padding: '14px 12px',
@@ -83,6 +78,7 @@ export default function BadgesPanel({ studentId, compact = false }) {
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.8rem', color: b.color, marginBottom: 4 }}>{b.label}</div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{b.desc}</div>
+                  {note && <div style={{ fontSize: '0.68rem', color: b.color, marginTop: 6, fontWeight: 600 }}>{note}</div>}
                 </div>
               );
             })}
@@ -97,6 +93,7 @@ export default function BadgesPanel({ studentId, compact = false }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
             {lockedBadges.map(b => {
               const Icon = b.icon;
+              const note = noteFor(b);
               return (
                 <div key={b.id} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '14px 12px', background: 'rgba(0,0,0,0.02)', textAlign: 'center', opacity: 0.55 }}>
                   <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
@@ -104,6 +101,7 @@ export default function BadgesPanel({ studentId, compact = false }) {
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#94a3b8', marginBottom: 4 }}>{b.label}</div>
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: 1.4 }}>{b.desc}</div>
+                  {note && <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 6, fontWeight: 600 }}>{note}</div>}
                 </div>
               );
             })}
