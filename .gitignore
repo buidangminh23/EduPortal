@@ -13,3 +13,8 @@ Thumbs.db
 .claude/
 Web/.claude/
 _design_extract/
+
+# Added by `vercel link`. Web/.gitignore re-includes the two env files that are
+# committed on purpose (.env.example, .env.development) — a nested negation
+# wins over this, so both patterns can stay.
+.env*
