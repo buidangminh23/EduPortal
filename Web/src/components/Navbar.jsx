@@ -1,8 +1,9 @@
 import { useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut, BookOpen, Languages } from 'lucide-react';
+import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkles, LogOut, BookOpen, Languages, Settings } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
+import SettingsModal from './SettingsModal';
 
 export default function Navbar({ setActiveTab }) {
   const {
@@ -22,6 +23,7 @@ export default function Navbar({ setActiveTab }) {
   } = useContext(AppContext);
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const dropdownRef = useRef(null);
 
   const activeStudent = students?.find(s => s.id === selectedStudentId) || students?.[0];
@@ -240,6 +242,35 @@ export default function Navbar({ setActiveTab }) {
               <button
                 onClick={() => {
                   setShowUserDropdown(false);
+                  setShowSettings(true);
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  marginBottom: '6px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
+                  borderRadius: '8px',
+                  color: 'var(--ink)',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-soft)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; }}
+              >
+                <Settings size={15} />
+                <span>{t('Cài đặt', 'Settings')}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowUserDropdown(false);
                   logout();
                 }}
                 style={{
@@ -276,6 +307,8 @@ export default function Navbar({ setActiveTab }) {
         </div>
 
       </div>
+
+      <SettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
     </header>
   );
 }
