@@ -76,7 +76,7 @@ export default function KnowledgeEditor({ entry, teacherSubject, onSave, onCance
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="ds-split" style={{ '--split-main': '1fr', gap: 24, alignItems: 'start' }}>
         {/* Left Side: General Info */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-secondary)', borderBottom: '1px dashed rgba(148,163,184,0.15)', paddingBottom: 8 }}>

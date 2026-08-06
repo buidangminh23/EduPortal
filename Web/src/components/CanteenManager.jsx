@@ -102,8 +102,8 @@ export default function CanteenManager() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20 }}>
-        
+      <div className="ds-split" style={{ '--split-main': '1.4fr', gap: 20 }}>
+
         {/* Left Side: Menu and Booking */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           
@@ -145,7 +145,10 @@ export default function CanteenManager() {
               <CheckCircle size={16} color="#10b981" /> Đăng ký cơm bán trú
             </h3>
 
-            <form onSubmit={handleRegister} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {/* A pair, not a split: two short pickers. The wallet row below already
+                takes the full width through `span 2`, which a one-column collapse
+                would strand. */}
+            <form onSubmit={handleRegister} className="ds-pair" style={{ gap: 14 }}>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Ngày dùng *</label>
                 <select className="form-control" value={activeDate} onChange={e => setActiveDate(e.target.value)} style={{ fontSize: '0.85rem' }}>
@@ -216,7 +219,7 @@ export default function CanteenManager() {
 
             {/* Submission form */}
             <form onSubmit={handleFeedback} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="ds-pair" style={{ gap: 8 }}>
                 <div>
                   <label style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>Chọn món ăn</label>
                   <select className="form-control" value={selectedDish} onChange={e => setSelectedDish(e.target.value)} style={{ fontSize: '0.8rem', padding: '6px' }}>

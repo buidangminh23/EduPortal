@@ -232,7 +232,9 @@ export default function AiLessonPlannerTab() {
 
   return (
     <div className="animate-fade">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', alignItems: 'start' }}>
+      {/* .ds-split puts its wide cell first; the settings form sits left of the
+          wider preview here, so --split-main scales below 1fr to keep that order. */}
+      <div className="ds-split" style={{ '--split-main': '0.667fr', gap: '24px', alignItems: 'start' }}>
         
         {/* Planner Settings Form */}
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -253,7 +255,7 @@ export default function AiLessonPlannerTab() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="ds-pair" style={{ gap: '12px' }}>
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label" style={{ fontWeight: 600 }}>Môn học</label>
               <select value={subject} onChange={e => setSubject(e.target.value)} className="form-control" style={{ background: 'white' }}>
@@ -498,7 +500,7 @@ export default function AiLessonPlannerTab() {
                       <div key={q.id} style={{ borderBottom: '1px solid var(--border-card)', paddingBottom: '16px' }}>
                         <p style={{ fontWeight: 700, marginBottom: '10px' }} dangerouslySetInnerHTML={{ __html: `Câu ${idx + 1}: ${decodeHtmlEntities(q.question)}` }} />
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', paddingLeft: '12px', marginBottom: '10px' }}>
+                        <div className="ds-pair" style={{ gap: '8px', paddingLeft: '12px', marginBottom: '10px' }}>
                           {q.options.map(opt => {
                             const isCorrect = opt.key === q.correctKey;
                             return (

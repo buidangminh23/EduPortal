@@ -88,7 +88,9 @@ export default function MiniTournament() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '24px' }}>
+      {/* The wide cell is second here, so the ratio is stated against it:
+          0.333fr 1fr keeps the old 1fr 3fr without reordering the panes. */}
+      <div className="ds-split" style={{ '--split-main': '0.333fr', gap: '24px' }}>
         {/* Left pane: Tournament list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h3 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-secondary)' }}>Danh sách giải đấu</h3>

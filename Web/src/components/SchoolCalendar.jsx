@@ -629,7 +629,7 @@ export default function SchoolCalendar() {
       </div>
 
       {/* Main Layout containing Grid + Sidebar Deadlines */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
+      <div className="ds-rail" style={{ gap: '24px', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: The Scheduler view */}
         <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-card)', padding: '16px', overflow: 'hidden' }}>

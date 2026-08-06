@@ -290,8 +290,9 @@ export default function ParentHub({ setActiveTab }) {
         </div>
       )}
 
+      {/* The narrow cell comes first on these tabs, so --split-main sits below 1fr to keep the original 1:1.5 proportion. */}
       {activeSubTab === 'qa' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Ask question form */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -354,7 +355,7 @@ export default function ParentHub({ setActiveTab }) {
       )}
 
       {activeSubTab === 'leaves' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Submit Leave Request form */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -432,7 +433,7 @@ export default function ParentHub({ setActiveTab }) {
       )}
 
       {activeSubTab === 'evaluations' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Submit Evaluation form */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -672,7 +673,7 @@ export default function ParentHub({ setActiveTab }) {
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Cố vấn Học vụ AI & Hướng nghiệp cho con</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'start' }}>
+          <div className="ds-grid ds-split" style={{ '--split-main': '1.2fr', alignItems: 'start' }}>
             <div>
               <div style={{ padding: '16px', background: 'rgba(99,102,241,0.03)', borderRadius: '12px', border: '1px solid var(--border-card)', marginBottom: '20px' }}>
                 <h4 style={{ margin: '0 0 12px 0' }}>Biểu đồ tiến độ học tập (Điểm trung bình)</h4>
@@ -830,7 +831,7 @@ export default function ParentHub({ setActiveTab }) {
       )}
 
       {activeSubTab === 'cafeteria' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }} className="animate-fade">
+        <div className="ds-grid ds-split animate-fade" style={{ '--split-main': '1.2fr' }}>
           {/* Menu Planner & Registration */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -980,7 +981,7 @@ export default function ParentHub({ setActiveTab }) {
       )}
 
       {activeSubTab === 'wallet' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }} className="animate-fade">
+        <div className="ds-grid ds-split animate-fade" style={{ '--split-main': '1.2fr' }}>
           {/* Wallet Balance & Action */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -1002,7 +1003,7 @@ export default function ParentHub({ setActiveTab }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                  <div className="ds-split" style={{ '--split-main': '1fr', gap: '16px', marginBottom: '24px' }}>
                     {/* Top up form */}
                     <form onSubmit={handleTopUpSubmit} style={{ border: '1px solid var(--border-card)', padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.01)' }}>
                       <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem' }}>Nạp tiền vào ví</h4>

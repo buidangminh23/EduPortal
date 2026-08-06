@@ -72,7 +72,7 @@ export default function EssayGrader() {
 
       {/* ── 1. STUDENT VIEW ── */}
       {isStudent && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+        <div className="ds-rail" style={{ '--rail': '340px', gap: 24 }}>
           {/* Submit form */}
           <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
             <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -233,7 +233,7 @@ export default function StudyGroupHub() {
       {activeTab === 'rooms' ? (
         activeRoom ? (
           /* ACTIVE ROOM SCREEN */
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, background: 'rgba(255,255,255,0.4)', padding: 24, borderRadius: 24, border: '1px solid var(--border-card)' }}>
+          <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24, background: 'rgba(255,255,255,0.4)', padding: 24, borderRadius: 24, border: '1px solid var(--border-card)' }}>
             {/* Timer Center */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'white', borderRadius: 20, padding: 30, border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
               <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--text-secondary)', fontWeight: 700, marginBottom: 8 }}>
@@ -421,7 +421,7 @@ export default function StudyGroupHub() {
         )
       ) : (
         /* PEER TUTORING SCREEN */
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20 }}>
+        <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 20 }}>
           {/* Left Column: Tutors and request panel */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Tutors directory */}
@@ -598,7 +598,7 @@ export default function StudyGroupHub() {
                 <input className="form-control" value={newRoomTitle} onChange={e => setNewRoomTitle(e.target.value)} placeholder="Ví dụ: Ôn tập Đại số giải tích cuối kỳ II..." required style={{ fontSize: '0.82rem' }} />
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="ds-pair" style={{ gap: 10 }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Môn học *</label>
                   <select className="form-control" value={newRoomSubject} onChange={e => setNewRoomSubject(e.target.value)} style={{ fontSize: '0.82rem' }}>

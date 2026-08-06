@@ -169,6 +169,35 @@
 .ds-split { display: grid; grid-template-columns: var(--split-main, 1.5fr) 1fr; }
 @media (max-width: 760px) { .ds-split { grid-template-columns: 1fr; } }
 
+/*
+ * The other half of the same decision: two cells that both stay readable at
+ * half a phone's width — a label beside its value, two short figures, two
+ * chips. Collapsing these spends a screen to say what fits on a line, which is
+ * the mistake `.cols-*` used to make with the stat row.
+ *
+ * Which class a two-column grid takes is a judgement about what the narrower
+ * cell holds, not about the grid. A table, a chart, prose or a form wants the
+ * full width and takes `.ds-split`; a number and its label do not and take
+ * this.
+ */
+.ds-pair { display: grid; grid-template-columns: repeat(2, 1fr); }
+
+/*
+ * Main content beside a fixed-width rail — a history log, a filter panel, a
+ * thumbnail strip.
+ *
+ * Worse on a phone than any `fr` split, because a fixed track does not shrink:
+ * `1fr 340px` on a 375px screen leaves the main column **seven pixels**. Eight
+ * screens were built this way and every one of them was unusable held in one
+ * hand.
+ *
+ * `minmax(0, 1fr)` on the main track, not `1fr`: a long unbroken string — a
+ * URL, a formula — otherwise pushes the track past its share and takes the rail
+ * off the edge.
+ */
+.ds-rail { display: grid; grid-template-columns: minmax(0, 1fr) var(--rail, 300px); }
+@media (max-width: 760px) { .ds-rail { grid-template-columns: minmax(0, 1fr); } }
+
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .card-title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
 .card-pad-sm { padding: 16px; }

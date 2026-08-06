@@ -314,7 +314,7 @@ export default function PhysicsLab() {
   const mySimulations = labSimulations?.filter(sim => sim.studentId === student?.id && sim.type === 'physics') || [];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
+    <div className="ds-rail" style={{ gap: 24 }}>
       <div>
         {/* Navigation bar for sub-experiments */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -347,7 +347,7 @@ export default function PhysicsLab() {
               <Zap size={18} /> Khảo sát Mạch điện xoay chiều RLC & Hiện tượng Cộng hưởng
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Sliders and data */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -382,7 +382,7 @@ export default function PhysicsLab() {
                   <input type="range" min="10" max="500" value={rlcF} onChange={e => setRlcF(Number(e.target.value))} style={{ width: '100%' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, textAlign: 'center', background: 'rgba(99,102,241,0.04)', padding: 10, borderRadius: 10, border: '1px solid rgba(99,102,241,0.08)' }}>
+                <div className="ds-pair" style={{ gap: 8, textAlign: 'center', background: 'rgba(99,102,241,0.04)', padding: 10, borderRadius: 10, border: '1px solid rgba(99,102,241,0.08)' }}>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Cộng hưởng f₀</span>
                     <div style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{rlcFRes.toFixed(1)} Hz</div>
@@ -453,7 +453,7 @@ export default function PhysicsLab() {
               <Play size={18} /> Khảo sát Chuyển động ném xiên trong Trọng trường
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Sliders and actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -542,7 +542,7 @@ export default function PhysicsLab() {
               <RotateCcw size={18} /> Khảo sát Dao động điều hòa của Con lắc đơn
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Sliders */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -569,7 +569,7 @@ export default function PhysicsLab() {
                   <input type="range" min="1" max="15" step="0.1" value={pendG} onChange={e => setPendG(Number(e.target.value))} style={{ width: '100%' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, textAlign: 'center', background: 'rgba(16,185,129,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
+                <div className="ds-pair" style={{ gap: 8, textAlign: 'center', background: 'rgba(16,185,129,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Chu kỳ T</span>
                     <div style={{ fontWeight: 700, color: '#10b981' }}>{pendPeriod.toFixed(2)} s</div>
@@ -622,7 +622,7 @@ export default function PhysicsLab() {
               <Eye size={18} /> Quang hình học: Tạo ảnh qua Thấu kính hội tụ
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Controls */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -741,7 +741,7 @@ export default function PhysicsLab() {
               <ArrowDown size={18} /> Mô phỏng Rơi tự do & Xác định Động năng va chạm
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Sliders */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
@@ -760,7 +760,7 @@ export default function PhysicsLab() {
                   <input type="range" min="5" max="15" step="0.1" value={fallG} onChange={e => setFallG(Number(e.target.value))} style={{ width: '100%' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, textAlign: 'center', background: 'rgba(239,68,68,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
+                <div className="ds-pair" style={{ gap: 8, textAlign: 'center', background: 'rgba(239,68,68,0.05)', padding: 10, borderRadius: 10, fontSize: '0.75rem' }}>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Thời gian rơi t</span>
                     <div style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{fallTotalTime.toFixed(2)} s</div>
@@ -810,7 +810,7 @@ export default function PhysicsLab() {
               <Zap size={18} /> Mạch điện một chiều: Định luật Ôm, công suất và cách mắc điện trở
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {[
@@ -919,7 +919,7 @@ export default function PhysicsLab() {
               <RotateCcw size={18} /> Giao thoa hai nguồn kết hợp và khoảng vân
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -997,7 +997,7 @@ export default function PhysicsLab() {
               <Zap size={18} /> Cảm ứng điện từ: Faraday - Lenz
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>

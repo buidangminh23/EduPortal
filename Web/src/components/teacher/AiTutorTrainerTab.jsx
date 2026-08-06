@@ -334,7 +334,7 @@ export default function AiTutorTrainerTab() {
       </div>
 
       {/* Layout: Content + Test Sandbox */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
+      <div className="ds-rail" style={{ '--rail': '340px', gap: 24, alignItems: 'start' }}>
         {/* Left column: Sub-tab Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {activeSubTab === 'method' && (

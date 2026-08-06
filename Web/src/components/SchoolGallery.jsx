@@ -419,7 +419,7 @@ export default function SchoolGallery() {
                   style={{ background: 'white', color: '#1e293b', borderColor: '#cbd5e1' }}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12 }}>
+              <div className="ds-rail" style={{ '--rail': '120px', gap: 12 }}>
                 <div className="form-group">
                   <label className="form-label">Chủ đề</label>
                   <select

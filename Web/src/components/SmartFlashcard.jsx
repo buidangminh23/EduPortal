@@ -190,7 +190,7 @@ export default function SmartFlashcard({ studentId }) {
       {showAdd && (
         <div style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
           <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="ds-split" style={{ '--split-main': '1fr', gap: 10 }}>
               <div>
                 <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Mặt trước *</label>
                 <textarea className="form-control" rows={3} value={newForm.front} onChange={e => setNewForm(f => ({ ...f, front: e.target.value }))} placeholder="Câu hỏi / Khái niệm..." required style={{ resize: 'vertical', fontSize: '0.85rem' }} />

@@ -1211,7 +1211,9 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       )}
 
       {activeTab === 'teacher_leaves' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        /* .ds-split puts its wide cell first; this screen is narrow-first, so
+           --split-main scales below 1fr to keep the order the teacher expects. */
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Submit Teacher Leave Request Form */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -1370,7 +1372,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
       {activeTab === 'lesson_plans' && (
         /* Lesson Plans Panel */
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Submit lesson plan */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -1631,7 +1633,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       )}
 
       {activeTab === 'assignments' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }} className="animate-fade">
+        <div style={{ '--split-main': '0.667fr' }} className="ds-grid ds-split animate-fade">
           {/* Left panel: List of Assignments and Create Button */}
           <div className="glass-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -2108,7 +2110,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: 6 }}>
                     🤖 Cấu hình AI Quiz Generator
                   </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px', marginBottom: '12px' }}>
+                  <div className="ds-split" style={{ '--split-main': '0.833fr', gap: '12px', marginBottom: '12px' }}>
                     <div className="form-group" style={{ margin: 0 }}>
                       <label className="form-label" style={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Môn học trắc nghiệm</label>
                       <select
@@ -2152,7 +2154,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                       {aiQuizQuestions.map((q, idx) => (
                         <div key={idx} style={{ fontSize: '0.8rem', color: '#e2e8f0', marginBottom: '8px', borderBottom: idx < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none', paddingBottom: '6px' }}>
                           <strong>Câu {idx + 1}:</strong> {q.question}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', fontSize: '0.72rem', color: '#94a3b8' }}>
+                          <div className="ds-pair" style={{ gap: '4px', marginTop: '4px', fontSize: '0.72rem', color: '#94a3b8' }}>
                             {q.options.map((opt, oIdx) => <div key={oIdx}>{opt}</div>)}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>✓ Đáp án đúng: {q.correctKey}</div>
@@ -2175,7 +2177,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="ds-split" style={{ '--split-main': '1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label" style={{ color: '#cbd5e1' }}>Lớp học mục tiêu</label>
                   <select 
@@ -2302,7 +2304,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </div>
 
             <form onSubmit={handleGradeSubmissionSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '16px' }}>
+              <div className="ds-split" style={{ '--split-main': '0.4fr', gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Điểm số (thang 10)</label>
                   <input 
@@ -2610,7 +2612,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                         </div>
 
                         {/* Options Inputs */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                        <div className="ds-split" style={{ '--split-main': '1fr', gap: '12px', marginBottom: '12px' }}>
                           {q.options.map(opt => (
                             <div key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#64748b' }}>{opt.key}:</span>
@@ -2628,7 +2630,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                         </div>
 
                         {/* Correct Key and Explanation */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                        <div className="ds-split" style={{ '--split-main': '0.5fr', gap: '16px' }}>
                           <div className="form-group">
                             <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>Đáp án đúng:</label>
                             <select
@@ -3103,7 +3105,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   ties that count to the subject's lessons per year, so a fixed
                   pair of boxes was wrong for every subject over 35 tiết. */}
               {subjectIsScored && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div className="ds-pair" style={{ gap: '12px', marginBottom: '16px' }}>
                 {gradeRecord.regular.map((mark, index) => (
                   <div className="form-group" style={{ margin: 0 }} key={`regular-${index}`}>
                     <label className="form-label" htmlFor={`gtx-${index}`} style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>

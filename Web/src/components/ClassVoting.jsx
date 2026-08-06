@@ -553,7 +553,7 @@ export default function ClassVoting() {
                 <input type="text" className="form-control" placeholder="Ví dụ: Bầu Lớp Trưởng Lớp 12A1" value={newVote.title} onChange={(e) => setNewVote({ ...newVote, title: e.target.value })} required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="ds-split" style={{ '--split-main': '1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Vị trí bầu *</label>
                   <input type="text" className="form-control" placeholder="Lớp Trưởng, Bí Thư..." value={newVote.position} onChange={(e) => setNewVote({ ...newVote, position: e.target.value })} required />

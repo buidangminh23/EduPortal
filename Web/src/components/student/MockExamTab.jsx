@@ -922,7 +922,7 @@ export default function MockExamTab({ student }) {
           </div>
 
           {/* Main content grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '24px' }}>
+          <div className="ds-split" style={{ '--split-main': '3fr', gap: '24px' }}>
 
             {/* Left side: Question detail */}
             <div>

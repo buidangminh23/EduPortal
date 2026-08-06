@@ -1848,7 +1848,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
 
             <section>
               <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 8 }}>Tổng quan nhanh</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="ds-pair" style={{ gap: 8 }}>
                 {[
                   { label: 'Điểm TB lớp', value: classAverage !== null ? classAverage.toFixed(1) : '-' },
                   { label: 'Ghế khóa', value: lockedSeats },

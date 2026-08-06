@@ -150,7 +150,7 @@ export default function LibraryHub() {
 
       {activeTab === 'physical' ? (
         /* PHYSICAL BOOKS CATALOG & LOANS */
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24 }}>
+        <div className="ds-split" style={{ '--split-main': '1.4fr', gap: 24 }}>
           {/* Catalog Left */}
           <div>
             {/* Filter Bar */}
@@ -476,7 +476,7 @@ export default function LibraryHub() {
                   <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#4f46e5' }}>{activeTicket.bookTitle}</div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="ds-pair" style={{ gap: 10 }}>
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>HỌC SINH NHẬN</div>
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>{activeTicket.studentName}</div>
@@ -487,7 +487,7 @@ export default function LibraryHub() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
+                <div className="ds-pair" style={{ gap: 10, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
                   <div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>NGÀY ĐẶT GIỮ</div>
                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formatDate(activeTicket.reserveDate)}</div>

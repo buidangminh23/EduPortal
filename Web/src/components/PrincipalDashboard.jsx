@@ -273,7 +273,8 @@ export default function PrincipalDashboard({ setActiveTab }) {
       {subTab === 'finance' && (
         <>
         <FeeReconciliation />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
+        {/* Form column comes first, so --split-main sits below 1fr to keep the original 1:1.6 proportion. */}
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.625fr' }}>
           {/* Create Fee Form */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.25rem' }}>
@@ -378,7 +379,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
 
       {/* Announcements & Q&A Oversight tab */}
       {subTab === 'qa_notices' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+        <div className="ds-grid ds-split" style={{ '--split-main': '0.667fr' }}>
           {/* Post notification */}
           <div className="glass-panel">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -987,7 +988,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{stat.assignmentsCount} bài đã giao</span>
                           </div>
                           
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          <div className="ds-pair" style={{ gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                             <div>
                               <span>Tỷ lệ hoàn thành:</span>
                               <div style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '1.05rem', marginTop: '2px' }}>{completionRate}%</div>

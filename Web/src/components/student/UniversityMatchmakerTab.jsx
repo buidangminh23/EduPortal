@@ -206,8 +206,9 @@ export default function UniversityMatchmakerTab({ student }) {
     }
   };
 
+  // 0.79fr : 1fr is the old 1.1fr : 1.4fr — the filter column stays the narrow one, and stays first.
   return (
-    <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.4fr', gap: '24px', alignItems: 'start' }}>
+    <div className="glass-panel animate-fade ds-split" style={{ '--split-main': '0.79fr', gap: '24px', alignItems: 'start' }}>
       
       {/* Filters & Inputs Column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -433,7 +434,7 @@ export default function UniversityMatchmakerTab({ student }) {
                       </p>
 
                       {/* AI Probabilities and RIASEC match indices */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '12px', padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', margin: '10px 0' }}>
+                      <div className="ds-pair" style={{ gap: '12px', padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', margin: '10px 0' }}>
                         <div>
                           <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>Cơ hội trúng tuyển (AI đánh giá)</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

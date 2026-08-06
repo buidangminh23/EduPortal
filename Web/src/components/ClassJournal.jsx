@@ -330,7 +330,7 @@ export default function ClassJournal() {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="ds-split" style={{ '--split-main': '1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Tiết học</label>
                   <select 
@@ -380,7 +380,8 @@ export default function ClassJournal() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+              {/* Narrow select first, wide comment second, so --split-main sits below 1fr to keep the original 1:2 proportion. */}
+              <div className="ds-split" style={{ '--split-main': '0.5fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Xếp loại tiết học</label>
                   <select 

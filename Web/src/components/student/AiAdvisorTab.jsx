@@ -315,8 +315,9 @@ export default function AiAdvisorTab() {
       )}
 
       {/* STATE 3: RESULTS & RADAR CHART */}
+      {/* 0.83fr : 1fr is the old 1fr : 1.2fr — the chart column stays the narrow one, and stays first. */}
       {testCompleted && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '32px', marginTop: '12px', alignItems: 'start' }}>
+        <div className="ds-split" style={{ '--split-main': '0.83fr', gap: '32px', marginTop: '12px', alignItems: 'start' }}>
           
           {/* Left Column: Holland Code & Visual Spider Chart */}
           <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.02)' }}>

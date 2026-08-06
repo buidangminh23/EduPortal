@@ -349,7 +349,7 @@ export default function ExamRepository() {
             </div>
 
             {examMode === 'result' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className="ds-pair" style={{ gap: 12, marginBottom: 16 }}>
                 <div style={{ padding: 16, borderRadius: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#047857', fontWeight: 800 }}><CheckCircle size={18} /> Điểm số</div>
                   <div style={{ fontSize: '2rem', fontWeight: 900, color: '#065f46', marginTop: 4 }}>{result.score}/10</div>
@@ -373,7 +373,7 @@ export default function ExamRepository() {
                     <div style={{ fontWeight: 800, color: '#111827', marginBottom: 10, lineHeight: 1.5 }}>
                       Câu {question.displayNumber}: <span dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(question.question) }} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div className="ds-split" style={{ '--split-main': '1fr', gap: 8 }}>
                       {question.options.map(option => {
                         const selected = answered === option.key;
                         const correct = question.correctKey === option.key;

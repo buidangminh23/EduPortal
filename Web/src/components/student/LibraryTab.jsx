@@ -57,7 +57,7 @@ export default function LibraryTab({ student }) {
   };
 
   return (
-    <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+    <div className="glass-panel animate-fade ds-split" style={{ '--split-main': '1.2fr', gap: '24px', alignItems: 'start' }}>
 
       {/* Digital resources & Quiz section */}
       <div>
@@ -104,7 +104,7 @@ export default function LibraryTab({ student }) {
               {QUIZ_QUESTIONS.map((q) => (
                 <div key={q.id} style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '12px' }}>
                   <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: 600 }}>Câu {q.id}: {q.q}</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div className="ds-pair" style={{ gap: '8px' }}>
                     {[
                       { key: 'a', label: q.a },
                       { key: 'b', label: q.b },

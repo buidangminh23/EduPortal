@@ -101,8 +101,8 @@ export default function WellnessHub() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 20 }}>
-        
+      <div className="ds-split" style={{ '--split-main': '1.3fr', gap: 20 }}>
+
         {/* Left Column: Stress logger and appointments */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           
@@ -188,7 +188,11 @@ export default function WellnessHub() {
                 <Calendar size={16} color="#ec4899" /> Đăng ký tham vấn tâm lý học đường
               </h3>
 
-              <form onSubmit={handleRequestCounseling} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {/* A pair, not a split: the date and the slot are short pickers, and the
+                  prose and the action below already take the full row. Collapsing this
+                  to one column would leave their `span 2` asking for a track that is
+                  no longer there. */}
+              <form onSubmit={handleRequestCounseling} className="ds-pair" style={{ gap: 12 }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Chọn ngày *</label>
                   <input type="date" className="form-control" value={counselingDate} min={new Date().toISOString().split('T')[0]} onChange={e => setCounselingDate(e.target.value)} required style={{ fontSize: '0.82rem' }} />

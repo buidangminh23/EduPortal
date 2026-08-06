@@ -55,7 +55,7 @@ export default function WebLab() {
         Không gian thực hành mô phỏng kỹ thuật số có công thức, điều khiển tham số, quan sát trực quan và nhật ký kết quả cho từng học sinh.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 750, margin: '0 auto' }}>
+      <div className="ds-split" style={{ '--split-main': '1fr', gap: 24, maxWidth: 750, margin: '0 auto' }}>
         {/* Physics card */}
         <div 
           onClick={() => setSelectedLab('physics')}

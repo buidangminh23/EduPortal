@@ -32,8 +32,9 @@ export default function WalletIdTab({ student }) {
   const todaySpend = wallet.transactions ? wallet.transactions.filter(t => t.date === new Date().toISOString().split('T')[0] && t.type === 'spend').reduce((sum, t) => sum + t.amount, 0) : 0;
   const remainLimit = Math.max(0, wallet.dailyLimit - todaySpend);
 
+  // 0.83fr : 1fr is the old 1fr : 1.2fr — the ID card column stays the narrow one, and stays first.
   return (
-    <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '30px', alignItems: 'start' }}>
+    <div className="glass-panel animate-fade ds-split" style={{ '--split-main': '0.83fr', gap: '30px', alignItems: 'start' }}>
       {/* 3D Student ID Card Mockup */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
         <div style={{ alignSelf: 'flex-start' }}>
@@ -186,7 +187,7 @@ export default function WalletIdTab({ student }) {
             <span className="badge badge-info" style={{ fontWeight: 700 }}>Học sinh</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '16px', marginBottom: '16px' }}>
+          <div className="ds-pair" style={{ gap: '16px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '16px', marginBottom: '16px' }}>
             <div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>SỐ DƯ HIỆN TẠI</div>
               <strong style={{ fontSize: '1.75rem', color: 'var(--accent-primary)', fontWeight: 800 }}>

@@ -37,7 +37,7 @@ export default function BusTracker() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+      <div className="ds-rail" style={{ '--rail': '340px', gap: 24 }}>
         {/* Left Side: Route Map & Simulation */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           

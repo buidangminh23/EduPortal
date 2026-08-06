@@ -717,7 +717,7 @@ export default function ChemistryLab() {
   const mySimulations = labSimulations?.filter(sim => sim.studentId === student?.id && sim.type === 'chemistry') || [];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 }}>
+    <div className="ds-rail" style={{ gap: 24 }}>
       <div>
         {/* Lab Navigation Sub-tabs */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -753,10 +753,10 @@ export default function ChemistryLab() {
               <Beaker size={18} /> Phản ứng trao đổi ion trong dung dịch
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               {/* Selected Slots */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="ds-pair" style={{ gap: 12 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>CHẤT 1:</span>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: selectedTube1 ? 'rgba(99,102,241,0.08)' : '#f1f5f9', padding: '8px 12px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 600 }}>
@@ -909,7 +909,7 @@ export default function ChemistryLab() {
               <Zap size={18} /> Khảo sát Dãy hoạt động hóa học của Kim loại
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {/* Metals list */}
                 <div>
@@ -931,7 +931,7 @@ export default function ChemistryLab() {
                 {/* Salt solutions list */}
                 <div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>2. CHỌN DUNG DỊCH MUỐI:</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                  <div className="ds-pair" style={{ gap: 8, marginTop: 6 }}>
                     {solutions.map(sol => (
                       <button
                         key={sol.name}
@@ -1039,7 +1039,7 @@ export default function ChemistryLab() {
               <Droplets size={18} /> Thử nghiệm Chỉ thị màu & Đo nồng độ pH
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 
                 {/* Solutions select cards */}
@@ -1161,13 +1161,13 @@ export default function ChemistryLab() {
               <Flame size={18} /> Phản ứng Đốt cháy & Oxi hóa ở nhiệt độ cao
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 
                 {/* Select combustible */}
                 <div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>1. CHỌN CHẤT ĐỐT CHÁY:</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                  <div className="ds-pair" style={{ gap: 8, marginTop: 6 }}>
                     {combustibles.map(item => (
                       <button
                         key={item.name}
@@ -1287,7 +1287,7 @@ export default function ChemistryLab() {
               <Zap size={18} /> Mô phỏng Điện phân dung dịch Chất điện ly
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {/* Select Solution */}
                 <div>
@@ -1328,7 +1328,9 @@ export default function ChemistryLab() {
                 {elecDetails && (
                   <div style={{ padding: 12, background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 12, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                     <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#b45309', background: '#fff', padding: '6px 12px', borderRadius: 6, margin: '2px 0 8px 0', border: '1px solid rgba(0,0,0,0.05)' }}>{elecDetails.fullEqn}</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                    {/* Even split, but ds-split not ds-pair: each cell is a half-equation
+                        that must not wrap mid-formula on a phone. */}
+                    <div className="ds-split" style={{ '--split-main': '1fr', gap: 8, marginBottom: 8 }}>
                       <div><strong>Anot (+):</strong> {elecDetails.anodeHalf}</div>
                       <div><strong>Catot (-):</strong> {elecDetails.cathodeHalf}</div>
                     </div>
@@ -1408,7 +1410,7 @@ export default function ChemistryLab() {
               <Droplets size={18} /> Chuẩn độ axit-bazơ HCl bằng NaOH
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -1502,7 +1504,7 @@ export default function ChemistryLab() {
               <Beaker size={18} /> Cân bằng hóa học: N₂O₄ ⇄ 2NO₂ và nguyên lý Le Chatelier
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -1570,7 +1572,7 @@ export default function ChemistryLab() {
               <Flame size={18} /> Tốc độ phản ứng: Zn + HCl tạo khí H₂
             </h4>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+            <div className="ds-split" style={{ '--split-main': '1.2fr', gap: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>

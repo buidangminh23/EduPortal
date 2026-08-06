@@ -21,7 +21,7 @@ export default function EvaluationsTab({ student }) {
   };
 
   return (
-    <div className="glass-panel animate-fade" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+    <div className="glass-panel animate-fade ds-split" style={{ '--split-main': '1.2fr', gap: '24px', alignItems: 'start' }}>
       {/* Survey Submission form */}
       <div>
         <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>

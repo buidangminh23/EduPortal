@@ -24,7 +24,7 @@ export default function ClubsTab({ student }) {
         <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Câu Lạc Bộ Học Sinh</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+      <div className="ds-rail" style={{ '--rail': '340px', gap: '24px', alignItems: 'start' }}>
 
         {/* List of Clubs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

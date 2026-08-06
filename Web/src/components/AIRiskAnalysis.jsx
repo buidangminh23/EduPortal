@@ -188,7 +188,9 @@ export default function AIRiskAnalysis() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedStudent ? '3fr 2fr' : '1fr', gap: '20px', transition: 'all 0.3s ease' }}>
+      {/* .ds-split only once the detail panel exists — on its own the table
+          would otherwise sit in a narrow column beside an empty one. */}
+      <div className={selectedStudent ? 'ds-split' : undefined} style={{ display: 'grid', gap: '20px', transition: 'all 0.3s ease' }}>
         {/* Table list */}
         <div className="glass-panel" style={{ overflowX: 'auto', padding: '16px' }}>
           <table className="premium-table">
@@ -280,7 +282,7 @@ export default function AIRiskAnalysis() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <div className="ds-pair" style={{ gap: '12px', marginBottom: '20px' }}>
               <div style={{ background: 'var(--bg)', padding: '12px', borderRadius: '12px' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Điểm Trung Bình</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 700, marginTop: '4px', color: parseFloat(selectedStudent.risk.avg) < 6.5 ? '#ef4444' : 'var(--text-primary)' }}>

@@ -105,7 +105,7 @@ export default function MeetingBooking() {
                   {(teachers || []).map(t => <option key={t.id} value={t.id}>{t.name} — {t.subject}</option>)}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="ds-split" style={{ '--split-main': '1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Ngày hẹn *</label>
                   <input type="date" className="form-control" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} min={new Date().toISOString().split('T')[0]} required />
