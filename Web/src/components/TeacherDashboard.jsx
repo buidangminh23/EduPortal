@@ -16,11 +16,33 @@ import {
   ATTENDANCE_STATUS,
   resolveAttendanceStatus
 } from '../lib/domain/attendance';
+import {
+  CONDUCT_BANDS,
+  CONDUCT_SEMESTERS,
+  conductBandForYear,
+  readConductBand,
+  readConductYearBand
+} from '../lib/domain/conduct';
 
-/** Conduct points every student starts the term on. */
+/**
+ * Điểm thi đua every student starts the term on.
+ *
+ * This tally is the school's own nề nếp practice, not a Thông tư 22 figure —
+ * the circular has no points behind kết quả rèn luyện at all. It is shown to
+ * the giáo viên chủ nhiệm as evidence and never converted into a mức.
+ */
 const CONDUCT_BASE_POINTS = 100;
-const CONDUCT_GOOD = 90;
-const CONDUCT_FAIR = 70;
+
+/** How an unassessed semester or year is written, wherever one is shown. */
+const CONDUCT_NOT_ASSESSED = 'Chưa đánh giá';
+
+/** Badge styling per mức rèn luyện, in the descending order of Điều 8 khoản 2. */
+const CONDUCT_BADGE = {
+  [LEARNING_BAND.GOOD]: 'badge-success',
+  [LEARNING_BAND.FAIR]: 'badge-info',
+  [LEARNING_BAND.PASS]: 'badge-warning',
+  [LEARNING_BAND.FAIL]: 'badge-danger'
+};
 
 /** Badge styling per resolved attendance status. */
 const ATTENDANCE_BADGE = {
@@ -51,11 +73,36 @@ const COMMENT_BY_BAND = {
 };
 
 /**
+ * States the recorded kết quả rèn luyện, or null when no semester has been
+ * assessed.
+ *
+ * Both semesters and the derived cả năm are spelled out rather than reduced to
+ * one figure: a parent reading the học bạ is entitled to see which term the
+ * mức belongs to, and to see plainly where the school has not judged yet.
+ */
+function conductSummary(student) {
+  const first = readConductBand(student, 'semester1');
+  const second = readConductBand(student, 'semester2');
+  if (!first && !second) return null;
+
+  const year = readConductYearBand(student);
+  return `HK I: ${first || CONDUCT_NOT_ASSESSED} · HK II: ${second || CONDUCT_NOT_ASSESSED}`
+    + ` · Cả năm: ${year || CONDUCT_NOT_ASSESSED}`;
+}
+
+/**
  * Drafts a report-card comment from the classification, not from ad-hoc
  * thresholds, so the wording never contradicts the band shown on the học bạ.
+ *
+ * Kết quả rèn luyện is quoted only where the giáo viên chủ nhiệm has entered
+ * it. Until then the draft says so: the previous version derived a mức from the
+ * điểm thi đua tally and could print "Cần cố gắng", which is not one of the
+ * four mức in Điều 8 and cannot appear in a học bạ.
  */
 function buildReportComment(name, learning, conduct) {
-  const conductLine = ` Kết quả rèn luyện: ${conduct}.`;
+  const conductLine = conduct
+    ? ` Kết quả rèn luyện — ${conduct}.`
+    : ' Kết quả rèn luyện: giáo viên chủ nhiệm chưa đánh giá, chưa có căn cứ ghi vào học bạ.';
 
   if (!learning.band) {
     return `Học sinh ${name}: ${learning.reason} Bổ sung đủ điểm các môn để xếp loại theo Thông tư 22.${conductLine}`;
@@ -97,6 +144,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     submitLessonPlan,
     conductLogs,
     addConductLog,
+    saveConductResult,
     assignments,
     submissions,
     createAssignment,
@@ -199,6 +247,29 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
   const [conductPointsDelta, setConductPointsDelta] = useState(10);
   const [conductReason, setConductReason] = useState('');
 
+  // Xếp loại rèn luyện state — the GVCN's own judgement, kept apart from the
+  // điểm thi đua log above so neither can be mistaken for the other.
+  const [conductBandStudent, setConductBandStudent] = useState(null);
+  const [conductBandDraft, setConductBandDraft] = useState({ semester1: null, semester2: null });
+  const [conductBandErrors, setConductBandErrors] = useState([]);
+
+  /** Opens the xếp loại form on whatever the student already carries. */
+  const openConductBandForm = (student) => {
+    setConductBandStudent(student);
+    setConductBandDraft({
+      semester1: readConductBand(student, 'semester1'),
+      semester2: readConductBand(student, 'semester2')
+    });
+    setConductBandErrors([]);
+  };
+
+  /** Điểm thi đua the student has accumulated, shown to the GVCN as evidence. */
+  const conductLogsFor = (studentId) =>
+    conductLogs ? conductLogs.filter(log => log.studentId === studentId) : [];
+
+  const conductPointsFor = (studentId) =>
+    CONDUCT_BASE_POINTS + conductLogsFor(studentId).reduce((sum, log) => sum + log.points, 0);
+
   // Homework Assignments local states
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
   const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false);
@@ -256,11 +327,12 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     const averages = Object.values(selectedStudent.grades || {}).filter(Number.isFinite);
     const learning = explainLearningBand(averages);
 
-    const logs = conductLogs ? conductLogs.filter(cl => cl.studentId === selectedStudent.id) : [];
-    const conductScore = CONDUCT_BASE_POINTS + logs.reduce((sum, curr) => sum + curr.points, 0);
-    const conduct = conductScore >= CONDUCT_GOOD ? 'Tốt' : conductScore >= CONDUCT_FAIR ? 'Khá' : 'Cần cố gắng';
-
-    setGeneratedComment(buildReportComment(selectedStudent.name, learning, conduct));
+    // Quotes the mức the giáo viên chủ nhiệm recorded, and says nothing when
+    // they have not. Điều 8 makes kết quả rèn luyện their judgement; the điểm
+    // thi đua total this used to read is a school tally, not an assessment.
+    setGeneratedComment(
+      buildReportComment(selectedStudent.name, learning, conductSummary(selectedStudent))
+    );
   };
 
   const createBlankQuestion = (subj = 'Math') => ({
@@ -479,7 +551,36 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
     addConductLog(selectedConductStudent.id, conductPointsDelta, conductReason, 'Nguyễn Minh Triết');
     setSelectedConductStudent(null);
     setConductReason('');
-    alert('Đã ghi nhận điểm rèn luyện thi đua cá nhân học sinh thành công!');
+    alert('Đã ghi nhận điểm thi đua cá nhân học sinh thành công!');
+  };
+
+  /**
+   * Saves the mức the giáo viên chủ nhiệm chose for each học kỳ.
+   *
+   * Both semesters go through the same action, including the ones left at
+   * "Chưa đánh giá" — clearing an entry is how a teacher takes back a mức
+   * entered by mistake, and skipping the write would leave the old one standing.
+   */
+  const handleConductBandSubmit = (e) => {
+    e.preventDefault();
+    if (!conductBandStudent) return;
+
+    for (const semester of CONDUCT_SEMESTERS) {
+      const outcome = saveConductResult(conductBandStudent.id, semester, conductBandDraft[semester]);
+      if (!outcome.ok) {
+        setConductBandErrors(outcome.errors);
+        return;
+      }
+    }
+
+    const summary = CONDUCT_SEMESTERS
+      .map((semester, index) => `HK ${index + 1}: ${conductBandDraft[semester] || CONDUCT_NOT_ASSESSED}`)
+      .join(' · ');
+    const name = conductBandStudent.name;
+
+    setConductBandStudent(null);
+    setConductBandErrors([]);
+    alert(`Đã lưu kết quả rèn luyện của ${name}. ${summary}.`);
   };
 
   const handleFileChange = (e) => {
@@ -1039,10 +1140,16 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
           {/* Students Conduct List */}
           <div className="glass-panel">
-            <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
+            <h2 style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
               <Users size={18} color="var(--accent-primary)" />
-              <span>Sổ điểm rèn luyện & thi đua lớp 12A1</span>
+              <span>Sổ rèn luyện & thi đua lớp 12A1</span>
             </h2>
+            {/* Says outright which column is the school's and which is the
+                circular's, so nobody reads the tally as a mức. */}
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+              Điểm thi đua là quy ước nề nếp của trường. Mức rèn luyện học kỳ là đánh giá của
+              giáo viên chủ nhiệm theo Thông tư 22/2021/TT-BGDĐT Điều 8, không suy ra từ điểm.
+            </p>
 
             <div style={{ overflowX: 'auto' }}>
               <table className="premium-table">
@@ -1050,37 +1157,57 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
                   <tr>
                     <th>Mã HS</th>
                     <th>Họ và Tên</th>
-                    <th>Điểm Rèn Luyện</th>
-                    <th>Xếp Loại</th>
+                    <th>Điểm thi đua</th>
+                    <th>Rèn luyện HK I</th>
+                    <th>Rèn luyện HK II</th>
+                    <th>Cả năm</th>
                     <th>Thao Tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {classStudents.map(std => {
-                    const logs = conductLogs ? conductLogs.filter(l => l.studentId === std.id) : [];
-                    const score = 100 + logs.reduce((sum, curr) => sum + curr.points, 0);
-                    const grade = score >= 90 ? 'Tốt' : score >= 70 ? 'Khá' : score >= 50 ? 'Trung bình' : 'Yếu';
-                    
+                    const score = conductPointsFor(std.id);
+                    const first = readConductBand(std, 'semester1');
+                    const second = readConductBand(std, 'semester2');
+                    const year = readConductYearBand(std);
+
+                    // An unassessed mức is written out as such rather than left
+                    // as a dash: the GVCN needs to see at a glance whose học bạ
+                    // is still missing an entry.
+                    const bandCell = (band) => (
+                      <span
+                        className={`badge ${band ? CONDUCT_BADGE[band] : 'badge-slate'}`}
+                        style={band ? undefined : { opacity: 0.75 }}
+                      >
+                        {band || CONDUCT_NOT_ASSESSED}
+                      </span>
+                    );
+
                     return (
                       <tr key={std.id}>
                         <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>{std.id}</td>
                         <td style={{ fontWeight: 600 }}>{std.name}</td>
-                        <td style={{ fontWeight: 700, color: score >= 90 ? 'var(--accent-secondary)' : 'var(--text-primary)' }}>{score}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{score}</td>
+                        <td>{bandCell(first)}</td>
+                        <td>{bandCell(second)}</td>
+                        <td>{bandCell(year)}</td>
                         <td>
-                          <span className={`badge ${
-                            score >= 90 ? 'badge-success' : score >= 70 ? 'badge-info' : 'badge-warning'
-                          }`}>
-                            {grade}
-                          </span>
-                        </td>
-                        <td>
-                          <button 
-                            onClick={() => { setSelectedConductStudent(std); setConductPointsDelta(10); setConductReason(''); }} 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                          >
-                            Ghi nhận điểm
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => { setSelectedConductStudent(std); setConductPointsDelta(10); setConductReason(''); }}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                            >
+                              Ghi nhận điểm
+                            </button>
+                            <button
+                              onClick={() => openConductBandForm(std)}
+                              className="btn btn-primary"
+                              style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                            >
+                              Xếp loại rèn luyện
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1829,12 +1956,122 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
         </div>
       )}
 
-      {/* Conduct Modal */}
+      {/* Xếp loại rèn luyện Modal — Thông tư 22 Điều 8 */}
+      {conductBandStudent && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-fade" style={{ maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ marginBottom: '4px', fontSize: '1.25rem' }}>
+              Xếp loại kết quả rèn luyện: {conductBandStudent.name}
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 18px' }}>
+              Giáo viên chủ nhiệm chọn mức cho từng học kỳ (Thông tư 22/2021/TT-BGDĐT, Điều 8).
+              Hệ thống không tự chọn thay thầy cô.
+            </p>
+
+            {/* The behaviour log sits beside the choice, never inside it: a
+                teacher deciding a mức should have the term's record in front of
+                them, but Điều 8 makes the decision theirs, not the tally's. */}
+            <div style={{ background: 'rgba(148,163,184,0.12)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.85rem' }}>Điểm thi đua tham khảo</strong>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{conductPointsFor(conductBandStudent.id)}</span>
+              </div>
+              <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 10px' }}>
+                Quy ước thi đua của trường, dùng để tham khảo. Điểm này không quyết định mức
+                rèn luyện và không được ghi vào học bạ.
+              </p>
+
+              <div style={{ maxHeight: '132px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {conductLogsFor(conductBandStudent.id).length === 0 ? (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Chưa có ghi nhận thi đua nào trong sổ.
+                  </span>
+                ) : (
+                  conductLogsFor(conductBandStudent.id).map(log => (
+                    <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '0.78rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{log.date} — {log.reason}</span>
+                      <span style={{ fontWeight: 700, whiteSpace: 'nowrap', color: log.points > 0 ? 'var(--accent-secondary)' : 'var(--accent-danger)' }}>
+                        {log.points > 0 ? `+${log.points}` : log.points}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <form onSubmit={handleConductBandSubmit}>
+              {CONDUCT_SEMESTERS.map((semester, index) => (
+                <fieldset key={semester} style={{ border: 'none', padding: 0, margin: '0 0 16px' }}>
+                  <legend style={{ fontSize: '0.85rem', fontWeight: 600, padding: 0, marginBottom: '8px' }}>
+                    Học kỳ {index + 1}
+                  </legend>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[...CONDUCT_BANDS, null].map(option => {
+                      const active = conductBandDraft[semester] === option;
+                      const label = option || CONDUCT_NOT_ASSESSED;
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setConductBandDraft(prev => ({ ...prev, [semester]: option }))}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: 10,
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            background: active ? 'rgba(99,102,241,0.18)' : 'transparent',
+                            border: `1px solid ${active ? 'var(--accent-primary)' : 'var(--border-card)'}`,
+                            color: active ? 'var(--accent-primary)' : 'var(--text-secondary)'
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              ))}
+
+              {/* Điều 8 khoản 2 điểm b derives the year, so it is shown, not
+                  chosen — a teacher entering it by hand could contradict the
+                  two semesters they just recorded. */}
+              <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.85rem' }}>Kết quả rèn luyện cả năm:</span>
+                  <strong style={{ fontSize: '1rem' }}>
+                    {conductBandForYear(conductBandDraft.semester1, conductBandDraft.semester2) || CONDUCT_NOT_ASSESSED}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                  Tự suy ra từ hai học kỳ theo Điều 8 khoản 2 điểm b. Đủ cả hai học kỳ mới có kết quả cả năm.
+                </p>
+              </div>
+
+              {conductBandErrors.length > 0 && (
+                <div role="alert" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 12, padding: '10px 14px', marginBottom: '16px' }}>
+                  {conductBandErrors.map(error => (
+                    <div key={error} style={{ fontSize: '0.8rem', color: 'var(--accent-danger)' }}>{error}</div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button type="button" onClick={() => setConductBandStudent(null)} className="btn btn-secondary" style={{ flex: 1 }}>Hủy</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Lưu xếp loại</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Conduct points Modal — the school's thi đua log, not a TT22 mức */}
       {selectedConductStudent && (
         <div className="modal-overlay">
           <div className="modal-content animate-fade">
-            <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Cập nhật điểm rèn luyện học sinh: {selectedConductStudent.name}</h2>
-            
+            <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Ghi nhận điểm thi đua học sinh: {selectedConductStudent.name}</h2>
+
             <form onSubmit={handleConductSubmit}>
               <div className="form-group">
                 <label className="form-label">Chọn hành động điểm số</label>

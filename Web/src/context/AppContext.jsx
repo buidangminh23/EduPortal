@@ -8,6 +8,8 @@ import { INVOICE_STATUS } from '../lib/domain/fees';
 import { buildTuitionPurpose } from '../lib/domain/vietqr';
 import { validateAttendanceEntry } from '../lib/domain/attendance';
 import { applySubjectComment, applySubjectRecord, computeSemesterAverage, validateAssessmentRecord } from '../lib/domain/grading';
+import { applyConductResult } from '../lib/domain/conduct';
+import { clearPortfolioConfirmation, confirmPortfolio, normalisePortfolios } from '../lib/domain/portfolio';
 import { currentSchoolDay } from '../config/demoClock';
 import { getRepository, resetRepository, isBrowserStore } from '../lib/db';
 import { fromMockExamRow } from '../lib/db/repository';
@@ -590,9 +592,12 @@ const initialBusScanLogs = [
 ];
 
 // ── STUDENT PORTFOLIOS ───────────────────────────────────────────────────────
+// `bghConfirmation` is who in the Ban Giám hiệu confirmed the hồ sơ and when —
+// an internal record, not a chữ ký số. See lib/domain/portfolio.js for why the
+// hash this seed used to carry was removed rather than recomputed.
 const initialStudentPortfolios = [
-  { studentId: 'HS001', studentName: 'Nguyễn Hoàng Nam', extracurricularAchievements: ['Đạt giải nhất cuộc thi Tin học trẻ thành phố', 'Thành viên cốt cán CLB Sách & Thơ học đường', 'Tình nguyện viên chiến dịch Mùa hè xanh 2025'], blockchainSignature: { signedBy: 'Hiệu trưởng Nguyễn Văn Hùng', date: '2026-06-02', hash: '8f3c7e2b1a9c8f7d6e5d4c3b2a1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a' }, isPublic: true },
-  { studentId: 'HS002', studentName: 'Lê Mai Chi', extracurricularAchievements: ['Giải Nhì học sinh giỏi Toán cấp Tỉnh', 'Đội trưởng CLB Thiện nguyện Trái tim hồng'], blockchainSignature: null, isPublic: false }
+  { studentId: 'HS001', studentName: 'Nguyễn Hoàng Nam', extracurricularAchievements: ['Đạt giải nhất cuộc thi Tin học trẻ thành phố', 'Thành viên cốt cán CLB Sách & Thơ học đường', 'Tình nguyện viên chiến dịch Mùa hè xanh 2025'], bghConfirmation: { confirmedBy: 'Hiệu trưởng Nguyễn Văn Hùng', confirmedAt: '2026-06-02' }, isPublic: true },
+  { studentId: 'HS002', studentName: 'Lê Mai Chi', extracurricularAchievements: ['Giải Nhì học sinh giỏi Toán cấp Tỉnh', 'Đội trưởng CLB Thiện nguyện Trái tim hồng'], bghConfirmation: null, isPublic: false }
 ];
 
 // ── AI TIMETABLE SLOTS & TEACHER AVAILABILITY ───────────────────────────────
@@ -1157,9 +1162,12 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : initialBusScanLogs;
   });
 
+  // Browsers that ran an earlier release hold hồ sơ carrying a
+  // `blockchainSignature`; normalising on load is what keeps those users from
+  // meeting a screen that reads a field nothing writes any more.
   const [studentPortfolios, setStudentPortfolios] = useState(() => {
     const saved = localStorage.getItem('studentPortfolios');
-    return saved ? JSON.parse(saved) : initialStudentPortfolios;
+    return normalisePortfolios(saved ? JSON.parse(saved) : initialStudentPortfolios);
   });
 
   const [timetableSlots, setTimetableSlots] = useState(() => {
@@ -1849,6 +1857,36 @@ export const AppProvider = ({ children }) => {
       }),
       `lưu nhận xét môn ${subject}`
     );
+
+    return { ok: true, errors: [] };
+  };
+
+  /**
+   * Records the kết quả rèn luyện the giáo viên chủ nhiệm decided on, for one
+   * học kỳ — Thông tư 22/2021/TT-BGDĐT Điều 8.
+   *
+   * The mức is the teacher's judgement, so this only stores what they chose.
+   * Nothing derives it from the điểm thi đua log; that tally is the school's own
+   * practice and a mức taken from it would be the software's opinion printed
+   * under a teacher's name.
+   *
+   * It lands on the student beside `commentResults`, so the existing
+   * students → localStorage effect carries it and there is no second store to
+   * keep in step. The repository has no conduct table yet, so unlike marks this
+   * never reaches the server — it stays a record of this device until one
+   * exists.
+   *
+   * @param {'semester1'|'semester2'} semester
+   * @param {string|null} band One of LEARNING_BAND, or null to clear the entry.
+   * @returns {{ ok: boolean, errors: string[] }}
+   */
+  const saveConductResult = (studentId, semester, band) => {
+    const check = applyConductResult({}, semester, band);
+    if (check.errors.length > 0) return { ok: false, errors: check.errors };
+
+    setStudents(prev => prev.map(std =>
+      std.id === studentId ? applyConductResult(std, semester, band).student : std
+    ));
 
     return { ok: true, errors: [] };
   };
@@ -3107,44 +3145,47 @@ export const AppProvider = ({ children }) => {
     setStudentPortfolios(prev => {
       const idx = prev.findIndex(p => p.studentId === studentId);
       if (idx > -1) {
-        return prev.map(p => p.studentId === studentId ? { ...p, extracurricularAchievements: achievementsArray, blockchainSignature: null } : p);
+        // Editing the list releases the confirmation: the Ban Giám hiệu approved
+        // the achievements as they stood, not whatever replaces them.
+        return prev.map(p => p.studentId === studentId
+          ? clearPortfolioConfirmation({ ...p, extracurricularAchievements: achievementsArray })
+          : p);
       } else {
         const std = students.find(s => s.id === studentId);
         return [...prev, {
           studentId,
           studentName: std ? std.name : 'Học sinh',
           extracurricularAchievements: achievementsArray,
-          blockchainSignature: null,
+          bghConfirmation: null,
           isPublic: false
         }];
       }
     });
   };
 
-  const signPortfolioBgh = (studentId, signerName) => {
-    setStudentPortfolios(prev => prev.map(p => {
-      if (p.studentId === studentId) {
-        const contentString = `${p.studentName}_${p.extracurricularAchievements.join(',')}_${Date.now()}`;
-        
-        let hashVal = 0;
-        for (let i = 0; i < contentString.length; i++) {
-          const char = contentString.charCodeAt(i);
-          hashVal = (hashVal << 5) - hashVal + char;
-          hashVal = hashVal & hashVal;
-        }
-        const hexHash = Math.abs(hashVal).toString(16).padEnd(8, '0') + Math.random().toString(16).substring(2, 10) + '8f3c7e2b1a9c8f7d6e5d4c3b2a1a0f9e';
-        
-        return {
-          ...p,
-          blockchainSignature: {
-            signedBy: signerName,
-            date: new Date().toISOString().split('T')[0],
-            hash: hexHash.substring(0, 64)
-          }
-        };
-      }
-      return p;
-    }));
+  /**
+   * Records that a member of the Ban Giám hiệu confirmed a hồ sơ thành tích,
+   * which locks it.
+   *
+   * This is an internal xác nhận and nothing more. The action it replaces was
+   * called `signPortfolioBgh` and minted a random hex string presented as a
+   * blockchain chữ ký số; a browser cannot produce a chữ ký số, so the name goes
+   * with the hash. The official học bạ still needs the school's own signature.
+   *
+   * The date comes from the school day the rest of the app agrees on, so the
+   * confirmation cannot be stamped with a day the register does not know about.
+   *
+   * @returns {{ ok: boolean, errors: string[] }}
+   */
+  const confirmPortfolioByBgh = (studentId, confirmedBy) => {
+    const target = studentPortfolios.find(p => p.studentId === studentId);
+    if (!target) return { ok: false, errors: ['Không tìm thấy hồ sơ của học sinh này.'] };
+
+    const check = confirmPortfolio(target, { confirmedBy, confirmedAt: currentSchoolDay() });
+    if (check.errors.length > 0) return { ok: false, errors: check.errors };
+
+    setStudentPortfolios(prev => prev.map(p => (p.studentId === studentId ? check.portfolio : p)));
+    return { ok: true, errors: [] };
   };
 
   const togglePortfolioPublic = (studentId) => {
@@ -3356,6 +3397,7 @@ export const AppProvider = ({ children }) => {
       addStudent,
       saveSubjectGrades,
       saveSubjectComment,
+      saveConductResult,
       storeError,
       addTeacher,
       addAnnouncement,
@@ -3405,7 +3447,7 @@ export const AppProvider = ({ children }) => {
       labSimulations: scopeStudentRows(labSimulations), runPhysicsRLC, runChemistryReaction, addLabSimulation,
       essaySubmissions: scopeStudentRows(essaySubmissions), submitEssayForAiGrading, approveOrEditEssayGrade,
       busRoutes, busScanLogs: scopeStudentRows(busScanLogs), simulateBusMove, parentRegisterBusRoute,
-      studentPortfolios: scopeStudentRows(studentPortfolios), updatePortfolioAchievements, signPortfolioBgh, togglePortfolioPublic,
+      studentPortfolios: scopeStudentRows(studentPortfolios), updatePortfolioAchievements, confirmPortfolioByBgh, togglePortfolioPublic,
       timetableSlots, teacherAvailability, generateSmartTimetable, swapTimetableSlots,
       notifications: scopedNotifications, markNotificationRead, markAllNotificationsRead, addNotification,
       directMessages: scopedDirectMessages, sendDirectMessage, markMessageRead,

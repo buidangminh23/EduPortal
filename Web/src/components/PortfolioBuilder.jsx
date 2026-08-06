@@ -1,13 +1,33 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
 import { SCHOOL } from '../config/school';
-import { 
+import { subjectName } from '../config/curriculum';
+import { readConductBand } from '../lib/domain/conduct';
+import { summariseAttendance } from '../lib/domain/attendance';
+import { readPortfolioConfirmation } from '../lib/domain/portfolio';
+import {
   Shield, Globe, Lock, CheckCircle, Award as Medal, Plus, Trash, ShieldAlert
 } from 'lucide-react';
 
+/** Shown wherever the school has not recorded the fact yet. */
+const NOT_ASSESSED = 'Chưa đánh giá';
+const NOT_RECORDED = 'Chưa điểm danh';
+
+/**
+ * The học kỳ this card reports on. `student.grades` holds học kỳ II — học kỳ I
+ * is kept apart in `gradesSem1` — so the conduct mức beside it must be read for
+ * the same semester, or the card would pair one term's marks with another
+ * term's rèn luyện.
+ */
+const CARD_SEMESTER = 'semester2';
+
 export default function PortfolioBuilder() {
-  const { currentRole, selectedStudentId, setSelectedStudentId, students, studentPortfolios, updatePortfolioAchievements, signPortfolioBgh, togglePortfolioPublic } = useContext(AppContext);
-  
+  const {
+    currentRole, selectedStudentId, setSelectedStudentId, students, studentPortfolios,
+    updatePortfolioAchievements, confirmPortfolioByBgh, togglePortfolioPublic,
+    attendanceLogs, leaveRequests, userSession
+  } = useContext(AppContext);
+
   const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const isStudent = currentRole === 'student';
   const isAdmin = currentRole === 'admin';
@@ -16,15 +36,34 @@ export default function PortfolioBuilder() {
 
   // Student editor achievements state
   const [newAchievement, setNewAchievement] = useState('');
-  
+
   // Find portfolio
   const portfolio = studentPortfolios?.find(p => p.studentId === student?.id) || {
     studentId: student?.id,
     studentName: student?.name || 'Học sinh',
     extracurricularAchievements: [],
-    blockchainSignature: null,
+    bghConfirmation: null,
     isPublic: false
   };
+
+  const confirmation = readPortfolioConfirmation(portfolio);
+
+  /**
+   * Chuyên cần as the register actually holds it.
+   *
+   * Counted over recorded sessions only, by the same domain rule the child's
+   * attendance log and the parent's page use. The card used to print
+   * "175/175 buổi" for every student in the school — a full year of perfect
+   * attendance asserted from nothing.
+   */
+  const attendance = useMemo(() => {
+    if (!student) return null;
+    const records = (attendanceLogs || []).filter((log) => log.studentId === student.id);
+    const leaves = (leaveRequests || []).filter((request) => request.studentId === student.id);
+    return summariseAttendance(records, leaves);
+  }, [attendanceLogs, leaveRequests, student]);
+
+  const conductBand = readConductBand(student, CARD_SEMESTER);
 
   const handleAddAchievement = () => {
     if (!newAchievement.trim()) return;
@@ -42,9 +81,25 @@ export default function PortfolioBuilder() {
     togglePortfolioPublic(student.id);
   };
 
-  const handleBghSign = (studentId) => {
-    signPortfolioBgh(studentId, 'Hiệu trưởng BGH');
-    alert(`Đã ký số học bạ số thành công cho em ${student?.name}!`);
+  /**
+   * Names the confirmer from the signed-in session rather than from a literal.
+   *
+   * The previous version recorded every confirmation as "Hiệu trưởng BGH", so
+   * the hồ sơ said a confirmation had happened without saying whose it was.
+   */
+  const handleBghConfirm = (studentId, studentNameToConfirm) => {
+    const confirmedBy = userSession?.displayName?.trim();
+    if (!confirmedBy) {
+      alert('Chưa xác định được người xác nhận. Vui lòng đăng nhập lại rồi thử lại.');
+      return;
+    }
+
+    const result = confirmPortfolioByBgh(studentId, confirmedBy);
+    if (!result.ok) {
+      alert(result.errors.join('\n'));
+      return;
+    }
+    alert(`Đã ghi nhận xác nhận của Ban Giám hiệu cho hồ sơ của em ${studentNameToConfirm}.`);
   };
 
   return (
@@ -53,18 +108,20 @@ export default function PortfolioBuilder() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.4rem', color: '#1e293b' }}>
-            🎓 Hồ Sơ Thành Tích & Chữ Ký Số Học Bạ
+            🎓 Hồ Sơ Thành Tích Học Sinh
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Hồ sơ năng lực học sinh tích hợp công nghệ xác thực chữ ký điện tử blockchain chống giả mạo.
+            Hoạt động ngoại khóa và giải thưởng, kèm xác nhận nội bộ của Ban Giám hiệu.
           </p>
         </div>
-        <button 
-          onClick={() => window.print()} 
+        <button
+          onClick={() => window.print()}
           className="btn btn-primary"
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px' }}
         >
-          <span>Xuất học bạ PDF</span>
+          {/* Opens the browser print dialog for the card on the right — not an
+              export of the học bạ, which follows a form of the Bộ GD&ĐT. */}
+          <span>In hồ sơ thành tích</span>
         </button>
       </div>
 
@@ -151,7 +208,7 @@ export default function PortfolioBuilder() {
               }}>
                 <ShieldAlert size={18} color="var(--accent-primary)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  <strong>Quyền cập nhật thành tích:</strong> Chỉ có Giáo viên và Ban Giám Hiệu mới có thẩm quyền thêm/xóa hoạt động ngoại khóa hoặc giải thưởng trên học bạ điện tử của bạn. Vui lòng liên hệ Giáo viên chủ nhiệm để gửi yêu cầu cập nhật.
+                  <strong>Quyền cập nhật thành tích:</strong> Chỉ có Giáo viên và Ban Giám hiệu mới có thẩm quyền thêm/xóa hoạt động ngoại khóa hoặc giải thưởng trên hồ sơ của bạn. Vui lòng liên hệ Giáo viên chủ nhiệm để gửi yêu cầu cập nhật.
                 </div>
               </div>
 
@@ -250,9 +307,14 @@ export default function PortfolioBuilder() {
           {/* ADMIN STUDENT PORTFOLIO VERIFICATION ROSTER */}
           {isAdmin && (
             <div className="glass-panel" style={{ padding: 20, background: 'rgba(255,255,255,0.6)' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Shield size={18} /> Phê duyệt & Ký chữ ký điện tử Blockchain
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Shield size={18} /> Xác nhận hồ sơ thành tích
               </h3>
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Xác nhận ở đây là ghi nhận nội bộ trong phần mềm: hệ thống lưu lại ai xác nhận, vào ngày nào,
+                và khóa hồ sơ sau đó. Đây <strong>không phải chữ ký số có giá trị pháp lý</strong>. Học bạ chính thức
+                vẫn cần chữ ký và con dấu của nhà trường theo quy định hiện hành.
+              </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {students.map(std => {
@@ -260,10 +322,10 @@ export default function PortfolioBuilder() {
                     studentId: std.id,
                     studentName: std.name,
                     extracurricularAchievements: [],
-                    blockchainSignature: null
+                    bghConfirmation: null
                   };
-                  const isSigned = stdPort.blockchainSignature !== null;
-                  
+                  const stdConfirmation = readPortfolioConfirmation(stdPort);
+
                   return (
                     <div 
                       key={std.id} 
@@ -285,28 +347,32 @@ export default function PortfolioBuilder() {
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                           Hoạt động ngoại khóa ({stdPort.extracurricularAchievements.length}): {stdPort.extracurricularAchievements.join('; ') || 'Chưa cập nhật'}
                         </div>
-                        {isSigned && (
+                        {stdConfirmation && (
                           <div style={{ fontSize: '0.72rem', color: '#047857', display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontWeight: 700 }}>
-                            <CheckCircle size={12} /> Học bạ số đã được niêm phong chữ ký điện tử.
+                            <CheckCircle size={12} /> Đã xác nhận ngày {stdConfirmation.confirmedAt || 'không rõ'} — {stdConfirmation.confirmedBy}
                           </div>
                         )}
                       </div>
 
+                      {/* Confirming is about the record, not the child's CV: a
+                          student with no club to their name still has a hồ sơ,
+                          and the empty list is itself what gets confirmed. */}
                       <button
-                        onClick={() => handleBghSign(std.id)}
-                        disabled={isSigned || stdPort.extracurricularAchievements.length === 0}
-                        aria-label={isSigned ? 'Đã Ký Số' : 'Ký Số Blockchain'}
+                        onClick={() => handleBghConfirm(std.id, std.name)}
+                        disabled={Boolean(stdConfirmation)}
+                        aria-label={stdConfirmation ? 'Hồ sơ đã được xác nhận' : `Xác nhận hồ sơ của ${std.name}`}
                         className="btn btn-primary"
-                        style={{ 
-                          fontSize: '0.8rem', 
-                          padding: '8px 16px', 
-                          background: isSigned ? 'rgba(4, 120, 87, 0.15)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                          color: isSigned ? '#047857' : 'white',
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '8px 16px',
+                          background: stdConfirmation ? 'rgba(4, 120, 87, 0.15)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                          color: stdConfirmation ? '#047857' : 'white',
                           border: 'none',
-                          fontWeight: 700
+                          fontWeight: 700,
+                          flexShrink: 0
                         }}
                       >
-                        {isSigned ? 'Đã Ký Số' : 'Ký Số Blockchain'}
+                        {stdConfirmation ? 'Đã xác nhận' : 'Xác nhận hồ sơ'}
                       </button>
                     </div>
                   );
@@ -382,7 +448,7 @@ export default function PortfolioBuilder() {
                   {student?.name?.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b' }}>Học bạ Số điện tử</h3>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#1e293b' }}>Hồ sơ thành tích</h3>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Lớp {student?.class} | {SCHOOL.name}</div>
                 </div>
               </div>
@@ -395,24 +461,50 @@ export default function PortfolioBuilder() {
               {/* Student Academic Grades */}
               {student?.grades && (
                 <div style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: 10, marginBottom: 12 }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>Điểm học tập Kỳ II:</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                    {Object.entries(student.grades).map(([sub, val]) => (
-                      <div key={sub} style={{ textAlign: 'center', background: 'rgba(0,0,0,0.03)', padding: '6px', borderRadius: '8px' }}>
-                        <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                          {sub === 'Math' ? 'Toán' : sub === 'Literature' ? 'Văn' : sub === 'Physics' ? 'Lý' : 'Anh'}
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>Điểm học tập HK II:</div>
+                  {/* Names come from the curriculum table, which covers every
+                      subject of the programme. The chain of ternaries this
+                      replaces labelled Hoá học, Sinh học and every other elective
+                      as "Anh" — a chemistry mark printed as Tiếng Anh. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))', gap: '8px' }}>
+                    {Object.entries(student.grades).map(([sub, val]) => {
+                      const hasMark = Number.isFinite(val);
+                      return (
+                        <div key={sub} style={{ textAlign: 'center', background: 'rgba(0,0,0,0.03)', padding: '6px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.25 }}>
+                            {subjectName(sub)}
+                          </div>
+                          <div style={{
+                            fontSize: hasMark ? '0.85rem' : '0.62rem',
+                            fontWeight: 700,
+                            color: hasMark ? 'var(--accent-ink)' : 'var(--text-muted)'
+                          }}>
+                            {hasMark ? val.toFixed(1) : 'Chưa có điểm'}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-ink)' }}>{val.toFixed(1)}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Attendance and Conduct */}
-              <div style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: 10, marginBottom: 12, display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                <div>Hạnh kiểm: <strong style={{ color: '#059669' }}>Tốt</strong></div>
-                <div>Chuyên cần: <strong>175/175 buổi</strong></div>
+              {/* Kết quả rèn luyện and chuyên cần, both read from what the school
+                  has actually recorded — see the notes on `attendance` above. */}
+              <div style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: 10, marginBottom: 12, display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem', flexWrap: 'wrap' }}>
+                <div>
+                  Rèn luyện HK II:{' '}
+                  <strong style={{ color: conductBand ? '#1e293b' : 'var(--text-muted)' }}>
+                    {conductBand || NOT_ASSESSED}
+                  </strong>
+                </div>
+                <div>
+                  Chuyên cần:{' '}
+                  {attendance && attendance.total > 0 ? (
+                    <strong>{attendance.present + attendance.late}/{attendance.total} buổi đã điểm danh</strong>
+                  ) : (
+                    <strong style={{ color: 'var(--text-muted)' }}>{NOT_RECORDED}</strong>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -421,7 +513,7 @@ export default function PortfolioBuilder() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {portfolio.extracurricularAchievements.length === 0 ? (
-                    <div style={{ fontSize: '0.78rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>Chưa cập nhật thành tích nào trên học bạ số.</div>
+                    <div style={{ fontSize: '0.78rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>Chưa cập nhật thành tích nào trên hồ sơ này.</div>
                   ) : (
                     portfolio.extracurricularAchievements.map((item, idx) => (
                       <div key={idx} style={{ fontSize: '0.78rem', color: '#334155', lineHeight: '1.3' }}>
@@ -433,11 +525,14 @@ export default function PortfolioBuilder() {
               </div>
             </div>
 
-            {/* Blockchain secure seal stamp at the bottom of the CV card */}
-            {portfolio.blockchainSignature ? (
-              <div style={{ 
-                marginTop: 20, 
-                borderTop: '1px dashed rgba(99,102,241,0.2)', 
+            {/* What the school confirmed, stated as what it is.
+                No hash and no circular red stamp: the hash authenticated
+                nothing, and a graphic imitating a con dấu makes a printed copy
+                of this card look like a sealed học bạ to whoever is handed it. */}
+            {confirmation ? (
+              <div style={{
+                marginTop: 20,
+                borderTop: '1px dashed rgba(99,102,241,0.2)',
                 paddingTop: 12,
                 zIndex: 2,
                 position: 'relative'
@@ -445,59 +540,24 @@ export default function PortfolioBuilder() {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <CheckCircle size={16} color="#10b981" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#065f46' }}>Xác thực học bạ Blockchain</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: 1 }}>Ký bởi: {portfolio.blockchainSignature.signedBy}</div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>Ngày ký: {portfolio.blockchainSignature.date}</div>
-                    <div style={{ 
-                      fontSize: '0.58rem', 
-                      fontFamily: 'monospace', 
-                      wordBreak: 'break-all', 
-                      color: 'var(--accent-primary)',
-                      background: '#fff',
-                      padding: 4,
-                      borderRadius: 4,
-                      border: '1px solid rgba(99,102,241,0.1)',
-                      marginTop: 4
-                    }}>
-                      Hash: {portfolio.blockchainSignature.hash}
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#065f46' }}>Ban Giám hiệu đã xác nhận</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: 1 }}>Người xác nhận: {confirmation.confirmedBy}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                      Ngày xác nhận: {confirmation.confirmedAt || 'không rõ'}
                     </div>
-                  </div>
-                </div>
-                
-                {/* Red Circular Stamp graphic overlay */}
-                <div style={{
-                  position: 'absolute',
-                  right: -10,
-                  bottom: -10,
-                  width: 65,
-                  height: 65,
-                  border: '2px solid rgba(220, 38, 38, 0.45)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transform: 'rotate(-15deg)',
-                  fontSize: '0.55rem',
-                  fontWeight: 800,
-                  color: 'rgba(220, 38, 38, 0.45)',
-                  textAlign: 'center',
-                  textTransform: 'uppercase',
-                  pointerEvents: 'none',
-                  lineHeight: '1.1',
-                  background: 'rgba(255,255,255,0.7)',
-                  boxShadow: '0 0 5px rgba(220, 38, 38, 0.05)'
-                }}>
-                  <div style={{ border: '1px dashed rgba(220, 38, 38, 0.35)', borderRadius: '50%', width: 55, height: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    ĐÃ DUYỆT BGH
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.45 }}>
+                      Đây là xác nhận nội bộ trong phần mềm, không phải chữ ký số có giá trị pháp lý.
+                      Học bạ chính thức vẫn cần chữ ký và con dấu của nhà trường theo quy định hiện hành.
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div style={{ 
-                marginTop: 20, 
-                borderTop: '1px dashed rgba(0,0,0,0.06)', 
-                paddingTop: 12, 
-                fontSize: '0.72rem', 
+              <div style={{
+                marginTop: 20,
+                borderTop: '1px dashed rgba(0,0,0,0.06)',
+                paddingTop: 12,
+                fontSize: '0.72rem',
                 color: '#f59e0b',
                 display: 'flex',
                 alignItems: 'center',
@@ -508,7 +568,7 @@ export default function PortfolioBuilder() {
                 zIndex: 2
               }}>
                 <ShieldAlert size={16} />
-                Chưa ký chữ ký điện tử niêm phong.
+                Ban Giám hiệu chưa xác nhận hồ sơ này.
               </div>
             )}
           </div>
