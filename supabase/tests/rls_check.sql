@@ -11,6 +11,11 @@
 -- that at all — which is how a student could hand themselves the admin role
 -- while every policy in this file went on passing.
 --
+-- And triggers, since 013, because two of the rules a school cares about most
+-- are not expressible as policies at all: a closed sổ điểm refuses writes that
+-- RLS would happily allow, and every change to a mark leaves a row behind in a
+-- log the caller who made it cannot reach.
+--
 -- Run against a local stack:
 --     supabase db reset
 --     psql "$(supabase status -o env | grep DB_URL | cut -d= -f2- | tr -d '"')" -v ON_ERROR_STOP=1 -f supabase/tests/rls_check.sql
@@ -60,17 +65,21 @@ INSERT INTO enrollments (student_id, class_id) VALUES
 INSERT INTO guardians (parent_id, student_id) VALUES
     ('ff000000-0000-0000-0000-000000000005', 'ff000000-0000-0000-0000-000000000003');
 
-INSERT INTO assessment_records (school_id, student_id, subject, semester, regular, midterm, final, average) VALUES
-    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 'Toán', 2, ARRAY[8.0, 9.0], 7.0, 6.0, 6.9),
-    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 'Toán', 2, ARRAY[5.0, 5.0], 5.0, 5.0, 5.0);
+-- Every academic record carries its năm học since 012. Written out here rather
+-- than left to a default because there is no default: a row that cannot say
+-- which of a pupil's three years it belongs to is the bug 012 exists to end,
+-- and the fixtures are held to the same rule as the application.
+INSERT INTO assessment_records (school_id, student_id, subject, semester, school_year, regular, midterm, final, average) VALUES
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 'Toán', 2, '2025-2026', ARRAY[8.0, 9.0], 7.0, 6.0, 6.9),
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 'Toán', 2, '2025-2026', ARRAY[5.0, 5.0], 5.0, 5.0, 5.0);
 
 -- Kết quả rèn luyện học kỳ I, as the teacher entered it. Student One is Khá and
 -- Student Two is Đạt, deliberately neither of them Tốt, so that an attempt below
 -- to write 'Tốt' is a real change rather than a value that was already there.
-INSERT INTO conduct_results (school_id, student_id, semester, band, updated_by) VALUES
-    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 1, 'Khá',
+INSERT INTO conduct_results (school_id, student_id, semester, school_year, band, updated_by) VALUES
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003', 1, '2025-2026', 'Khá',
      'ff000000-0000-0000-0000-000000000002'),
-    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 1, 'Đạt',
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000004', 1, '2025-2026', 'Đạt',
      'ff000000-0000-0000-0000-000000000002');
 
 INSERT INTO invoices (id, school_id, student_id, title, amount, due_date) VALUES
@@ -213,9 +222,9 @@ DO $$
 DECLARE refused BOOLEAN := FALSE;
 BEGIN
     BEGIN
-        INSERT INTO conduct_results (school_id, student_id, semester, band)
+        INSERT INTO conduct_results (school_id, student_id, semester, school_year, band)
         VALUES ('ffffffff-1111-1111-1111-111111111111',
-                'ff000000-0000-0000-0000-000000000004', 2, 'Tốt');
+                'ff000000-0000-0000-0000-000000000004', 2, '2025-2026', 'Tốt');
     EXCEPTION WHEN insufficient_privilege THEN
         refused := TRUE;
     END;
@@ -264,9 +273,9 @@ DO $$
 DECLARE refused BOOLEAN := FALSE;
 BEGIN
     BEGIN
-        INSERT INTO conduct_results (school_id, student_id, semester, band)
+        INSERT INTO conduct_results (school_id, student_id, semester, school_year, band)
         VALUES ('ffffffff-1111-1111-1111-111111111111',
-                'ff000000-0000-0000-0000-000000000003', 2, 'Tốt');
+                'ff000000-0000-0000-0000-000000000003', 2, '2025-2026', 'Tốt');
     EXCEPTION WHEN insufficient_privilege THEN
         refused := TRUE;
     END;
@@ -330,9 +339,9 @@ SELECT expect('mức rèn luyện của con vẫn nguyên là Khá',
 SET LOCAL ROLE postgres;
 SELECT act_as('ff000000-0000-0000-0000-000000000002');
 
-INSERT INTO conduct_results (school_id, student_id, semester, band, updated_by)
+INSERT INTO conduct_results (school_id, student_id, semester, school_year, band, updated_by)
 VALUES ('ffffffff-1111-1111-1111-111111111111',
-        'ff000000-0000-0000-0000-000000000003', 2, 'Tốt',
+        'ff000000-0000-0000-0000-000000000003', 2, '2025-2026', 'Tốt',
         'ff000000-0000-0000-0000-000000000002');
 
 SELECT expect('giáo viên ghi được mức rèn luyện học kỳ II',
@@ -345,6 +354,316 @@ DELETE FROM conduct_results
 SELECT expect('giáo viên xoá lại được mức vừa ghi nhầm',
     (SELECT count(*) FROM conduct_results
      WHERE student_id = 'ff000000-0000-0000-0000-000000000003'), 1);
+
+-- ── Sổ điểm đã khoá ────────────────────────────────────────────────────────
+-- Everything above this line is decided by row-level security, and none of it
+-- can express "học kỳ này đã chốt". A policy sees one row of one table; whether
+-- that row's học kỳ has been closed is a fact in another table entirely. So 013
+-- puts the rule in a trigger, and a trigger is invisible from the client in
+-- exactly the way a policy is: one that has stopped firing looks like a school
+-- where nobody happens to have edited an old mark yet.
+--
+-- The lock arrives here rather than with the fixtures at the top so that every
+-- assertion above is measured against an open sổ điểm and means only what it
+-- says.
+
+SET LOCAL ROLE postgres;
+
+-- A học kỳ I mark to close the book on. Student One now has Toán in both học
+-- kỳ, which is also the shape 012 made possible: before it, a second row for
+-- the same subject and student could only exist by displacing the first.
+INSERT INTO assessment_records (school_id, student_id, subject, semester, school_year, regular, midterm, final, average) VALUES
+    ('ffffffff-1111-1111-1111-111111111111', 'ff000000-0000-0000-0000-000000000003',
+     'Toán', 1, '2025-2026', ARRAY[6.0], 6.0, 6.0, 6.0);
+
+-- Ban Giám Hiệu closes học kỳ I. Written through the policy rather than as the
+-- owner, so this also asserts that an admin may close a book at all.
+SELECT act_as('ff000000-0000-0000-0000-000000000001');
+
+INSERT INTO gradebook_locks (school_id, school_year, semester, locked_by)
+VALUES ('ffffffff-1111-1111-1111-111111111111', '2025-2026', 1,
+        'ff000000-0000-0000-0000-000000000001');
+
+SELECT expect('hiệu trưởng khoá được sổ điểm học kỳ I',
+    (SELECT count(*) FROM gradebook_locks WHERE semester = 1), 1);
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+-- A teacher whose write is about to be refused has to be able to find out why,
+-- so the lock itself is readable school-wide. It says nothing about any student.
+SELECT expect('giáo viên đọc được trạng thái khoá của sổ điểm',
+    (SELECT count(*) FROM gradebook_locks), 1);
+
+DO $$
+DECLARE blocked BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE assessment_records SET average = 9.9
+        WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND semester = 1;
+    EXCEPTION WHEN raise_exception THEN
+        blocked := TRUE;
+    END;
+
+    IF NOT blocked THEN
+        RAISE EXCEPTION 'FAIL — giáo viên sửa được điểm học kỳ đã khoá';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không sửa được điểm học kỳ đã khoá';
+END;
+$$;
+
+SELECT expect('điểm học kỳ đã khoá vẫn nguyên như lúc chốt',
+    (SELECT count(*) FROM assessment_records
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND semester = 1 AND average = 6.0), 1);
+
+-- Filing a new subject into a closed học kỳ is the same act as editing one.
+DO $$
+DECLARE blocked BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        INSERT INTO assessment_records (school_id, student_id, subject, semester, school_year, average)
+        VALUES ('ffffffff-1111-1111-1111-111111111111',
+                'ff000000-0000-0000-0000-000000000003', 'Vật lí', 1, '2025-2026', 9.0);
+    EXCEPTION WHEN raise_exception THEN
+        blocked := TRUE;
+    END;
+
+    IF NOT blocked THEN
+        RAISE EXCEPTION 'FAIL — giáo viên thêm được môn mới vào học kỳ đã khoá';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không thêm được môn vào học kỳ đã khoá';
+END;
+$$;
+
+-- And the other direction, which is the one worth stating: a lock on học kỳ I
+-- must not close học kỳ II. A guard that stops the term in progress is reported
+-- as "hệ thống hỏng", and it is fixed by turning the guard off.
+UPDATE assessment_records SET average = 8.0
+WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND semester = 2;
+
+SELECT expect('giáo viên vẫn vào được điểm học kỳ chưa khoá',
+    (SELECT count(*) FROM assessment_records
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND semester = 2 AND average = 8.0), 1);
+
+-- Lifting the lock is not a teacher's to do. A teacher who could unlock their
+-- own class is a teacher for whom no lock exists.
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        INSERT INTO gradebook_locks (school_id, school_year, semester, locked_by)
+        VALUES ('ffffffff-1111-1111-1111-111111111111', '2025-2026', 2,
+                'ff000000-0000-0000-0000-000000000002');
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — giáo viên tự khoá được sổ điểm';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không tự khoá sổ điểm được';
+END;
+$$;
+
+-- The correction path. A wrong mark found after chốt has to be fixable, or the
+-- school keeps a second gradebook on paper and this one stops being true.
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000001');
+
+UPDATE assessment_records SET average = 6.5
+WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND semester = 1;
+
+SELECT expect('hiệu trưởng sửa được điểm trong học kỳ đã khoá',
+    (SELECT count(*) FROM assessment_records
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND semester = 1 AND average = 6.5), 1);
+
+-- ── Nhật ký sửa điểm ───────────────────────────────────────────────────────
+-- The question this table exists for is a parent's: "điểm con tôi bị sửa". Both
+-- halves of the answer are asserted here — the teacher's ordinary edit earlier
+-- in this file, and the admin's correction inside the closed học kỳ just now.
+-- The correction being logged is the whole reason the lock may let an admin
+-- through at all.
+
+SELECT expect('nhật ký ghi lại lần giáo viên sửa điểm, kèm điểm cũ và điểm mới',
+    (SELECT count(*) FROM assessment_history
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND operation = 'UPDATE'
+       AND changed_by = 'ff000000-0000-0000-0000-000000000002'
+       AND old_average = 6.9 AND new_average = 7.5), 1);
+
+SELECT expect('nhật ký ghi lại cả lần hiệu trưởng sửa điểm đã chốt',
+    (SELECT count(*) FROM assessment_history
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND semester = 1
+       AND changed_by = 'ff000000-0000-0000-0000-000000000001'
+       AND old_average = 6.0 AND new_average = 6.5), 1);
+
+-- And the write that was refused left nothing behind. This is what the BEFORE
+-- guard and the AFTER log being timed the way they are actually buys: a log
+-- that records attempts as if they were changes accuses people of things they
+-- did not manage to do.
+SELECT expect('lần ghi bị từ chối không để lại dòng nào trong nhật ký',
+    (SELECT count(*) FROM assessment_history WHERE subject = 'Vật lí'), 0);
+
+-- Who may read it: Ban Giám Hiệu, nobody else. A parent reading this table
+-- would see every digit a teacher ever typed and corrected a minute later, and
+-- would be reading marks that were never anybody's result.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000004');
+
+SELECT expect('học sinh không đọc được nhật ký sửa điểm',
+    (SELECT count(*) FROM assessment_history), 0);
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        INSERT INTO assessment_history (school_id, student_id, subject, semester, school_year, operation, new_average)
+        VALUES ('ffffffff-1111-1111-1111-111111111111',
+                'ff000000-0000-0000-0000-000000000004', 'Toán', 2, '2025-2026', 'UPDATE', 10);
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — học sinh tự viết được vào nhật ký sửa điểm';
+    END IF;
+    RAISE NOTICE 'ok — học sinh không viết được vào nhật ký sửa điểm';
+END;
+$$;
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000005');
+
+SELECT expect('phụ huynh không đọc được nhật ký sửa điểm',
+    (SELECT count(*) FROM assessment_history), 0);
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        DELETE FROM gradebook_locks WHERE semester = 1;
+        IF NOT FOUND THEN refused := TRUE; END IF;
+    EXCEPTION WHEN OTHERS THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — phụ huynh mở khoá được sổ điểm';
+    END IF;
+    RAISE NOTICE 'ok — phụ huynh không mở khoá được sổ điểm';
+END;
+$$;
+
+-- The teacher deleting the row that names them. This is the one an audit log
+-- lives or dies by: a log its own subject can edit records only what that
+-- subject was willing to leave in it. Refused at the privilege, before a single
+-- row is looked at — authenticated is granted SELECT on this table and nothing
+-- else.
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        DELETE FROM assessment_history
+        WHERE changed_by = 'ff000000-0000-0000-0000-000000000002';
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — giáo viên xoá được dòng nhật ký ghi tên mình';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không xoá được dòng nhật ký ghi tên mình';
+END;
+$$;
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE assessment_history SET old_average = new_average
+        WHERE changed_by = 'ff000000-0000-0000-0000-000000000002';
+    EXCEPTION WHEN insufficient_privilege THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — giáo viên sửa lại được dòng nhật ký ghi tên mình';
+    END IF;
+    RAISE NOTICE 'ok — giáo viên không sửa được dòng nhật ký ghi tên mình';
+END;
+$$;
+
+-- The second lock, tested the way 010's is: a guard nobody has ever seen fire
+-- is a guess. It cannot fire while the client holds neither the privilege nor a
+-- policy, so both are widened here exactly the way a later migration would by
+-- accident — GRANT ALL and a FOR ALL policy are each one line somebody writes
+-- without thinking about this table — and the write is still refused. This time
+-- by the trigger, whose error is its own.
+--
+-- The probe policy is FOR ALL rather than FOR DELETE, because a DELETE with a
+-- WHERE clause has to read the rows it is deleting and so is judged by the
+-- SELECT policy too. FOR DELETE alone would leave the teacher matching no rows,
+-- and the test would pass without the trigger ever running — proving nothing,
+-- loudly.
+
+SET LOCAL ROLE postgres;
+GRANT DELETE ON TABLE assessment_history TO authenticated;
+CREATE POLICY "assessment_history_delete_probe" ON assessment_history FOR ALL
+    TO authenticated USING (TRUE) WITH CHECK (TRUE);
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+DO $$
+DECLARE refused BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        DELETE FROM assessment_history
+        WHERE changed_by = 'ff000000-0000-0000-0000-000000000002';
+    EXCEPTION WHEN raise_exception THEN
+        refused := TRUE;
+    END;
+
+    IF NOT refused THEN
+        RAISE EXCEPTION 'FAIL — nới quyền là mở lại đường xoá nhật ký';
+    END IF;
+    RAISE NOTICE 'ok — trigger vẫn giữ nhật ký nguyên vẹn dù quyền bị nới';
+END;
+$$;
+
+SET LOCAL ROLE postgres;
+DROP POLICY "assessment_history_delete_probe" ON assessment_history;
+REVOKE DELETE ON TABLE assessment_history FROM authenticated;
+
+SELECT expect('nhật ký vẫn còn nguyên dòng ghi tên giáo viên',
+    (SELECT count(*) FROM assessment_history
+     WHERE changed_by = 'ff000000-0000-0000-0000-000000000002'
+       AND old_average = 6.9 AND new_average = 7.5), 1);
+
+-- Unlocking, and the teacher can work again. The lock is a row: its absence is
+-- an open sổ điểm, so this also asserts that removing it removes the refusal
+-- rather than leaving something behind that has to be undone separately.
+
+SELECT act_as('ff000000-0000-0000-0000-000000000001');
+DELETE FROM gradebook_locks WHERE semester = 1;
+
+SET LOCAL ROLE postgres;
+SELECT act_as('ff000000-0000-0000-0000-000000000002');
+
+UPDATE assessment_records SET average = 7.0
+WHERE student_id = 'ff000000-0000-0000-0000-000000000003' AND semester = 1;
+
+SELECT expect('mở khoá xong giáo viên vào điểm học kỳ I lại được',
+    (SELECT count(*) FROM assessment_records
+     WHERE student_id = 'ff000000-0000-0000-0000-000000000003'
+       AND semester = 1 AND average = 7.0), 1);
 
 -- ── Reading one's own profile must not recurse ─────────────────────────────
 -- This is the query that ran on every sign-in and aborted before the fix.
