@@ -43,9 +43,16 @@ psql "$DB_URL" -f supabase/migrations/004_review_golden.sql
 psql "$DB_URL" -f supabase/migrations/005_fix_profile_recursion.sql
 psql "$DB_URL" -f supabase/migrations/006_academics.sql
 psql "$DB_URL" -f supabase/migrations/007_mock_exams.sql
+psql "$DB_URL" -f supabase/migrations/008_mock_exam_idempotency.sql
+psql "$DB_URL" -f supabase/migrations/009_policy_indexes.sql
+psql "$DB_URL" -f supabase/migrations/010_profile_privilege_guard.sql
 ```
 
 Chạy đúng thứ tự: 005 định nghĩa `can_view_student` / `can_edit_student`, và 006, 007 đều dựa vào hai hàm đó để quyết định ai đọc được điểm của ai.
+
+Chạy đủ cả mười, không dừng ở 007. 008 thêm cột `local_id` mà mã nguồn nộp bài thi ghi vào — thiếu nó thì mọi bài thi nộp lên đều lỗi. 010 là bản vá bảo mật: thiếu nó thì bất kỳ tài khoản nào đã đăng nhập, kể cả học sinh, cũng tự đặt mình thành `admin` được bằng một dòng lệnh trong trình duyệt, và admin thì xem được toàn bộ điểm, học phí, hồ sơ tư vấn tâm lý lẫn camera.
+
+Xong thì chạy `psql "$DB_URL" -f supabase/tests/rls_check.sql`. File này đóng vai từng nhóm người dùng rồi tự báo lỗi nếu phân quyền sai — trong đó có phép thử "học sinh tự đặt mình thành admin". Phải chạy hết mà không báo lỗi nào; nếu nó dừng giữa chừng thì có migration chưa chạy.
 
 Kiểm tra phân quyền đã bật:
 

@@ -7,7 +7,9 @@ import LandingPage from './components/LandingPage';
 import AppCommandDock from './components/AppCommandDock';
 import StoreErrorBanner from './components/StoreErrorBanner';
 import UnconfiguredScreen from './components/UnconfiguredScreen';
+import SchoolSsoScreen from './components/SchoolSsoScreen';
 import { isUnconfigured } from './lib/appMode';
+import { hasSchoolToken } from './lib/schoolSso';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye, Menu } from 'lucide-react';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
@@ -53,6 +55,12 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Whether this page load arrived from the school's website, decided once. The
+  // token is scrubbed from the address bar as soon as it is spent, so reading
+  // the URL on every render would flip this to false mid-exchange and drop the
+  // teacher on the landing page while their session was still being opened.
+  const [arrivedFromSchool] = useState(() => hasSchoolToken());
+
   // Reset tab on role switch
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -79,6 +87,12 @@ function App() {
 
   // If no active session, render the LandingPage or Login Portal
   if (!userSession) {
+    // A teacher walking over from the school's website never sees the login
+    // screen: they signed in there a moment ago, and asking again is the whole
+    // thing this was built to avoid.
+    if (arrivedFromSchool) {
+      return <SchoolSsoScreen />;
+    }
     if (showLogin) {
       return <Login onBack={() => setShowLogin(false)} />;
     }
