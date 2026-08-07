@@ -1,4 +1,5 @@
 import { useContext, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { 
   BookOpen, 
@@ -309,7 +310,7 @@ export default function ClassJournal() {
       </div>
 
       {/* Add Entry Modal */}
-      {showAddEntry && (
+      {showAddEntry && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade">
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Ghi Tiết Học Lớp {selectedClass}</h2>
@@ -414,10 +415,10 @@ export default function ClassJournal() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Signature drawing Modal */}
-      {showSignModal && (
+      {showSignModal && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade">
             <h2 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.25rem' }}>
@@ -472,7 +473,7 @@ export default function ClassJournal() {
             </button>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

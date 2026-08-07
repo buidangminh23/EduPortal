@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { 
   ChevronLeft, 
@@ -971,7 +972,7 @@ export default function SchoolCalendar() {
       </div>
 
       {/* EVENT DETAIL POPUP MODAL */}
-      {selectedEvent && (
+      {selectedEvent && createPortal((
         <div className="modal-overlay" onClick={() => setSelectedEvent(null)}>
           <div className="modal-content animate-fade" style={{ background: 'white' }} onClick={e => e.stopPropagation()}>
             <button 
@@ -1012,7 +1013,7 @@ export default function SchoolCalendar() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
     </div>
   );

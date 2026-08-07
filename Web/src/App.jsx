@@ -1,4 +1,5 @@
 import { useState, useContext, useEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -700,8 +701,13 @@ function AdminStudentManager() {
         </table>
       </div>
 
-      {/* Modal: Xem Hồ Sơ Chi Tiết Học Sinh */}
-      {selectedStudentDetail && (
+      {/* Modal: Xem Hồ Sơ Chi Tiết Học Sinh.
+          Rendered into document.body: the panel this roster lives in has a
+          backdrop-filter and an animation that leaves a transform behind, and
+          either one makes the panel — not the viewport — the containing block
+          for `position: fixed`. The overlay would then dim only the panel and
+          sit below the navbar instead of covering the screen. */}
+      {selectedStudentDetail && createPortal((
         <div className="modal-overlay" onClick={() => setSelectedStudentDetail(null)}>
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: '640px', width: '90%', borderRadius: '20px', padding: '24px' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
@@ -764,9 +770,9 @@ function AdminStudentManager() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
-      {showAdd && (
+      {showAdd && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white' }}>
             <h3 style={{ marginBottom: '16px' }}>Tiếp Nhận Học Sinh Mới</h3>
@@ -828,7 +834,7 @@ function AdminStudentManager() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

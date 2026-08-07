@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../../context/AppContext';
 import {
   RefreshCw, BookOpen, Clock, CheckCircle2, Circle, Calendar,
@@ -400,7 +401,7 @@ export default function StudyPlanTab() {
           </button>
         </div>
       </div>
-      {showTips && (
+      {showTips && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 520 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
@@ -418,7 +419,7 @@ export default function StudyPlanTab() {
             <button className="btn btn-primary" onClick={() => setShowTips(false)} style={{ width: '100%', marginTop: 16 }}>Đã hiểu</button>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

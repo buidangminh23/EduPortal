@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import {
   Vote,
@@ -538,7 +539,7 @@ export default function ClassVoting() {
       </div>
 
       {/* Create Vote Modal */}
-      {showCreateModal && (
+      {showCreateModal && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ maxWidth: '560px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -597,7 +598,7 @@ export default function ClassVoting() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

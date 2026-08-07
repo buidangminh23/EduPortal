@@ -1,4 +1,5 @@
 import { useContext, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import FeeReconciliation from './FeeReconciliation';
 import { currentSchoolDay } from '../config/demoClock';
@@ -722,7 +723,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
       )}
 
       {/* Lesson Plan Review Modal */}
-      {selectedPlan && (
+      {selectedPlan && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Đánh giá & Phê duyệt Giáo án</h2>
@@ -781,7 +782,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Teacher Ratings subtab pane */}
       {subTab === 'teacher_ratings' && (
@@ -1746,7 +1747,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
       )}
 
       {/* Teacher Ratings Details Modal */}
-      {selectedTeacherForRating && (
+      {selectedTeacherForRating && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: '600px' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Ý kiến khảo sát: Thầy/Cô {selectedTeacherForRating.teacher.name}</h2>
@@ -1790,7 +1791,7 @@ export default function PrincipalDashboard({ setActiveTab }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

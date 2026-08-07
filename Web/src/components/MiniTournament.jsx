@@ -1,4 +1,5 @@
 import { useState, useContext, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { Trophy, Users, Calendar, Plus, Play, Sparkles, Medal, Award, CheckCircle } from 'lucide-react';
 
@@ -243,8 +244,8 @@ export default function MiniTournament() {
       </div>
 
       {/* Create Tournament Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 1000 }}>
+      {showCreateModal && createPortal((
+        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-content animate-fade" style={{ background: 'var(--surface)', padding: '24px', borderRadius: '20px', width: '90%', maxWidth: '450px' }}>
             <h3 style={{ margin: '0 0 20px 0', color: 'var(--accent-ink)' }}>Tạo Cuộc Thi Mới</h3>
             
@@ -301,7 +302,7 @@ export default function MiniTournament() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

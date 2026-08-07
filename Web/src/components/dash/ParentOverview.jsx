@@ -1,4 +1,5 @@
 import { useContext, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageSquare, BarChart3, BookOpen, ArrowUp, ArrowDown, CheckCircle, Check, Clock, Wallet, Bus, User, X } from 'lucide-react';
 import { SectionCard, Pill, Bar, Avatar } from './DashUI';
 import { AppContext } from '../../context/AppContext';
@@ -379,7 +380,7 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
           </SectionCard>
         </div>
       </div>
-      {showTranscript && (
+      {showTranscript && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 560 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
@@ -434,7 +435,7 @@ export default function ParentOverview({ childName, childClass, student, onSubTa
             <button className="btn btn-primary" onClick={() => setShowTranscript(false)} style={{ width: '100%', marginTop: 16 }}>Đã xem</button>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

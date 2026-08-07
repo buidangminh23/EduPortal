@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Calendar,
   Clock,
@@ -153,7 +154,7 @@ function AddDutyModal({ onClose, onAdd }) {
     onClose();
   }
 
-  return (
+  return createPortal((
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content animate-fade" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
@@ -203,7 +204,7 @@ function AddDutyModal({ onClose, onAdd }) {
         </form>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 /* ─────────────────────────────────────────────

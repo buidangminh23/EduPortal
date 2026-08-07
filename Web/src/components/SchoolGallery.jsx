@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { SCHOOL } from '../config/school';
 import { Camera, Image as ImageIcon, Heart, Calendar, Plus, X, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -315,11 +316,11 @@ export default function SchoolGallery() {
           </div>
 
           {/* Lightbox / Overlay Modal */}
-          {activePhotoIndex !== null && (
-            <div 
+          {activePhotoIndex !== null && createPortal((
+            <div
               className="modal-overlay" 
               onClick={() => setActivePhotoIndex(null)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', zIndex: 1000 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)' }}
             >
               <div 
                 className="modal-content animate-fade" 
@@ -394,10 +395,10 @@ export default function SchoolGallery() {
                 </div>
               </div>
             </div>
-          )}
+          ), document.body)}
         </>
       )}
-      {showUploadModal && (
+      {showUploadModal && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: 'white', maxWidth: 520 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
@@ -470,7 +471,7 @@ export default function SchoolGallery() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

@@ -2065,7 +2065,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
       {/* Create Assignment Modal */}
       {showCreateAssignmentModal && createPortal(
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+        <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ maxWidth: '600px', background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Giao Bài Tập Về Nhà Mới</h2>
@@ -2275,7 +2275,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
       )}
 
       {/* Grade Submission Modal */}
-      {selectedGradingSubmission && (
+      {selectedGradingSubmission && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ maxWidth: '650px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -2338,10 +2338,10 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Xếp loại rèn luyện Modal — Thông tư 22 Điều 8 */}
-      {conductBandStudent && (
+      {conductBandStudent && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ marginBottom: '4px', fontSize: '1.25rem' }}>
@@ -2448,10 +2448,10 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Conduct points Modal — the school's thi đua log, not a TT22 mức */}
-      {selectedConductStudent && (
+      {selectedConductStudent && createPortal((
         <div className="modal-overlay">
           <div className="modal-content animate-fade">
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem' }}>Ghi nhận điểm thi đua học sinh: {selectedConductStudent.name}</h2>
@@ -2490,10 +2490,10 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
       {/* Create Custom Exam Modal */}
-      {showCreateExamModal && (
-        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+      {showCreateExamModal && createPortal((
+        <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ width: '90%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', padding: '30px' }}>
             <h2 style={{ marginBottom: '6px', fontSize: '1.4rem', fontWeight: 800, color: '#1e293b' }}>
               Soạn đề thi thử liên môn mới
@@ -2669,7 +2669,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* MOCK EXAMS TAB */}
       {activeTab === 'mock_exams' && (
@@ -2912,7 +2912,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
       {/* Grade Entry List Modal */}
       {showGradeEntryModal && createPortal(
-        <div className="modal-overlay" style={{ zIndex: 999 }}>
+        <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ maxWidth: '750px', background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>
@@ -3010,7 +3010,7 @@ export default function TeacherDashboard({ setActiveTab: setGlobalActiveTab }) {
 
       {/* Grading Modal */}
       {selectedStudent && createPortal(
-        <div className="modal-overlay" style={{ zIndex: 1010 }}>
+        <div className="modal-overlay">
           <div className="modal-content animate-fade" style={{ background: '#1e1e24', color: '#f8fafc', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '1.25rem', color: '#f8fafc', fontWeight: 'bold' }}>Cập nhật điểm số: {selectedStudent.name}</h2>
             <form onSubmit={handleGradeSubmit}>
