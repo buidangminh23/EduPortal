@@ -502,7 +502,16 @@
   z-index: 12000;
   animation: fadeIn 0.2s ease-out;
   overflow-y: auto;
+  /* A wheel gesture that runs out of dialog stops here instead of scrolling the
+     roster underneath — the page behind a dialog is 14000px tall, and watching
+     it slide past a dialog that stays put reads as the dialog being lost. */
+  overscroll-behavior: contain;
 }
+
+/* Freezing the page outright was tried and reverted: `overflow: hidden` on the
+   root drops the scrollbar, and `scrollbar-gutter: stable` does not hold its
+   width back for a hidden scroller, so every dialog opened with a visible 10px
+   sideways jump. Containing the scroll chain above is the part worth having. */
 
 .modal-content {
   width: 100%;
