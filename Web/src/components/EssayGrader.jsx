@@ -3,13 +3,14 @@ import { AppContext } from '../context/AppContext';
 import { 
   FileText, Sparkles, CheckCircle, AlertCircle, Award, PenTool, Check
 } from 'lucide-react';
+import { isTeacher as isTeacherRole } from '../lib/roles';
 
 export default function EssayGrader() {
   const { currentRole, selectedStudentId, students, essaySubmissions, submitEssayForAiGrading, approveOrEditEssayGrade } = useContext(AppContext);
   
   const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const isStudent = currentRole === 'student';
-  const isTeacher = currentRole === 'teacher' || currentRole === 'admin'; // admin can also grade
+  const isTeacher = isTeacherRole(currentRole) || currentRole === 'admin'; // admin can also grade
 
   // Student Form State
   const [subject, setSubject] = useState('English');

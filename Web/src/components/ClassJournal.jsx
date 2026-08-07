@@ -11,6 +11,7 @@ import {
   TrendingUp,
   RotateCcw
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function ClassJournal() {
   const { 
@@ -153,7 +154,7 @@ export default function ClassJournal() {
         </div>
         
         {/* Only Admin/Principal and Teacher can add entries */}
-        {(currentRole === 'admin' || currentRole === 'teacher') && (
+        {(currentRole === 'admin' || isTeacher(currentRole)) && (
           <button onClick={() => setShowAddEntry(true)} className="btn btn-primary">
             <Plus size={16} />
             <span>Ghi sổ đầu bài</span>
@@ -288,7 +289,7 @@ export default function ClassJournal() {
                       </div>
                     ) : (
                       // Only let Teacher or Admin sign
-                      (currentRole === 'teacher' || currentRole === 'admin') ? (
+                      (isTeacher(currentRole) || currentRole === 'admin') ? (
                         <button 
                           onClick={() => setShowSignModal(entry.id)} 
                           className="btn btn-secondary" 

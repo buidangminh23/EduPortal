@@ -12,6 +12,7 @@ import SchoolSsoScreen from './components/SchoolSsoScreen';
 import { isUnconfigured } from './lib/appMode';
 import { hasSchoolToken } from './lib/schoolSso';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye, Menu } from 'lucide-react';
+import { isTeacher } from './lib/roles';
 
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
@@ -119,16 +120,16 @@ function App() {
     }
 
     // Role-dependent premium pages
-    if (activeTab === 'essay_grader' && (currentRole === 'student' || currentRole?.startsWith('teacher') || currentRole === 'admin')) {
+    if (activeTab === 'essay_grader' && (currentRole === 'student' || isTeacher(currentRole) || currentRole === 'admin')) {
       return <EssayGrader />;
     }
-    if (activeTab === 'bus_tracker' && (currentRole === 'student' || currentRole === 'parent' || currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
+    if (activeTab === 'bus_tracker' && (currentRole === 'student' || currentRole === 'parent' || currentRole === 'admin' || isTeacher(currentRole))) {
       return <BusTracker />;
     }
-    if (activeTab === 'portfolio' && (currentRole === 'student' || currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
+    if (activeTab === 'portfolio' && (currentRole === 'student' || currentRole === 'admin' || isTeacher(currentRole))) {
       return <PortfolioBuilder />;
     }
-    if (activeTab === 'timetable_generator' && (currentRole === 'admin' || currentRole?.startsWith('teacher'))) {
+    if (activeTab === 'timetable_generator' && (currentRole === 'admin' || isTeacher(currentRole))) {
       return <TimetableGenerator />;
     }
 
@@ -168,7 +169,7 @@ function App() {
     }
     
     // 2. GIÁO VIÊN
-    if (currentRole === 'teacher' || currentRole?.startsWith('teacher')) {
+    if (isTeacher(currentRole)) {
       switch (activeTab) {
         case 'dashboard':
           return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;

@@ -4,6 +4,7 @@ import { Shield, UserCheck, GraduationCap, Users, CalendarDays, Activity, Sparkl
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 import SettingsModal from './SettingsModal';
+import { isTeacher } from '../lib/roles';
 
 export default function Navbar({ setActiveTab }) {
   const {
@@ -94,7 +95,7 @@ export default function Navbar({ setActiveTab }) {
     ? notifications.filter(n => !n.read && (n.targetRole === 'all' || n.targetRole === currentRole)).length
     : 0;
   const pendingWork = useMemo(() => {
-    if (currentRole?.startsWith('teacher')) {
+    if (isTeacher(currentRole)) {
       return (assignments?.filter(a => a.teacherId === 'T01').length ?? 0)
         + (leaveRequests?.filter(l => l.status === 'pending').length ?? 0);
     }
@@ -204,12 +205,12 @@ export default function Navbar({ setActiveTab }) {
               />
             ) : (
               <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
-                {(userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'BGH' : currentRole.startsWith('teacher') ? 'GV' : currentRole === 'student' ? 'HS' : 'PH')).substring(0, 2).toUpperCase()}
+                {(userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'BGH' : isTeacher(currentRole) ? 'GV' : currentRole === 'student' ? 'HS' : 'PH')).substring(0, 2).toUpperCase()}
               </div>
             )}
             <div style={{ overflow: 'hidden', lineHeight: 1.25 }}>
               <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary, #1e293b)', whiteSpace: 'nowrap' }}>
-                {userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'Hiệu trưởng BGH' : currentRole.startsWith('teacher') ? 'Thầy Minh Triết' : currentRole === 'student' ? (activeStudent?.name || 'Học sinh') : 'Phụ huynh')}
+                {userSession?.displayName || userSession?.username || (currentRole === 'admin' ? 'Hiệu trưởng BGH' : isTeacher(currentRole) ? 'Thầy Minh Triết' : currentRole === 'student' ? (activeStudent?.name || 'Học sinh') : 'Phụ huynh')}
               </div>
               <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>
                 {getProfileSub()}

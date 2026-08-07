@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { 
   Bus, Navigation, Clipboard, ArrowRight, Play
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function BusTracker() {
   const { currentRole, selectedStudentId, students, busRoutes, busScanLogs, simulateBusMove, parentRegisterBusRoute } = useContext(AppContext);
@@ -10,7 +11,7 @@ export default function BusTracker() {
   const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const isStudent = currentRole === 'student';
   const isParent = currentRole === 'parent';
-  const isAdmin = currentRole === 'admin' || currentRole === 'teacher';
+  const isAdmin = currentRole === 'admin' || isTeacher(currentRole);
 
   const [selectedRouteId, setSelectedRouteId] = useState(busRoutes?.[0]?.id || '');
 

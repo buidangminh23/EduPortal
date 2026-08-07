@@ -23,6 +23,7 @@ import {
   Users
 } from 'lucide-react';
 import { createSignaling } from '../lib/edumeetSignaling';
+import { isTeacher } from '../lib/roles';
 
 function RemoteVideo({ stream }) {
   const ref = useRef(null);
@@ -121,7 +122,7 @@ export default function EduMeet() {
   // đúng một cuộc gọi. Không suy ra được lớp nào thì vào phòng chung, và tên
   // phòng nói thẳng điều đó thay vì giả vờ là phòng riêng của một lớp.
   const homeroomClass = (teachers || []).find(item => item.name === userSession?.displayName)?.classJoined;
-  const roomClass = currentRole?.startsWith('teacher')
+  const roomClass = isTeacher(currentRole)
     ? (homeroomClass || userSession?.class)
     : (userSession?.class || activeStudent?.class);
   const meetingRoom = roomClass
@@ -197,7 +198,7 @@ export default function EduMeet() {
 
   // Get name for meeting label
   const getUserNameLabel = () => {
-    if (currentRole === 'teacher') return 'Thầy Nguyễn Minh Triết (Giáo viên)';
+    if (isTeacher(currentRole)) return `${userSession?.displayName || 'Giáo viên'} (Giáo viên)`;
     return `${activeStudent ? activeStudent.name : 'Học sinh'} (Học sinh)`;
   };
 
@@ -951,7 +952,7 @@ export default function EduMeet() {
               // Webcam Video Grid
               <div className="video-grid">
                 {/* User Camera Card */}
-                <div className={`video-card ${currentRole === 'teacher' ? 'active-speaker' : ''}`} style={{ position: 'relative' }}>
+                <div className={`video-card ${isTeacher(currentRole) ? 'active-speaker' : ''}`} style={{ position: 'relative' }}>
                   {/* Hand raise badge */}
                   {handRaised && (
                     <div style={{
@@ -1251,7 +1252,7 @@ export default function EduMeet() {
             {activePanel === 'polls' && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: 'calc(100% - 40px)', overflowY: 'auto' }}>
                 {/* Creator (Only for Teacher/Admin) */}
-                {(currentRole === 'teacher' || currentRole === 'admin') && (
+                {(isTeacher(currentRole) || currentRole === 'admin') && (
                   <div className="glass-panel" style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', border: '1px solid var(--border-card)', marginBottom: '16px' }}>
                     <h4 style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Plus size={14} /> Tạo khảo sát mới

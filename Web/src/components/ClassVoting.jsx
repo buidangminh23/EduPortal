@@ -16,6 +16,7 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -122,7 +123,7 @@ export default function ClassVoting() {
     candidateNames: ['', ''],
   });
 
-  const isAdminOrTeacher = currentRole === 'admin' || currentRole === 'teacher';
+  const isAdminOrTeacher = currentRole === 'admin' || isTeacher(currentRole);
   const currentStudent = students?.find((s) => s.id === selectedStudentId);
   const studentClass = currentStudent?.class || '12A1';
 

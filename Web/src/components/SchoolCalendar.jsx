@@ -13,6 +13,7 @@ import {
   FileText,
   UserCheck
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function SchoolCalendar() {
   const { 
@@ -274,7 +275,7 @@ export default function SchoolCalendar() {
     }
 
     // --- TEACHER ROLE (Focused on Thầy Minh Triết) ---
-    if (currentRole === 'teacher') {
+    if (isTeacher(currentRole)) {
       // Teaching Timetable (Toán học):
       // Mon Morning: 08:00 - 12:00: Dạy Toán 12A1
       // Mon Afternoon: 13:00 - 16:00: Sinh hoạt lớp chủ nhiệm 12A1

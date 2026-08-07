@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Layers, Calendar, User, CheckCircle, Clock, X, Send } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 const PERIODS = ['Tiết 1-2', 'Tiết 3-4', 'Tiết 5-6', 'Tiết 7-8', 'Cả ngày'];
 
@@ -129,7 +130,7 @@ export default function AssetManager() {
                   onMouseEnter={() => setHoveredAsset(zone.id)}
                   onMouseLeave={() => setHoveredAsset(null)}
                   onClick={() => {
-                    if (currentRole === 'teacher') {
+                    if (isTeacher(currentRole)) {
                       setBookingModal(zone.id);
                     } else {
                       alert(`Tài sản: ${asset.name}\nĐịa điểm: ${asset.location}\nSức chứa: ${asset.capacity} người\nTrạng thái: ${isBusy ? 'Đang bận' : 'Sẵn sàng sử dụng'}`);
@@ -229,7 +230,7 @@ export default function AssetManager() {
                 )}
 
                 {/* Actions */}
-                {currentRole === 'teacher' && (
+                {isTeacher(currentRole) && (
                   <button
                     className="btn btn-primary"
                     onClick={() => setBookingModal(asset.id)}

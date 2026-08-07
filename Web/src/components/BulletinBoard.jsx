@@ -4,6 +4,7 @@ import {
   Megaphone, Plus, AlertTriangle, BookOpen, DollarSign, Calendar,
   Check, Clock, ChevronDown, ChevronUp, X, Send
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 const PRIORITY_CONFIG = {
   urgent: { label: 'Khẩn cấp', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
@@ -28,7 +29,7 @@ export default function BulletinBoard() {
   // Determine current user ID
   const getCurrentUserId = () => {
     if (currentRole === 'admin') return 'admin';
-    if (currentRole === 'teacher') return userSession?.userId || 'T01';
+    if (isTeacher(currentRole)) return userSession?.userId || 'T01';
     if (currentRole === 'student') return selectedStudentId || 'HS001';
     if (currentRole === 'parent') return `parent_${selectedStudentId || 'HS001'}`;
     return 'unknown';
@@ -80,7 +81,7 @@ export default function BulletinBoard() {
             Thông báo chính thức từ Ban Giám Hiệu và Giáo viên
           </p>
         </div>
-        {(currentRole === 'admin' || currentRole === 'teacher') && (
+        {(currentRole === 'admin' || isTeacher(currentRole)) && (
           <button className="btn btn-primary" onClick={() => setShowCompose(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={16} /> Đăng thông báo
           </button>

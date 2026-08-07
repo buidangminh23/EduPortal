@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Calendar, Clock, Plus, CheckCircle, XCircle, User, Send, X } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 const TIME_SLOTS = [
   '07:00 - 07:30', '07:30 - 08:00', '08:00 - 08:30', '08:30 - 09:00',
@@ -28,7 +29,7 @@ export default function MeetingBooking() {
 
   // Filter bookings by role
   const myBookings = (meetingBookings || []).filter(b => {
-    if (currentRole === 'teacher') return b.teacherId === (myTeacher?.id || 'T01');
+    if (isTeacher(currentRole)) return b.teacherId === (myTeacher?.id || 'T01');
     if (currentRole === 'parent') return b.studentId === (myStudent?.id || 'HS001');
     return true; // admin sees all
   }).filter(b => filterStatus === 'all' || b.status === filterStatus);
@@ -164,7 +165,7 @@ export default function MeetingBooking() {
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                        {currentRole === 'teacher' ? `PH: ${b.parentName}` : `GV: ${b.teacherName}`}
+                        {isTeacher(currentRole) ? `PH: ${b.parentName}` : `GV: ${b.teacherName}`}
                       </div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 2 }}>
                         Học sinh: {b.studentName} • {b.studentId}
@@ -187,7 +188,7 @@ export default function MeetingBooking() {
                     <span style={{ fontSize: '0.77rem', fontWeight: 700, padding: '4px 12px', borderRadius: 99, background: sc.bg, color: sc.color }}>
                       {sc.label}
                     </span>
-                    {b.status === 'pending' && currentRole === 'teacher' && (
+                    {b.status === 'pending' && isTeacher(currentRole) && (
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => setConfirmingId(b.id)} className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <CheckCircle size={13} /> Xác nhận

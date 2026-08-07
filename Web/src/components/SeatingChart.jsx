@@ -24,6 +24,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import { isTeacher } from '../lib/roles';
 
 /* ─────────────────────────────────────────────
    Constants
@@ -904,7 +905,7 @@ export default function SeatingChart({ readOnly = false, fixedClass, highlightSt
   const { students: contextStudents, seatingCharts, setSeatingCharts, currentRole, selectedStudentId } = useContext(AppContext);
 
   // Determine effective readOnly and highlight from context
-  const canEditSeatingChart = currentRole === 'admin' || currentRole === 'teacher';
+  const canEditSeatingChart = currentRole === 'admin' || isTeacher(currentRole);
   const isReadOnly = readOnly || !canEditSeatingChart;
   const [isEditing, setIsEditing] = useState(false);
   const [isWheelOpen, setIsWheelOpen] = useState(false);

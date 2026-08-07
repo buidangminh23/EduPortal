@@ -3,11 +3,12 @@ import { AppContext } from '../context/AppContext';
 import { 
   Calendar, Cpu, RefreshCw, ArrowLeftRight
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function TimetableGenerator() {
   const { currentRole, timetableSlots, generateSmartTimetable, swapTimetableSlots } = useContext(AppContext);
   
-  const isAdmin = currentRole === 'admin' || currentRole === 'teacher';
+  const isAdmin = currentRole === 'admin' || isTeacher(currentRole);
 
   const [selectedClass, setSelectedClass] = useState('12A1');
   const [selectedSlotId, setSelectedSlotId] = useState(null);

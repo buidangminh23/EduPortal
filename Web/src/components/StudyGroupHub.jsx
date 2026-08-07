@@ -4,6 +4,7 @@ import {
   Users, Play, Pause, RotateCcw, Plus, CheckCircle, Clock, 
   Volume2, VolumeX, LogOut, Send, Award, Star 
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function StudyGroupHub() {
   const {
@@ -559,7 +560,7 @@ export default function StudyGroupHub() {
             )}
 
             {/* General Monitoring for Teacher / BGH roles */}
-            {(currentRole === 'teacher' || currentRole === 'admin') && (
+            {(isTeacher(currentRole) || currentRole === 'admin') && (
               <div style={{ background: 'rgba(255,255,255,0.4)', padding: 20, borderRadius: 20, border: '1px solid var(--border-card)' }}>
                 <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 700 }}>Giám sát nhóm gia sư đồng đẳng</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 350, overflowY: 'auto' }}>

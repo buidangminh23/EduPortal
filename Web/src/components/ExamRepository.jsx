@@ -18,6 +18,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 const DIFFICULTY_CONFIG = {
   'Dễ': { color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
@@ -187,7 +188,7 @@ export default function ExamRepository() {
             Tổng hợp {filtered.length} đề thi từ giáo viên - xem đề, làm bài và tải đáp án
           </p>
         </div>
-        {currentRole === 'teacher' && (
+        {isTeacher(currentRole) && (
           <button className="btn btn-primary" onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={16} /> Đóng góp đề thi
           </button>

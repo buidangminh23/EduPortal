@@ -1,6 +1,7 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { MessageCircle, Send, Check, CheckCheck, Users, Search } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function DirectChat() {
   const { directMessages, sendDirectMessage, markMessageRead, currentRole, userSession, students, teachers, selectedStudentId } = useContext(AppContext);
@@ -11,7 +12,7 @@ export default function DirectChat() {
 
   // Build current user identity
   const getMe = () => {
-    if (currentRole === 'teacher') {
+    if (isTeacher(currentRole)) {
       const t = teachers?.find(t => t.id === (userSession?.userId || 'T01')) || teachers?.[0];
       return { id: t?.id || 'T01', name: t?.name || 'Giáo viên', role: 'teacher' };
     }
@@ -46,7 +47,7 @@ export default function DirectChat() {
 
   // Build possible contacts (who you can message)
   const buildContacts = () => {
-    if (currentRole === 'teacher') {
+    if (isTeacher(currentRole)) {
       // Can message parents of students in their class
       const myClass = teachers?.find(t => t.id === me.id)?.classJoined || '12A1';
       return (students || [])
@@ -81,7 +82,7 @@ export default function DirectChat() {
     e.preventDefault();
     if (!text.trim() || !selectedConv) return;
     sendDirectMessage(me.id, me.name, me.role, selectedConv.partnerId, selectedConv.partnerName,
-      selectedConv.partnerRole || (currentRole === 'teacher' ? 'parent' : 'teacher'), text.trim());
+      selectedConv.partnerRole || (isTeacher(currentRole) ? 'parent' : 'teacher'), text.trim());
     setText('');
   };
 

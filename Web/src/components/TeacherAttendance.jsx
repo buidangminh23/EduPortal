@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Clock, CheckCircle, AlertCircle, Fingerprint, Shield } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function TeacherAttendance() {
   const { teacherAttendance, checkInTeacher, currentRole, userSession, teachers } = useContext(AppContext);
@@ -50,7 +51,7 @@ export default function TeacherAttendance() {
       </div>
 
       {/* Teacher check-in panel */}
-      {currentRole === 'teacher' && (
+      {isTeacher(currentRole) && (
         <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.04))', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 20, padding: 24, marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <Fingerprint size={20} color="#6366f1" />

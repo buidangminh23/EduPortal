@@ -2,6 +2,7 @@ import { useState, useContext, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from '../context/AppContext';
 import { Trophy, Users, Calendar, Plus, Play, Sparkles, Medal, Award, CheckCircle } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function MiniTournament() {
   const { currentRole, tournaments, setTournaments } = useContext(AppContext);
@@ -81,7 +82,7 @@ export default function MiniTournament() {
           </p>
         </div>
 
-        {currentRole === 'teacher' && (
+        {isTeacher(currentRole) && (
           <button className="btn btn-primary" onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Plus size={16} />
             <span>Tạo cuộc thi mới</span>

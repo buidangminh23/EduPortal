@@ -1,6 +1,7 @@
 import { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Hash, Send, Trash2, Users, GraduationCap } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 /* ─── Mock Data ─────────────────────────────────────────────────────────── */
 const QUICK_EMOJIS = ['😊', '👍', '🙏', '🔥', '📚', '✅'];
@@ -23,9 +24,14 @@ export default function ClassChatRoom() {
   const { currentRole, userSession, students, classChats, setClassChats } = useContext(AppContext);
 
   // Determine current user
-  const meId   = currentRole === 'teacher' ? (userSession?.userId || 'T01') : (students?.[0]?.id || 'HS001');
-  const meName = currentRole === 'teacher' ? 'Nguyễn Minh Triết' : (students?.find(s => s.id === meId)?.name || 'Học sinh');
-  const meRole = currentRole === 'teacher' ? 'teacher' : 'student';
+  const meId   = isTeacher(currentRole) ? (userSession?.userId || 'T01') : (students?.[0]?.id || 'HS001');
+  // The signed-in teacher's own name. It used to be the maths teacher's, which
+  // nobody noticed while the role check above was broken and this branch never
+  // ran — a homeroom teacher would now be posting under a colleague's name.
+  const meName = isTeacher(currentRole)
+    ? (userSession?.displayName || 'Giáo viên')
+    : (students?.find(s => s.id === meId)?.name || 'Học sinh');
+  const meRole = isTeacher(currentRole) ? 'teacher' : 'student';
 
   const rooms = classChats.rooms;
   const setRooms = (newRooms) => {

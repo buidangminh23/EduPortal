@@ -11,6 +11,7 @@ import { isValidSchoolYear } from '../lib/domain/schoolYear';
 import {
   Shield, Globe, Lock, CheckCircle, Plus, Trash, ShieldAlert
 } from 'lucide-react';
+import { isTeacher as isTeacherRole } from '../lib/roles';
 
 /** Shown wherever the school has not recorded the fact yet. */
 const NOT_ASSESSED = 'Chưa đánh giá';
@@ -401,7 +402,7 @@ export default function PortfolioBuilder() {
   const student = students?.find(s => s.id === selectedStudentId) || students?.[0];
   const isStudent = currentRole === 'student';
   const isAdmin = currentRole === 'admin';
-  const isTeacher = currentRole === 'teacher';
+  const isTeacher = isTeacherRole(currentRole);
   const canEdit = isAdmin || isTeacher;
 
   // Student editor achievements state

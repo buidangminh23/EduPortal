@@ -4,6 +4,7 @@ import {
   Book, Bookmark, BookOpen, Search, 
   FileText, X, AlertCircle, Layers 
 } from 'lucide-react';
+import { isTeacher } from '../lib/roles';
 
 export default function LibraryHub() {
   const {
@@ -283,7 +284,7 @@ export default function LibraryHub() {
             )}
 
             {/* Librarian Admin Dashboard Panel */}
-            {(currentRole === 'teacher' || currentRole === 'admin') && (
+            {(isTeacher(currentRole) || currentRole === 'admin') && (
               <div style={{ background: 'rgba(255,255,255,0.4)', padding: 20, borderRadius: 20, border: '1px solid var(--border-card)' }}>
                 <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Layers size={16} color="#4f46e5" /> Quản lý mượn trả (Thủ thư)

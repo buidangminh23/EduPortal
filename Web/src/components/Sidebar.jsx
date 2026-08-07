@@ -38,6 +38,7 @@ import {
   Compass,
   Calculator
 } from 'lucide-react';
+import { isTeacher as isTeacherRole } from '../lib/roles';
 
 
 // Section-based nav items for Student Dashboard
@@ -307,9 +308,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen = false, onClo
 
 
   const isStudent = currentRole === 'student';
-  const isTeacherSubject = currentRole === 'teacher_subject';
-  const isTeacherHomeroom = currentRole === 'teacher_homeroom';
-  const isTeacher = currentRole === 'teacher' || isTeacherSubject || isTeacherHomeroom;
+  const isTeacher = isTeacherRole(currentRole);
   const isParent = currentRole === 'parent';
 
   const activeStudent = students ? (students.find(s => s.id === selectedStudentId) || students[0]) : null;
