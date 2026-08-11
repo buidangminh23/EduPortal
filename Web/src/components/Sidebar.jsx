@@ -95,6 +95,7 @@ const TEACHER_SECTIONS = [
     title: 'QUẢN LÝ LỚP & GIẢNG DẠY',
     items: [
       { id: 'students',           label: 'Học Sinh & Điểm Số',    icon: Users,           isSubTab: true },
+      { id: 'grade_import',       label: 'Nhận Điểm Từ Tệp',     icon: ClipboardList,   isSubTab: false },
       { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
       { id: 'attendance',         label: 'Điểm Danh Lớp',         icon: ClipboardCheck,  isSubTab: true },
@@ -150,6 +151,7 @@ const ADMIN_SECTIONS = [
       { id: 'ai_risk',            label: 'Phân Tích Nguy Cơ', icon: AlertTriangle,   isSubTab: false },
       { id: 'class_comparison',   label: 'So Sánh Các Lớp',      icon: Activity,        isSubTab: false },
       { id: 'timetable_generator', label: 'Xếp TKB Thông Minh',  icon: Calendar,        isSubTab: false },
+      { id: 'timetable_import',   label: 'Nạp TKB Từ Tệp',       icon: ClipboardList,   isSubTab: false },
       { id: 'exam_repository',    label: 'Kho Đề Thi Trường',    icon: BookMarked,      isSubTab: false },
     ]
   },
