@@ -310,3 +310,62 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/**
+ * Thông báo đẩy.
+ *
+ * Máy chủ chưa gửi đẩy — phần đó cần khoá VAPID và một endpoint lưu đăng ký.
+ * Hai trình xử lý dưới đây có mặt trước vì chúng thuộc về worker, và worker chỉ
+ * đổi khi có bản dựng mới: một chiếc điện thoại cài EduPortal hôm nay phải sẵn
+ * sàng nhận đẩy vào ngày máy chủ bật, thay vì phải cài lại.
+ *
+ * Nội dung thông báo cố tình không mang điểm số hay tên học sinh. Thông báo
+ * hiện trên màn hình khoá, ai cầm điện thoại cũng đọc được — nên nó chỉ nói có
+ * việc cần xem, còn nội dung nằm sau lần mở khoá và lần đăng nhập.
+ */
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {};
+  }
+
+  const title = payload.title || 'EduPortal';
+  const options = {
+    body: payload.body || 'Bạn có thông tin mới từ nhà trường.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    lang: 'vi',
+    // Cùng một tag thì thông báo sau thay thông báo trước thay vì xếp chồng:
+    // phụ huynh mở máy sau một ngày không cần thấy mười dòng giống nhau.
+    tag: payload.tag || 'eduportal',
+    data: { url: payload.url || '/' },
+    timestamp: Date.now()
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/**
+ * Bấm vào thông báo thì đưa người dùng tới đúng chỗ.
+ *
+ * Ưu tiên cửa sổ đang mở thay vì mở thêm tab: người dùng đang đăng nhập ở đó,
+ * và một tab mới bắt họ đăng nhập lại là lý do đủ để bỏ luôn thông báo.
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client && target !== '/') client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    })
+  );
+});

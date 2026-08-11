@@ -36,7 +36,8 @@ import {
   Video,
   Sparkles,
   Compass,
-  Calculator
+  Calculator,
+  Bell
 } from 'lucide-react';
 import { isTeacher as isTeacherRole } from '../lib/roles';
 
@@ -96,6 +97,7 @@ const TEACHER_SECTIONS = [
     items: [
       { id: 'students',           label: 'Học Sinh & Điểm Số',    icon: Users,           isSubTab: true },
       { id: 'grade_import',       label: 'Nhận Điểm Từ Tệp',     icon: ClipboardList,   isSubTab: false },
+      { id: 'classroom_import',   label: 'Lấy Điểm Từ Classroom', icon: ClipboardList,  isSubTab: false },
       { id: 'calendar',           label: 'Thời Khóa Biểu',       icon: Calendar,        isSubTab: false },
       { id: 'bulletin',           label: 'Bảng Tin Trường',      icon: Megaphone,       isSubTab: false },
       { id: 'attendance',         label: 'Điểm Danh Lớp',         icon: ClipboardCheck,  isSubTab: true },
@@ -103,6 +105,7 @@ const TEACHER_SECTIONS = [
       { id: 'journal',            label: 'Ghi Sổ Đầu Bài',       icon: BookOpen,        isSubTab: false },
       { id: 'seating_chart',      label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers,          isSubTab: false },
       { id: 'class_voting',       label: 'Bầu Chọn Ban Cán Sự',  icon: ClipboardCheck,  isSubTab: false },
+      { id: 'notification_setup', label: 'Bật Thông Báo',       icon: Bell,            isSubTab: false },
     ]
   },
   {
@@ -178,6 +181,7 @@ const PARENT_SECTIONS = [
       { id: 'attendance',         label: 'Chuyên Cần Của Con',    icon: ClipboardCheck,  isSubTab: true },
       { id: 'assignments',        label: 'Xem Bài Tập Về Nhà',    icon: CheckSquare,     isSubTab: true },
       { id: 'seating_chart',      label: 'Sơ Đồ Chỗ Ngồi Lớp',   icon: Layers,          isSubTab: false },
+      { id: 'notification_setup', label: 'Bật Thông Báo',       icon: Bell,            isSubTab: false },
     ]
   },
   {
