@@ -3496,6 +3496,35 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  /**
+   * Nạp thời khoá biểu từ tệp đã được soát.
+   *
+   * Thay theo lớp, không nối thêm vào danh sách cũ: nạp lại tệp của lớp 12A1
+   * nghĩa là "đây là thời khoá biểu hiện hành của 12A1", nên các tiết cũ của
+   * chính lớp đó phải biến mất. Nối thêm sẽ để lại tiết của tuần trước nằm lẫn
+   * với tuần này, và không ai nhìn màn hình mà biết tiết nào còn hiệu lực.
+   *
+   * Lớp không có trong tệp thì giữ nguyên — người phụ trách thường nạp từng
+   * lớp một, và xoá lịch của lớp họ không đụng tới là mất dữ liệu.
+   *
+   * @param {Array} slots Các tiết đã qua toTimetableSlots.
+   * @returns {{ ok: boolean, added: number, replacedClasses: string[] }}
+   */
+  const importTimetableSlots = (slots = []) => {
+    if (!Array.isArray(slots) || slots.length === 0) {
+      return { ok: false, added: 0, replacedClasses: [] };
+    }
+
+    const touched = [...new Set(slots.map((s) => s.classTarget))];
+
+    setTimetableSlots(prev => [
+      ...prev.filter(s => !touched.includes(s.classTarget)),
+      ...slots
+    ]);
+
+    return { ok: true, added: slots.length, replacedClasses: touched };
+  };
+
   const isParentView = currentRole === 'parent';
   const parentUserId = parentLinkedStudentId ? `parent_${parentLinkedStudentId}` : '';
   const scopedStudents = isParentView
@@ -3729,7 +3758,7 @@ export const AppProvider = ({ children }) => {
       essaySubmissions: scopeStudentRows(essaySubmissions), submitEssayForAiGrading, approveOrEditEssayGrade,
       busRoutes, busScanLogs: scopeStudentRows(busScanLogs), simulateBusMove, parentRegisterBusRoute,
       studentPortfolios: scopeStudentRows(studentPortfolios), updatePortfolioAchievements, confirmPortfolioByBgh, togglePortfolioPublic,
-      timetableSlots, teacherAvailability, generateSmartTimetable, swapTimetableSlots,
+      timetableSlots, teacherAvailability, generateSmartTimetable, swapTimetableSlots, importTimetableSlots,
       notifications: scopedNotifications, markNotificationRead, markAllNotificationsRead, addNotification,
       directMessages: scopedDirectMessages, sendDirectMessage, markMessageRead,
       bulletins, addBulletin, confirmBulletinRead,

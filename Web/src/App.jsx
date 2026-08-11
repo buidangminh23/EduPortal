@@ -17,6 +17,8 @@ import { isTeacher } from './lib/roles';
 const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
 const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
 const ClassJournal = lazy(() => import('./components/ClassJournal'));
+const GradeImport = lazy(() => import('./components/GradeImport'));
+const TimetableImport = lazy(() => import('./components/TimetableImport'));
 const ParentHub = lazy(() => import('./components/ParentHub'));
 const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
 const AITutor = lazy(() => import('./components/AITutor'));
@@ -132,6 +134,9 @@ function App() {
     if (activeTab === 'timetable_generator' && (currentRole === 'admin' || isTeacher(currentRole))) {
       return <TimetableGenerator />;
     }
+    if (activeTab === 'timetable_import' && currentRole === 'admin') {
+      return <TimetableImport />;
+    }
 
 
     // 1. BAN GIÁM HIỆU
@@ -175,6 +180,8 @@ function App() {
           return <TeacherDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
         case 'journal':
           return <ClassJournal />;
+        case 'grade_import':
+          return <GradeImport />;
         case 'duty_schedule':
           return <DutySchedule />;
         case 'seating_chart':
