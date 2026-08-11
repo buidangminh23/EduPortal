@@ -19,6 +19,9 @@ const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
 const ClassJournal = lazy(() => import('./components/ClassJournal'));
 const GradeImport = lazy(() => import('./components/GradeImport'));
 const TimetableImport = lazy(() => import('./components/TimetableImport'));
+const ClassroomImport = lazy(() => import('./components/ClassroomImport'));
+const GoogleOauthCallback = lazy(() => import('./components/GoogleOauthCallback'));
+const NotificationSetup = lazy(() => import('./components/NotificationSetup'));
 const ParentHub = lazy(() => import('./components/ParentHub'));
 const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
 const AITutor = lazy(() => import('./components/AITutor'));
@@ -65,6 +68,11 @@ function App() {
   // teacher on the landing page while their session was still being opened.
   const [arrivedFromSchool] = useState(() => hasSchoolToken());
 
+  // Google trả người dùng về địa chỉ `/oauth/google`. Quyết định một lần, y hệt
+  // lý do ở trên: bước đổi mã sẽ xoá mã khỏi thanh địa chỉ, đọc lại URL mỗi lần
+  // vẽ sẽ khiến màn hình biến mất giữa chừng.
+  const [isGoogleCallback] = useState(() => window.location.pathname === '/oauth/google');
+
   // Reset tab on role switch
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -89,6 +97,17 @@ function App() {
     return <UnconfiguredScreen />;
   }
 
+  // Đứng trước cả cổng đăng nhập: người dùng đang ở giữa chừng một lượt đổi mã,
+  // và mã của Google chỉ dùng được một lần. Đẩy họ ra màn hình đăng nhập lúc này
+  // là vứt mã đi, rồi lần kết nối sau lại hỏng đúng như vậy.
+  if (isGoogleCallback) {
+    return (
+      <Suspense fallback={<div style={{ padding: '2rem' }}>Đang kết nối Google…</div>}>
+        <GoogleOauthCallback />
+      </Suspense>
+    );
+  }
+
   // If no active session, render the LandingPage or Login Portal
   if (!userSession) {
     // A teacher walking over from the school's website never sees the login
@@ -110,6 +129,11 @@ function App() {
     }
     if (activeTab === 'casio580') {
       return <CasioFX580 />;
+    }
+    // Bật thông báo là việc của thiết bị, không của vai trò: giáo viên, phụ
+    // huynh và học sinh đều cần biết máy mình có nhận được tin hay không.
+    if (activeTab === 'notification_setup') {
+      return <NotificationSetup />;
     }
 
     // Student only tabs
@@ -182,6 +206,8 @@ function App() {
           return <ClassJournal />;
         case 'grade_import':
           return <GradeImport />;
+        case 'classroom_import':
+          return <ClassroomImport />;
         case 'duty_schedule':
           return <DutySchedule />;
         case 'seating_chart':
