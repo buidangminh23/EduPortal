@@ -24,9 +24,9 @@ export default function GoogleOauthCallback() {
     if (done.current) return;
     done.current = true;
 
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-    completeSignIn({ search: window.location.search, clientId, redirectUri: callbackUrl() })
+    // Client ID không cần ở đây nữa: bước đổi mã chạy trên máy chủ, nơi giữ cả
+    // client id lẫn secret.
+    completeSignIn({ search: window.location.search, redirectUri: callbackUrl() })
       .then((out) => {
         window.history.replaceState({}, '', '/');
         if (out.status === 'ok') {
