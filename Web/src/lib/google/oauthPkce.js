@@ -135,7 +135,15 @@ export function readCallback(search) {
         : `Google trả về lỗi: ${error}.`
     };
   }
-  if (!code) return { status: 'none' };
+  // Không có mã nghĩa là trang này được mở thẳng, không phải Google đưa về:
+  // một dấu trang cũ, một lần tải lại sau khi mã đã dùng, hoặc gõ tay. Phải nói
+  // ra, vì màn hình gọi hàm này chỉ có mỗi câu của ta để hiển thị.
+  if (!code) {
+    return {
+      status: 'none',
+      error: 'Trang này chỉ dùng khi Google đưa bạn quay về. Hãy mở EduPortal rồi bấm "Kết nối Google Classroom".'
+    };
+  }
   return { status: 'ok', code, state };
 }
 

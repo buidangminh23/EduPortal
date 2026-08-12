@@ -139,6 +139,10 @@ describe('readCallback', () => {
   it('không có gì trên URL thì không coi là lỗi', () => {
     expect(readCallback('').status).toBe('none');
     expect(readCallback('?foo=bar').status).toBe('none');
+    // Màn hình callback chỉ có câu này để hiển thị; để trống thì người dùng
+    // nhìn thấy "Không kết nối được:" rồi hết.
+    expect(readCallback('').error).toBeTruthy();
+    expect(readCallback('?foo=bar').error).toMatch(/Kết nối Google Classroom/);
   });
 });
 
