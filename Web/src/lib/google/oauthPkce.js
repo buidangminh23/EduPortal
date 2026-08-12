@@ -18,7 +18,11 @@
  */
 
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+
+// Bước đổi mã đi qua máy chủ của chính EduPortal, không gọi thẳng Google. Client
+// OAuth loại "Web application" của Google luôn đòi client_secret ở bước này, và
+// PKCE không thay được — secret phải ở nơi trình duyệt không với tới.
+const TOKEN_EXCHANGE_PATH = '/api/google/token';
 
 /** Chỗ giữ tạm giữa lúc chuyển sang Google và lúc quay về. */
 const VERIFIER_KEY = 'google_pkce_verifier';
@@ -165,25 +169,19 @@ export function takeVerifier(storage = globalThis.sessionStorage) {
  * chính chuỗi verifier đóng vai trò chứng minh. Gửi secret từ trình duyệt vừa
  * thừa vừa là cách làm lộ nó.
  */
-export async function exchangeCode({ clientId, redirectUri, code, verifier, fetchImpl = globalThis.fetch }) {
-  const body = new URLSearchParams({
-    client_id: clientId,
-    code,
-    code_verifier: verifier,
-    grant_type: 'authorization_code',
-    redirect_uri: redirectUri
-  });
-
-  const res = await fetchImpl(TOKEN_ENDPOINT, {
+export async function exchangeCode({
+  redirectUri, code, verifier, endpoint = TOKEN_EXCHANGE_PATH, fetchImpl = globalThis.fetch
+}) {
+  const res = await fetchImpl(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString()
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, codeVerifier: verifier, redirectUri })
   });
 
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const detail = data.error_description || data.error || `HTTP ${res.status}`;
+    const detail = data.error || `HTTP ${res.status}`;
     return { ok: false, error: `Không đổi được mã đăng nhập: ${detail}`, token: null };
   }
   if (!data.access_token) {
@@ -266,7 +264,7 @@ export function clearToken(storage = globalThis.sessionStorage) {
  * @returns {{ status:'none'|'error'|'ok', token?:object, error?:string }}
  */
 export async function completeSignIn({
-  search, clientId, redirectUri,
+  search, redirectUri,
   storage = globalThis.sessionStorage, fetchImpl = globalThis.fetch
 } = {}) {
   const callback = readCallback(search);
@@ -280,7 +278,7 @@ export async function completeSignIn({
     return { status: 'error', error: 'Thiếu dấu vết của lần đăng nhập này — hãy bấm kết nối lại.' };
   }
 
-  const exchanged = await exchangeCode({ clientId, redirectUri, code: callback.code, verifier, fetchImpl });
+  const exchanged = await exchangeCode({ redirectUri, code: callback.code, verifier, fetchImpl });
   if (!exchanged.ok) return { status: 'error', error: exchanged.error };
 
   saveToken(exchanged.token, storage);

@@ -176,22 +176,34 @@ describe('takeVerifier', () => {
 
 describe('exchangeCode', () => {
   const args = {
-    clientId: 'abc.apps.googleusercontent.com',
     redirectUri: 'http://localhost:5173/oauth/google',
     code: 'ma-tra-ve',
     verifier: 'chuoi-bi-mat'
   };
 
-  it('gửi verifier và tuyệt đối không gửi client secret', async () => {
+  it('gửi mã tới máy chủ của EduPortal, không gọi thẳng Google', async () => {
+    // Client OAuth "Web application" của Google luôn đòi client_secret ở bước
+    // này. Gọi thẳng từ trình duyệt là cách chắc chắn nhận "client_secret is
+    // missing" — đúng lỗi đã gặp trên production.
     const fetchImpl = vi.fn(async () => ({
       ok: true, json: async () => ({ access_token: 'tk', expires_in: 3600, token_type: 'Bearer' })
     }));
     await exchangeCode({ ...args, fetchImpl });
 
-    const body = new URLSearchParams(fetchImpl.mock.calls[0][1].body);
-    expect(body.get('code_verifier')).toBe('chuoi-bi-mat');
-    expect(body.get('client_secret')).toBeNull();
-    expect(body.get('grant_type')).toBe('authorization_code');
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe('/api/google/token');
+    expect(String(url)).not.toMatch(/googleapis\.com/);
+    expect(JSON.parse(init.body)).toEqual({
+      code: 'ma-tra-ve',
+      codeVerifier: 'chuoi-bi-mat',
+      redirectUri: 'http://localhost:5173/oauth/google'
+    });
+  });
+
+  it('không đính client secret vào lời gọi từ trình duyệt', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ access_token: 'tk' }) }));
+    await exchangeCode({ ...args, fetchImpl });
+    expect(fetchImpl.mock.calls[0][1].body).not.toMatch(/secret/i);
   });
 
   it('tính sẵn thời điểm hết hạn, trừ hao một phút', async () => {
@@ -202,10 +214,8 @@ describe('exchangeCode', () => {
     expect(token.expiresAt).toBeLessThanOrEqual(before + 3540 * 1000 + 50);
   });
 
-  it('trả lỗi đọc được khi Google từ chối', async () => {
-    const fetchImpl = async () => ({
-      ok: false, status: 400, json: async () => ({ error: 'invalid_grant', error_description: 'Bad Request' })
-    });
+  it('trả lỗi đọc được khi máy chủ từ chối', async () => {
+    const fetchImpl = async () => ({ ok: false, status: 400, json: async () => ({ error: 'Bad Request' }) });
     const out = await exchangeCode({ ...args, fetchImpl });
     expect(out.ok).toBe(false);
     expect(out.error).toMatch(/Bad Request/);
