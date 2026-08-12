@@ -25,7 +25,7 @@ const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
  * đúng cái đã dùng lúc xin mã — nhưng chặn ngay ở đây thì endpoint này không
  * thành cầu trung chuyển cho người lạ gọi Google bằng danh nghĩa của trường.
  */
-function isAllowedRedirect(value) {
+export function isAllowedRedirect(value, requestHost) {
   let url;
   try {
     url = new URL(value);
@@ -33,9 +33,15 @@ function isAllowedRedirect(value) {
     return false;
   }
   if (url.pathname !== '/oauth/google') return false;
-  if (url.protocol === 'https:') return true;
-  // Chỉ máy của người đang lập trình mới được dùng http.
-  return url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+
+  // Máy của người đang lập trình: chấp nhận, và chỉ mình nó được dùng http.
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return true;
+
+  // Còn lại phải là https và đúng tên miền mà lời gọi này đi vào. Google có
+  // kiểm lần nữa — nó chỉ nhận địa chỉ đã khai trong Cloud Console — nhưng chặn
+  // ngay ở đây thì endpoint không thành cầu để người lạ gọi Google bằng danh
+  // nghĩa của trường, và một tên miền lạ bị trả lời ngay thay vì đi một vòng.
+  return url.protocol === 'https:' && Boolean(requestHost) && url.host === requestHost;
 }
 
 async function readJsonBody(req) {
@@ -50,7 +56,7 @@ async function readJsonBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return {}; }
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Chỉ nhận POST.' });
@@ -71,7 +77,7 @@ module.exports = async function handler(req, res) {
   if (!code || !codeVerifier || !redirectUri) {
     return res.status(400).json({ error: 'Thiếu mã đăng nhập, dấu vết PKCE hoặc địa chỉ quay về.' });
   }
-  if (!isAllowedRedirect(redirectUri)) {
+  if (!isAllowedRedirect(redirectUri, req.headers && req.headers.host)) {
     return res.status(400).json({ error: 'Địa chỉ quay về không hợp lệ.' });
   }
 
@@ -116,5 +122,3 @@ module.exports = async function handler(req, res) {
     token_type: data.token_type || 'Bearer'
   });
 };
-
-module.exports.isAllowedRedirect = isAllowedRedirect;
