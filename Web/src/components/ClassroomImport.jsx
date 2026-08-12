@@ -246,7 +246,11 @@ export default function ClassroomImport() {
             </div>
           </div>
 
-          {courseId && work.length === 0 && !busy && (
+          {/* Chỉ nói "chưa có bài tập" khi thật sự đã hỏi được Classroom. Lúc
+              đang lỗi thì danh sách rỗng vì không đọc được, và hai câu hiện cùng
+              lúc — một câu báo lỗi, một câu bảo lớp trống — thì câu thứ hai là
+              câu sai. */}
+          {courseId && work.length === 0 && !busy && !error && (
             <p style={{ marginBottom: 0 }}>Lớp này chưa có bài tập nào được chấm điểm.</p>
           )}
 

@@ -39,6 +39,20 @@ export async function fetchJson(path, { accessToken, params = {}, fetchImpl = gl
 
   if (!res.ok) {
     const detail = data?.error?.message || `HTTP ${res.status}`;
+
+    // Câu hay gặp nhất, và nguyên văn tiếng Anh của Google không nói ra lý do
+    // thật: bốn quyền đã xin đều là quyền của người DẠY lớp đó. Tài khoản đang
+    // đăng nhập là học sinh trong lớp thì Classroom trả đúng câu này, và giáo
+    // viên nhìn vào sẽ tưởng ứng dụng hỏng.
+    if (res.status === 403 && /does not have permission/i.test(detail)) {
+      return {
+        ok: false,
+        expired: false,
+        error: 'Tài khoản Google này không phải giáo viên của lớp đó. EduPortal chỉ lấy được điểm ở lớp mà thầy cô dạy hoặc quản lý — hãy kết nối lại bằng tài khoản dạy lớp này.',
+        data: null
+      };
+    }
+
     return { ok: false, expired: false, error: `Google Classroom trả về lỗi: ${detail}`, data: null };
   }
 

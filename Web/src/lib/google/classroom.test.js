@@ -263,3 +263,29 @@ describe('buildClassroomPlan — ghép theo tên khi chưa có email', () => {
     expect(plan.ready[0]).toMatchObject({ studentId: 'HS777', matchedBy: 'email' });
   });
 });
+
+describe('lỗi thiếu quyền — câu hay gặp nhất khi dùng nhầm tài khoản', () => {
+  it('nói ra lý do thật thay vì chép nguyên văn tiếng Anh của Google', async () => {
+    // Bốn quyền đã xin đều là quyền của người DẠY lớp. Đăng nhập bằng tài khoản
+    // là học sinh trong lớp đó thì Classroom trả đúng câu này — gặp thật khi
+    // chạy thử trên production.
+    const fetchImpl = vi.fn(async () => ({
+      ok: false, status: 403,
+      json: async () => ({ error: { message: 'The caller does not have permission' } })
+    }));
+    const out = await fetchJson('/courses/1/courseWork', { accessToken: 'tk', fetchImpl });
+
+    expect(out.ok).toBe(false);
+    expect(out.expired).toBe(false);
+    expect(out.error).toMatch(/không phải giáo viên của lớp đó/);
+    expect(out.error).not.toMatch(/caller does not have permission/);
+  });
+
+  it('403 vì lý do khác thì vẫn giữ nguyên văn của Google', async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: false, status: 403, json: async () => ({ error: { message: 'Quota exceeded' } })
+    }));
+    const out = await fetchJson('/courses', { accessToken: 'tk', fetchImpl });
+    expect(out.error).toMatch(/Quota exceeded/);
+  });
+});
