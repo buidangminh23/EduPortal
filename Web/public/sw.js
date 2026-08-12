@@ -34,7 +34,7 @@
  */
 
 const CACHE_PREFIX = 'eduportal-';
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}asset-${CACHE_VERSION}`;
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE]);
@@ -211,6 +211,39 @@ async function cacheFirst(event) {
 }
 
 /**
+ * Đi mạng trước, chỉ mở đến bản đã lưu khi mạng không trả lời.
+ *
+ * Dùng cho index.html, và lý do đắt giá: trả bản đã lưu trước (stale-while-
+ * revalidate) nghĩa là sau mỗi lần triển khai, người dùng mở ứng dụng vẫn nhận
+ * trang cũ — mà trang cũ trỏ tới những gói mã cũ. Gói nào người đó chưa từng mở
+ * thì chưa nằm trong máy, còn trên máy chủ bản cũ đã bị thay, nên tải về là 404
+ * và React.lazy ném lỗi: người dùng thấy "Đã xảy ra lỗi hiển thị" khi bấm vào
+ * một màn hình hoàn toàn bình thường. Đã xảy ra thật.
+ *
+ * index.html chỉ khoảng một kilobyte và Vercel đã gắn must-revalidate cho nó,
+ * nên đi mạng trước gần như không tốn gì. Mất mạng thì vẫn còn bản đã lưu, tức
+ * lý do có worker này ngay từ đầu vẫn nguyên.
+ *
+ * @returns {Promise<Response|null>} null khi mạng không trả lời và cũng chưa
+ *   lưu được gì — bên gọi tự quyết hiển thị gì.
+ */
+async function networkFirst(event, cacheKey) {
+  const cache = await caches.open(SHELL_CACHE);
+
+  try {
+    const response = await fetch(event.request);
+    // Bản chuyển hướng không thể phát lại cho một lần điều hướng sau, nên tải
+    // thì tải mà không giữ.
+    if (response.ok && response.type === 'basic' && !response.redirected) {
+      event.waitUntil(cache.put(cacheKey, response.clone()));
+    }
+    return response;
+  } catch {
+    return cache.match(cacheKey, { ignoreVary: true });
+  }
+}
+
+/**
  * Answer from the cache immediately, refresh it in the background.
  *
  * @returns {Promise<Response|null>} null when nothing was cached and the
@@ -293,7 +326,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      staleWhileRevalidate(event, SHELL_URL).then((response) => response || offlinePage())
+      networkFirst(event, SHELL_URL).then((response) => response || offlinePage())
     );
     return;
   }

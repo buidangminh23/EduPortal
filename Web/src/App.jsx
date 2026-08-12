@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, lazy, Suspense } from 'react';
+import { useState, useContext, useEffect, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
@@ -13,48 +13,49 @@ import { isUnconfigured } from './lib/appMode';
 import { hasSchoolToken } from './lib/schoolSso';
 import { ShieldCheck, Mail, Phone, Trophy, Search, X, Eye, Menu } from 'lucide-react';
 import { isTeacher } from './lib/roles';
+import { lazyChunk, clearChunkReloadMark } from './lib/lazyChunk';
 
-const PrincipalDashboard = lazy(() => import('./components/PrincipalDashboard'));
-const TeacherDashboard = lazy(() => import('./components/TeacherDashboard'));
-const ClassJournal = lazy(() => import('./components/ClassJournal'));
-const GradeImport = lazy(() => import('./components/GradeImport'));
-const TimetableImport = lazy(() => import('./components/TimetableImport'));
-const ClassroomImport = lazy(() => import('./components/ClassroomImport'));
-const GoogleOauthCallback = lazy(() => import('./components/GoogleOauthCallback'));
-const NotificationSetup = lazy(() => import('./components/NotificationSetup'));
-const ParentHub = lazy(() => import('./components/ParentHub'));
-const StudentDashboard = lazy(() => import('./components/StudentDashboard'));
-const AITutor = lazy(() => import('./components/AITutor'));
-const VideoLectures = lazy(() => import('./components/VideoLectures'));
-const EduMeet = lazy(() => import('./components/EduMeet'));
-const SchoolCalendar = lazy(() => import('./components/SchoolCalendar'));
-const FloatingChatWidget = lazy(() => import('./components/FloatingChatWidget'));
-const BulletinBoard = lazy(() => import('./components/BulletinBoard'));
-const DirectChat = lazy(() => import('./components/DirectChat'));
-const MeetingBooking = lazy(() => import('./components/MeetingBooking'));
-const ExamRepository = lazy(() => import('./components/ExamRepository'));
-const AssetManager = lazy(() => import('./components/AssetManager'));
-const CameraWallTab = lazy(() => import('./components/admin/CameraWallTab'));
-const BadgesPanel = lazy(() => import('./components/BadgesPanel'));
-const Leaderboard = lazy(() => import('./components/Leaderboard'));
-const GradeTrendChart = lazy(() => import('./components/GradeTrendChart'));
-const CanteenManager = lazy(() => import('./components/CanteenManager'));
-const WellnessHub = lazy(() => import('./components/WellnessHub'));
-const StudyGroupHub = lazy(() => import('./components/StudyGroupHub'));
-const LibraryHub = lazy(() => import('./components/LibraryHub'));
-const WebLab = lazy(() => import('./components/WebLab'));
-const EssayGrader = lazy(() => import('./components/EssayGrader'));
-const BusTracker = lazy(() => import('./components/BusTracker'));
-const PortfolioBuilder = lazy(() => import('./components/PortfolioBuilder'));
-const TimetableGenerator = lazy(() => import('./components/TimetableGenerator'));
-const DutySchedule = lazy(() => import('./components/DutySchedule'));
-const SeatingChart = lazy(() => import('./components/SeatingChart'));
-const ClassVoting = lazy(() => import('./components/ClassVoting'));
-const AIRiskAnalysis = lazy(() => import('./components/AIRiskAnalysis'));
-const CasioFX580 = lazy(() => import('./components/CasioFX580'));
-const CasioFloatingWidget = lazy(() => import('./components/CasioFloatingWidget'));
-const ClassComparison = lazy(() => import('./components/ClassComparison'));
-const SchoolGallery = lazy(() => import('./components/SchoolGallery'));
+const PrincipalDashboard = lazyChunk(() => import('./components/PrincipalDashboard'));
+const TeacherDashboard = lazyChunk(() => import('./components/TeacherDashboard'));
+const ClassJournal = lazyChunk(() => import('./components/ClassJournal'));
+const GradeImport = lazyChunk(() => import('./components/GradeImport'));
+const TimetableImport = lazyChunk(() => import('./components/TimetableImport'));
+const ClassroomImport = lazyChunk(() => import('./components/ClassroomImport'));
+const GoogleOauthCallback = lazyChunk(() => import('./components/GoogleOauthCallback'));
+const NotificationSetup = lazyChunk(() => import('./components/NotificationSetup'));
+const ParentHub = lazyChunk(() => import('./components/ParentHub'));
+const StudentDashboard = lazyChunk(() => import('./components/StudentDashboard'));
+const AITutor = lazyChunk(() => import('./components/AITutor'));
+const VideoLectures = lazyChunk(() => import('./components/VideoLectures'));
+const EduMeet = lazyChunk(() => import('./components/EduMeet'));
+const SchoolCalendar = lazyChunk(() => import('./components/SchoolCalendar'));
+const FloatingChatWidget = lazyChunk(() => import('./components/FloatingChatWidget'));
+const BulletinBoard = lazyChunk(() => import('./components/BulletinBoard'));
+const DirectChat = lazyChunk(() => import('./components/DirectChat'));
+const MeetingBooking = lazyChunk(() => import('./components/MeetingBooking'));
+const ExamRepository = lazyChunk(() => import('./components/ExamRepository'));
+const AssetManager = lazyChunk(() => import('./components/AssetManager'));
+const CameraWallTab = lazyChunk(() => import('./components/admin/CameraWallTab'));
+const BadgesPanel = lazyChunk(() => import('./components/BadgesPanel'));
+const Leaderboard = lazyChunk(() => import('./components/Leaderboard'));
+const GradeTrendChart = lazyChunk(() => import('./components/GradeTrendChart'));
+const CanteenManager = lazyChunk(() => import('./components/CanteenManager'));
+const WellnessHub = lazyChunk(() => import('./components/WellnessHub'));
+const StudyGroupHub = lazyChunk(() => import('./components/StudyGroupHub'));
+const LibraryHub = lazyChunk(() => import('./components/LibraryHub'));
+const WebLab = lazyChunk(() => import('./components/WebLab'));
+const EssayGrader = lazyChunk(() => import('./components/EssayGrader'));
+const BusTracker = lazyChunk(() => import('./components/BusTracker'));
+const PortfolioBuilder = lazyChunk(() => import('./components/PortfolioBuilder'));
+const TimetableGenerator = lazyChunk(() => import('./components/TimetableGenerator'));
+const DutySchedule = lazyChunk(() => import('./components/DutySchedule'));
+const SeatingChart = lazyChunk(() => import('./components/SeatingChart'));
+const ClassVoting = lazyChunk(() => import('./components/ClassVoting'));
+const AIRiskAnalysis = lazyChunk(() => import('./components/AIRiskAnalysis'));
+const CasioFX580 = lazyChunk(() => import('./components/CasioFX580'));
+const CasioFloatingWidget = lazyChunk(() => import('./components/CasioFloatingWidget'));
+const ClassComparison = lazyChunk(() => import('./components/ClassComparison'));
+const SchoolGallery = lazyChunk(() => import('./components/SchoolGallery'));
 
 function App() {
   const { currentRole, userSession } = useContext(AppContext);
@@ -72,6 +73,12 @@ function App() {
   // lý do ở trên: bước đổi mã sẽ xoá mã khỏi thanh địa chỉ, đọc lại URL mỗi lần
   // vẽ sẽ khiến màn hình biến mất giữa chừng.
   const [isGoogleCallback] = useState(() => window.location.pathname === '/oauth/google');
+
+  // Ứng dụng mở được rồi thì xoá dấu "đã tải lại vì thiếu gói mã", để lần
+  // triển khai sau người dùng lại được cứu một lượt nữa.
+  useEffect(() => {
+    clearChunkReloadMark();
+  }, []);
 
   // Reset tab on role switch
   useEffect(() => {
